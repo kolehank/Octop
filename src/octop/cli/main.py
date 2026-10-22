@@ -94,14 +94,14 @@ class _LazyCLI(click.Group):
     "--user",
     "as_user",
     default=None,
-    envvar="AGENTBUDDY_USER",
+    envvar="OCTOP_USER",
     help="Default --user for subcommands (admin acting on behalf of a user).",
 )
 @click.option(
     "--agent",
     "agent_id",
     default=None,
-    envvar="AGENTBUDDY_AGENT",
+    envvar="OCTOP_AGENT",
     help="Default --agent for subcommands.",
 )
 @click.option(

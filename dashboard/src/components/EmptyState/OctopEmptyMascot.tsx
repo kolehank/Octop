@@ -1,4 +1,4 @@
-import { AGENTBUDDY_EMPTY_MASCOT_SRC } from "../../assets/mascot";
+import { OCTOP_EMPTY_MASCOT_SRC } from "../../assets/mascot";
 import styles from "./EmptyState.module.less";
 
 interface OctopEmptyMascotProps {
@@ -18,7 +18,7 @@ export function OctopEmptyMascot({
 }: OctopEmptyMascotProps) {
   return (
     <img
-      src={AGENTBUDDY_EMPTY_MASCOT_SRC}
+      src={OCTOP_EMPTY_MASCOT_SRC}
       alt=""
       draggable={false}
       className={className ? `${styles.mascot} ${className}` : styles.mascot}

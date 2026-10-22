@@ -33,17 +33,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-
-def _harness_home() -> _Path:
-    import os
-
-    root = os.environ.get("AGENTBUDDY_HOME", "").strip() or os.environ.get("OCTOP_HOME", "").strip()
-    if root:
-        return _Path(root).expanduser() / "harness"
-    return _Path.home() / ".agentbuddy" / "harness"
-
-
-_PROVIDERS_USER_DIR = _harness_home()
+_PROVIDERS_USER_DIR = _Path.home() / ".octop-harness"
 _PROVIDERS_TEMPLATE_SRC = "octop_harness.providers"
 _PROVIDERS_TEMPLATE_FILE = "provider_template.json"
 _PROVIDERS_USER_FILE = "providers_template.json"

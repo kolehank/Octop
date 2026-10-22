@@ -32,7 +32,7 @@ def _configurable(**kwargs: object):
 
 
 def _make_services(tmp_path: Path):
-    db = SqlitePool(tmp_path / "agentbuddy.db")
+    db = SqlitePool(tmp_path / "octop.db")
     run_migrations(db)
     return build_shared_services(db=db, paths=PathLayout(tmp_path), config=OctopConfig())
 

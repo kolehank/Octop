@@ -101,4 +101,4 @@ export function EmptyState({
 }
 
 export { OctopEmptyMascot } from "./OctopEmptyMascot";
-export { AGENTBUDDY_EMPTY_MASCOT_SRC } from "../../assets/mascot";
+export { OCTOP_EMPTY_MASCOT_SRC } from "../../assets/mascot";
