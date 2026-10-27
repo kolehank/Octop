@@ -188,7 +188,7 @@ uv run ruff check src tests && uv run ruff format --check src tests && uv run my
 | 后端启动即 `Segmentation fault (core dumped)` / exit 139 | 本机 onnxruntime | 换 Linux/macOS；本机走 §5 的 `--ignore` |
 | pytest 一堆 `UnicodeDecodeError` / `stderr is None` | Windows cp936 | 加 `PYTHONUTF8=1`，那批文件即转绿 |
 | 8088 被占 | 本机已有实例或服务 | `uv run octop run --port 8090`；Windows `netstat -ano \| grep :8088` |
-| 登录不进去 / 忘了管理员密码 | 管理员凭据落在数据目录 | 看 `$AGENTBUDDY_HOME/octop-login.txt`（向导解锁口令）与 `credential.txt`；复查环境直接换新 `AGENTBUDDY_HOME` 最省事 |
+| 登录不进去 / 忘了管理员密码 | 管理员凭据落在数据目录 | 看 `$AGENTBUDDY_HOME/agentbuddy-login.txt`（向导解锁口令）与 `credential.txt`；复查环境直接换新 `AGENTBUDDY_HOME` 最省事 |
 | 未挂载的 API 返回 405 而不是 404 | SPA GET 兜底路由（正常行为） | 按 §4 末的说明判断，别改代码 |
 | `make: command not found` | Windows 无 make | 按 §1 手拆；或 `choco install make` 后用 `make dev` |
 

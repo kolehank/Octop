@@ -646,7 +646,7 @@
     },
     "password": {
       "title": "Set Login Password",
-      "desc": "An initial password was randomly generated and saved to ~/octop-login.txt. Please enter it in the \"Current Password\" field below, then set your new password.",
+      "desc": "An initial password was randomly generated and saved to ~/.agentbuddy/agentbuddy-login.txt. Please enter it in the \"Current Password\" field below, then set your new password.",
       "currentPassword": "Current Password",
       "newPassword": "New Password",
       "confirmPassword": "Confirm New Password",
@@ -961,7 +961,7 @@
     "agentName": "Name",
     "agentDescription": "Description",
     "customIdLabel": "Custom ID (optional)",
-    "customIdHint": "Leave empty to auto-generate. Cannot be changed after creation; used as the workspace directory name (~/.octop/agents/<ID>/).",
+    "customIdHint": "Leave empty to auto-generate. Cannot be changed after creation; used as the workspace directory name (~/.agentbuddy/agents/<ID>/).",
     "customIdPlaceholder": "e.g. my-writer",
     "customIdInvalid": "ID must be 3-64 letters/digits/underscores/hyphens, starting and ending with a letter or digit",
     "customIdReserved": "ID \"{{id}}\" is reserved, please choose another",
@@ -1273,7 +1273,7 @@
     "invalid_request": "This endpoint may reject the live-token field. Turn off “Show live token count in chat” and retry. If it still fails, check whether the model supports tool calling.",
     "model_call_failed": "The model call failed after several retries. Wait a moment and retry. If it keeps failing, check the model settings or switch models.",
     "model_call_failed_detail": "The model call failed: {{detail}}",
-    "path_outside_root": "The file path is outside this expert's storage root, so it cannot be read or written. Use a path under the storage root, or widen the storage root in expert settings (on Windows, set an explicit drive path such as D:/octop-data)."
+    "path_outside_root": "The file path is outside this expert's storage root, so it cannot be read or written. Use a path under the storage root, or widen the storage root in expert settings (on Windows, set an explicit drive path such as D:/agentbuddy-data)."
   },
   "chat": {
     "sharedExpert": {
@@ -2839,7 +2839,7 @@
   },
   "environments": {
     "title": "Environment Variables",
-    "description": "Global variables in ~/.octop/env. Every agent inherits them in shell and Docker. Per-agent values go in that agent's workspace .env (override globals on execute). Search API keys belong here so tools can register.",
+    "description": "Global variables in ~/.agentbuddy/env. Every agent inherits them in shell and Docker. Per-agent values go in that agent's workspace .env (override globals on execute). Search API keys belong here so tools can register.",
     "secretGuide": "Need API credentials?",
     "secretGuideLink": "See how to get them",
     "key": "Key",
@@ -3848,7 +3848,7 @@
       "releaseNotes": "Release Notes",
       "updateModalTitle": "New Version Available",
       "guideTitle": "Update by install method",
-      "guideIntro": "If the one-click upgrade on the left is unavailable, pick the commands for your install method. Restart after upgrading; data stays in ~/.octop (or OCTOP_HOME).",
+      "guideIntro": "If the one-click upgrade on the left is unavailable, pick the commands for your install method. Restart after upgrading; data stays in ~/.agentbuddy (or AGENTBUDDY_HOME).",
       "guideDataNote": "Upgrades do not wipe local data: accounts, experts, chats and memory, skills, channels, and model settings live in the working directory. Reinstalling or updating the package keeps using that data.",
       "guide": {
         "ui": {
@@ -3857,7 +3857,7 @@
         },
         "installer": {
           "title": "One-line installer",
-          "body": "If you used the official install script, re-run the same install command to upgrade in place (it reuses the environment and data under ~/.octop)."
+          "body": "If you used the official install script, re-run the same install command to upgrade in place (it reuses the environment and data under ~/.agentbuddy)."
         },
         "cli": {
           "title": "CLI: octop update",
@@ -3873,7 +3873,7 @@
         },
         "docker": {
           "title": "Docker",
-          "body": "Rebuild and restart the image, and keep the same data volume (~/.octop or octop-data) so nothing is lost:"
+          "body": "Rebuild and restart the image, and keep the same data volume (~/.agentbuddy or AGENTBUDDY_DATA) so nothing is lost:"
         },
         "restart": {
           "title": "Restart after upgrade",
@@ -5379,7 +5379,7 @@
       "hint": "On first start, agentbuddy prints a one-time bootstrap password in the server terminal and writes it to the file below.",
       "whereTitle": "Where is the password?",
       "wherePath": "On the server, open {{path}} or check the yellow banner printed when agentbuddy starts.",
-      "whereDefault": "On the server, open ~/.octop/octop-login.txt or check the yellow banner printed when agentbuddy starts.",
+      "whereDefault": "On the server, open ~/.agentbuddy/agentbuddy-login.txt or check the yellow banner printed when agentbuddy starts.",
       "missingFile": "Bootstrap password file not found. Restart the server with no users to regenerate it.",
       "wrong": "Wrong password.",
       "rateLimited": "Too many attempts. Wait a minute and try again.",
@@ -5713,11 +5713,11 @@
     "forgotPasswordHint": "You can omit --password to enter it interactively. New password: at least 8 characters with letters and digits.",
     "forgotPasswordLinux": "Open Terminal, then run the command above. If octop is not found:",
     "forgotPasswordMac": "Open Terminal (Applications → Utilities → Terminal), then run the command above. If octop is not found:",
-    "forgotPasswordUnixPath": "~/.octop/bin/octop user passwd <username> --password <new-password>",
+    "forgotPasswordUnixPath": "~/.agentbuddy/bin/octop user passwd <username> --password <new-password>",
     "forgotPasswordWindows": "Open PowerShell or Command Prompt, then run the command above. If octop is not found:",
-    "forgotPasswordWindowsPs": "& \"$env:USERPROFILE\\.octop\\bin\\octop.cmd\" user passwd <username> --password <new-password>",
+    "forgotPasswordWindowsPs": "& \"$env:USERPROFILE\\.agentbuddy\\bin\\octop.cmd\" user passwd <username> --password <new-password>",
     "forgotPasswordWindowsCmdLabel": "Command Prompt",
-    "forgotPasswordWindowsCmd": "%USERPROFILE%\\.octop\\bin\\octop.cmd user passwd <username> --password <new-password>",
+    "forgotPasswordWindowsCmd": "%USERPROFILE%\\.agentbuddy\\bin\\octop.cmd user passwd <username> --password <new-password>",
     "forgotPasswordDocker": "Enter the container, then run:",
     "forgotPasswordDockerCommand": "docker exec -it <container> octop user passwd <username> --password <new-password>",
     "forgotPasswordOk": "Got it",
@@ -6692,7 +6692,7 @@
     "uninstallFailed": "Uninstall failed",
     "uninstallConfirm": "Uninstall plugin {{id}}?",
     "empty": "No plugins installed",
-    "adminHint": "Plugins live under ~/.octop/plugins/ on the server. Use this page to install, reload, globally enable, inspect, or uninstall them.",
+    "adminHint": "Plugins live under ~/.agentbuddy/plugins/ on the server. Use this page to install, reload, globally enable, inspect, or uninstall them.",
     "guideTitle": "How to build and import a plugin",
     "guideDevelopTitle": "1. Develop",
     "guideDevelopBody": "Create a folder with plugin.yaml and an entry Python file (for example main.py). plugin.yaml needs id, version, name, kind (tool / skill / hook), and entry. In setup(ctx): tool → ctx.tool(...); skill → ctx.skills(\"skills\"); hook → ctx.middleware(...). See the repo plugins/ demos for each kind.",
