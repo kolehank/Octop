@@ -170,7 +170,7 @@ cat <<EOF
 [install-offline] 完成。
   启动:  $AGENTBUDDY_VENV/bin/octop run
   数据:  $AGENTBUDDY_HOME
-  首次打开 Web 控制台走设置向导(口令见 $AGENTBUDDY_HOME/octop-login.txt)。
+  首次打开 Web 控制台走设置向导(口令见 $AGENTBUDDY_HOME/agentbuddy-login.txt)。
 EOF
 if [ "$SQLITE_NEEDS_FIX" = "1" ] && [ -f "$AGENTBUDDY_HOME/sqlite3-new/libsqlite3.so.0" ]; then
     cat <<EOF
