@@ -6,6 +6,11 @@
 
 ## [Unreleased]
 
+## [1.0.12] - 2026-10-27
+
+### 修复
+- **用户可见路径文案统一到 agentbuddy**：环境变量页说明此前仍写 `~/.octop/env`（后端实际写入 `~/.agentbuddy/env`），现全仓用户可见面统一——设置向导密码提示改为 `~/.agentbuddy/agentbuddy-login.txt`、插件目录/专家目录/升级指引（`AGENTBUDDY_HOME`）、忘记密码命令（Unix 与 Windows PowerShell/Cmd）、Docker 数据卷示例、README/README_CN/compose 注释、`install-offline.sh` 口令路径、SECURITY.md 的 tool_guard 规则目录一并修正。有意保留：`octop` CLI 命令名、技能 frontmatter `metadata.octop` 契约键、OctopBot 平台品牌名与 `octop-gateway` 包名
+
 ## [1.0.11] - 2026-10-26
 
 ### 新增
