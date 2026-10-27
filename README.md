@@ -260,7 +260,7 @@ octop run --host 0.0.0.0 --port 8088
 octop service start
 ```
 
-Open **http://127.0.0.1:8088**. With Docker, a valid `AGENTBUDDY_DEFAULT_PASSWORD` creates the admin on first boot (credentials in `/data/.agentbuddy/credential.txt`); if it is unset or rejected, open the setup wizard (unlock password in `/data/.agentbuddy/octop-login.txt`). Interactive `octop init` / the setup wizard asks you to choose a password (≥8 characters, letters and digits).
+Open **http://127.0.0.1:8088**. With Docker, a valid `AGENTBUDDY_DEFAULT_PASSWORD` creates the admin on first boot (credentials in `/data/.agentbuddy/credential.txt`); if it is unset or rejected, open the setup wizard (unlock password in `/data/.agentbuddy/agentbuddy-login.txt`). Interactive `octop init` / the setup wizard asks you to choose a password (≥8 characters, letters and digits).
 
 ### Docker (recommended for production)
 
@@ -281,7 +281,7 @@ docker run -d \
   agentbuddy:latest
 ```
 
-Open `http://localhost:8088`. A valid `AGENTBUDDY_DEFAULT_PASSWORD` creates the admin on first boot and writes credentials to `/data/.agentbuddy/credential.txt`. If it is unset or rejected by the password policy, no admin is created — complete the setup wizard (unlock password in `/data/.agentbuddy/octop-login.txt`). Override the username via `AGENTBUDDY_ADMIN_USERNAME`.
+Open `http://localhost:8088`. A valid `AGENTBUDDY_DEFAULT_PASSWORD` creates the admin on first boot and writes credentials to `/data/.agentbuddy/credential.txt`. If it is unset or rejected by the password policy, no admin is created — complete the setup wizard (unlock password in `/data/.agentbuddy/agentbuddy-login.txt`). Override the username via `AGENTBUDDY_ADMIN_USERNAME`.
 
 > **Password policy:** at least 8 characters with letters and digits.
 

@@ -262,7 +262,7 @@ octop run --host 0.0.0.0 --port 8088
 octop service start
 ```
 
-打开 **http://127.0.0.1:8088**。Docker 若设置了合格的 `AGENTBUDDY_DEFAULT_PASSWORD`，首次启动会创建管理员（凭据写入 `/data/.agentbuddy/credential.txt`）；未设置或密码不合格则打开设置向导（向导口令在 `/data/.agentbuddy/octop-login.txt`）。交互式 `octop init` / 设置向导会让你自行设置密码（至少 8 位，且同时包含字母和数字）。
+打开 **http://127.0.0.1:8088**。Docker 若设置了合格的 `AGENTBUDDY_DEFAULT_PASSWORD`，首次启动会创建管理员（凭据写入 `/data/.agentbuddy/credential.txt`）；未设置或密码不合格则打开设置向导（向导口令在 `/data/.agentbuddy/agentbuddy-login.txt`）。交互式 `octop init` / 设置向导会让你自行设置密码（至少 8 位，且同时包含字母和数字）。
 
 ### Docker（推荐用于生产部署）
 
@@ -283,7 +283,7 @@ docker run -d \
   agentbuddy:latest
 ```
 
-打开 `http://localhost:8088`。`AGENTBUDDY_DEFAULT_PASSWORD` 合格时首次启动会创建管理员，并把凭据写入 `/data/.agentbuddy/credential.txt`。未设置或密码被策略拒绝时不自动建账号，打开页面走设置向导（向导口令在 `/data/.agentbuddy/octop-login.txt`）。可通过 `AGENTBUDDY_ADMIN_USERNAME` 覆盖用户名。
+打开 `http://localhost:8088`。`AGENTBUDDY_DEFAULT_PASSWORD` 合格时首次启动会创建管理员，并把凭据写入 `/data/.agentbuddy/credential.txt`。未设置或密码被策略拒绝时不自动建账号，打开页面走设置向导（向导口令在 `/data/.agentbuddy/agentbuddy-login.txt`）。可通过 `AGENTBUDDY_ADMIN_USERNAME` 覆盖用户名。
 
 > **密码策略：** 至少 8 位，且同时包含字母和数字。
 
