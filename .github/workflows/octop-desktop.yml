@@ -210,6 +210,12 @@ jobs:
           PYTHONNOUSERSITE=1 \
             "$py" desktop/portable/verify_imports.py \
               "${verify_args[@]}"
+          # linux:扫描 ELF 扩展引用的 GLIBC 符号版本,> 2.17 即失败——
+          # 便携包要能在 glibc 2.23 的麒麟/FT-2000 老机上运行(runner 是 2.39,
+          # import 冒烟在 2.39 上通过不代表老机可用)。
+          if [[ "${{ matrix.plat }}" == linux-* ]]; then
+            python3 scripts/check_portable_glibc.py "${staging}/packages"
+          fi
           # macOS: fail if any native extension linked Homebrew/MacPorts paths.
           if [[ "${{ matrix.plat }}" == darwin-* ]]; then
             REPO_ROOT="$PWD" # shellcheck source=desktop/portable/_common.sh

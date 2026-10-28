@@ -6,6 +6,13 @@
 
 ## [Unreleased]
 
+## [1.0.13] - 2026-10-28
+
+### 修复
+- **便携包(portable zip)Linux 版在老 glibc 机器上不可用**:`uv --python-platform` 用 `unknown-linux-gnu` 档导致 uv 按 glibc 2.28 选 wheel,FT-2000/4 + 麒麟 glibc 2.23 真机 `import cryptography` 即报 `GLIBC_2.28 not found`。linux 两档切显式 `manylinux2014`(glibc 2.17 基线),配套降级表(numpy 2.2.6/pillow 12.2.0/greenlet 3.2.5/tiktoken 0.11.0/argon2 21.2.0+23.1.0/lxml 6.1.3/psycopg 3.2.13 三件套,与 offline legacy bundle 的 `LEGACY_PINNED` 同源)并剔除依赖死锁的 deepagents-backends/langchain-aws。
+- **便携包 glibc 闸门**:新增 `scripts/check_portable_glibc.py`,CI 冒烟时 `objdump -T` 扫描包内全部 ELF 扩展引用的 `GLIBC_*` 符号,> 2.17 即构建失败——打包 runner(glibc 2.39)上的 import 冒烟通过不再代表老机可用。
+- 已知限制:桌面键鼠控制依赖 evdev 全系无预编译 wheel,runner 编译产物仍引用高版本符号(延迟 import,服务端不受影响)。
+
 ## [1.0.12] - 2026-10-27
 
 ### 修复

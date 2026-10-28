@@ -184,8 +184,11 @@ uv_platform() {
   case "$1" in
     darwin-arm64) echo "aarch64-apple-darwin" ;;
     darwin-amd64) echo "x86_64-apple-darwin" ;;
-    linux-amd64) echo "x86_64-unknown-linux-gnu" ;;
-    linux-arm64) echo "aarch64-unknown-linux-gnu" ;;
+    # linux 两档必须用显式 manylinux2014(= glibc 2.17 最高基线):unknown-linux-gnu
+    # 会让 uv 按 glibc 2.28 选 wheel(cryptography 49 装出 manylinux_2_28 轮),
+    # glibc 2.23 的麒麟/FT-2000/4 机器上 ImportError: GLIBC_2.28 not found。
+    linux-amd64) echo "x86_64-manylinux2014" ;;
+    linux-arm64) echo "aarch64-manylinux2014" ;;
     windows-amd64) echo "x86_64-pc-windows-msvc" ;;
     windows-arm64) echo "aarch64-pc-windows-msvc" ;;
     *) return 1 ;;
@@ -272,6 +275,25 @@ write_green_overrides() {
         # 26.x only publishes macosx_15_0 wheels, which uv rejects on the
         # macOS-14 runner and on older Intel macs.
         echo "argon2-cffi-bindings==25.1.0"
+      } > "$out"
+      echo "$out"
+      ;;
+    linux-*)
+      # manylinux2014(uv --python-platform)下部分锁定版本没有 glibc 2.17 档
+      # wheel,降级到双架构 2014 档可用的版本 —— 与 scripts/offline_bundle.sh 的
+      # LEGACY_PINNED 同源。uv.lock 对应包升级时需两处一起复核。
+      # cryptography 49.0.0 本身有 2014 档,不钉(钉 50.0.2 会与 pyopenssl<50 冲突)。
+      {
+        echo "numpy==2.2.6"
+        echo "pillow==12.2.0"
+        echo "greenlet==3.2.5"
+        echo "tiktoken==0.11.0"
+        echo "argon2-cffi==23.1.0"
+        echo "argon2-cffi-bindings==21.2.0"
+        echo "lxml==6.1.3"
+        echo "psycopg==3.2.13"
+        echo "psycopg-binary==3.2.13"
+        echo "psycopg-pool==3.2.6"
       } > "$out"
       echo "$out"
       ;;
