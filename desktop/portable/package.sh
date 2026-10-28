@@ -116,6 +116,32 @@ assemble_one() {
   # Drop editable workspace-member lines (-e ./packages/…): they point at the
   # build machine's checkout; the real code ships via the workspace wheels.
   grep -v '^\s*-e\s' "$req_file" > "${req_file}.filtered" && mv "${req_file}.filtered" "$req_file"
+  # linux:剔除与 manylinux2014 替换表死锁的包(与 scripts/offline_bundle.sh 的
+  # LEGACY_EXCLUDE 同源)。deepagents-backends 硬要 psycopg>=3.3.2(其 aarch64 无
+  # 2014 档),langchain-aws 硬要 numpy>=2.3.2(aarch64 2014 档天花板 2.2.6);两者
+  # 都是 extras 专用路径,剔掉后 SQLite 主线不受影响。
+  case "$plat" in
+    linux-*)
+      python3 - "$req_file" <<'GREEN_EXCLUDE'
+import re, sys
+path = sys.argv[1]
+excluded = {"deepagents-backends", "langchain-aws"}
+lines = open(path).read().splitlines()
+kept, drop_next_via = [], False
+for line in lines:
+    m = re.match(r"^([A-Za-z0-9_.-]+)[=~<>!]", line)
+    if m and m.group(1).lower().replace("_", "-") in excluded:
+        drop_next_via = True
+        continue
+    if drop_next_via and re.match(r"^\s+#", line):
+        continue
+    drop_next_via = False
+    kept.append(line)
+open(path, "w").write("\n".join(kept) + "\n")
+print(f"[package] linux excludes applied: {sorted(excluded)}", file=sys.stderr)
+GREEN_EXCLUDE
+      ;;
+  esac
   # Online --target upgrades need uv to reuse the bundled dependencies. pip
   # ignores installed packages with --target and resolves/downloads them again.
   echo "uv==${GREEN_UV_VERSION}" >> "$req_file"
