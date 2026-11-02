@@ -6,8 +6,46 @@ import json
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
-from octop.api.routers.chat.serialize import _serialize_history_message
+from octop.api.routers.chat.serialize import (
+    _legacy_stream_aggregate_indexes,
+    _serialize_history_message,
+)
 from octop.api.routers.chat.sse import json_chunk_default
+
+
+def test_legacy_stream_aggregate_is_dropped() -> None:
+    """Old projections appended one id-less AI row concatenating the whole turn."""
+    messages = [
+        HumanMessage(content="查数据", id="u1"),
+        AIMessage(content="正在搜索。\n\n", id="a1"),
+        AIMessage(content="结论是 42。", id="a2"),
+        AIMessage(content="正在搜索。\n\n结论是 42。"),  # synthetic aggregate
+        HumanMessage(content="再查", id="u2"),
+        AIMessage(content="好的。", id="a3"),
+    ]
+    message_ids = ["u1", "a1", "a2", None, "u2", "a3"]
+
+    assert _legacy_stream_aggregate_indexes(messages, message_ids) == {3}
+
+
+def test_legacy_stream_aggregate_is_dropped_when_page_starts_mid_turn() -> None:
+    """History pages can begin mid-turn; the page text is a suffix of the aggregate."""
+    messages = [
+        AIMessage(content="第二段。\n\n", id="a2"),
+        AIMessage(content="结论。", id="a3"),
+        AIMessage(content="第一段。\n\n第二段。\n\n结论。"),  # aggregate for the full turn
+    ]
+
+    assert _legacy_stream_aggregate_indexes(messages, ["a2", "a3", None]) == {2}
+
+
+def test_legacy_stream_aggregate_keeps_idless_message_with_new_text() -> None:
+    messages = [
+        HumanMessage(content="hi", id="u1"),
+        AIMessage(content="hello"),
+    ]
+
+    assert _legacy_stream_aggregate_indexes(messages, ["u1", None]) == set()
 
 
 def test_json_chunk_default_serializes_langchain_messages() -> None:

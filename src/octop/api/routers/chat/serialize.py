@@ -25,6 +25,7 @@ from octop.infra.gateway.process.message_keys import (
     STREAM_ERROR_FLAG,
     parse_checkpoint_ts_ms,
 )
+from octop.infra.history.projection import squash_ws
 from octop.infra.utils.llm_text import strip_thinking as _strip_thinking
 from octop.infra.utils.locale import normalize_locale
 
@@ -441,6 +442,57 @@ def _isolated_sqlite_checkpoint_messages(
         conn.close()
 
 
+def _raw_message_text(msg: Any) -> str:
+    """Visible text of a wire message, before any thinking-tag stripping."""
+    content = msg.get("content") if isinstance(msg, dict) else getattr(msg, "content", "")
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "".join(
+            str(block.get("text") or "")
+            for block in content
+            if isinstance(block, dict) and str(block.get("type") or "").lower() == "text"
+        )
+    return ""
+
+
+def _legacy_stream_aggregate_indexes(
+    messages: list[Any], message_ids: list[str | None]
+) -> set[int]:
+    """Indexes of synthetic per-turn stream aggregates in a legacy projection page.
+
+    Older ``TurnHistoryTracker`` versions appended one id-less AI message per
+    turn whose text is the concatenation of every streamed fragment (its
+    ``reasoning_content`` merges the turn's thinking). The dashboard grouped it
+    with the real replies, so a second answer looked appended after the first
+    and its thinking hoisted into the turn's process summary. New turns no
+    longer write it; dropping it here keeps existing threads readable.
+    """
+    drop: set[int] = set()
+    turn_text: list[str] = []
+    for index, (message, message_id) in enumerate(zip(messages, message_ids, strict=True)):
+        role = _message_role(message)
+        if role in ("human", "user"):
+            turn_text = []
+        text = _raw_message_text(message)
+        joined = squash_ws("".join(turn_text))
+        stream_text = squash_ws(text)
+        if (
+            role in ("ai", "assistant")
+            and not (message_id or "").strip()
+            and stream_text
+            and joined
+            # A page can start mid-turn, so the page's assistant texts are a
+            # suffix of the aggregate rather than the whole turn.
+            and (stream_text == joined or stream_text.endswith(joined))
+        ):
+            drop.add(index)
+            continue
+        if role in ("ai", "assistant") and text.strip():
+            turn_text.append(text)
+    return drop
+
+
 def _load_projected_thread_messages(
     server: Any,
     agent_id: str,
@@ -456,7 +508,7 @@ def _load_projected_thread_messages(
         limit=limit,
         offset=offset,
     )
-    out: list[dict[str, Any]] = []
+    pairs: list[tuple[Any, Any]] = []
     for row in rows:
         try:
             wire = json.loads(row.message_json)
@@ -468,6 +520,15 @@ def _load_projected_thread_messages(
                 row.seq,
                 exc_info=True,
             )
+            continue
+        pairs.append((message, row))
+    drop = _legacy_stream_aggregate_indexes(
+        [message for message, _ in pairs],
+        [row.message_id for _, row in pairs],
+    )
+    out: list[dict[str, Any]] = []
+    for index, (message, row) in enumerate(pairs):
+        if index in drop:
             continue
         entry = _serialize_history_message(
             message,

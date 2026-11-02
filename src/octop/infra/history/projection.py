@@ -189,6 +189,11 @@ def _wire_text(item: ThreadMessageInput) -> str:
     return ""
 
 
+def squash_ws(text: str) -> str:
+    """Whitespace-insensitive form for stream-vs-state coverage checks."""
+    return "".join(text.split())
+
+
 @dataclass
 class TurnHistoryTracker:
     """Keep only the current user turn from replay-prone state chunks."""
@@ -259,10 +264,17 @@ class TurnHistoryTracker:
     def _inputs_cover_stream(self, items: list[ThreadMessageInput]) -> bool:
         if not self._stream_text:
             return False
-        return any(
-            item.role in _ASSISTANT_ROLES and self._stream_text in _wire_text(item)
-            for item in items
+        # A turn can stream several fragments (one per model call); each state
+        # message carries one of them. Coverage must use their ordered
+        # concatenation — checking messages one by one made every multi-step
+        # turn append a synthetic aggregate of the whole turn.
+        stream = squash_ws(self._stream_text)
+        if not stream:
+            return False
+        joined = squash_ws(
+            "".join(_wire_text(item) for item in items if item.role in _ASSISTANT_ROLES)
         )
+        return stream in joined
 
     @property
     def inputs(self) -> list[ThreadMessageInput]:

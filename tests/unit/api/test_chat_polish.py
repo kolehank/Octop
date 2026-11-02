@@ -290,6 +290,7 @@ def test_load_projected_falls_back_to_created_at() -> None:
 
     row = SimpleNamespace(
         seq=1,
+        message_id="m1",
         message_json=json.dumps(message_to_dict(HumanMessage(content="hi", id="m1"))),
         created_at=1_700_000_000,
     )
