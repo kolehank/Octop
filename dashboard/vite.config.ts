@@ -70,6 +70,11 @@ export default defineConfig(({ mode }) => {
   );
   // Allow overriding the backend port via VITE_API_PORT env variable (default: 8088)
   const apiPort = process.env.VITE_API_PORT ?? env.VITE_API_PORT ?? "8088";
+  // Big-screen dev server (see bigscreen/vite.config.ts). Proxying /screen
+  // through this origin keeps dashboard and big screen same-origin in dev, so
+  // they share localStorage["auth_token"] (same behavior as production, where
+  // FastAPI serves both under one origin).
+  const bigscreenPort = process.env.VITE_BIGSCREEN_PORT ?? "5174";
 
   const isProd = mode === "production";
   const analyze = env.ANALYZE === "true";
@@ -326,6 +331,14 @@ export default defineConfig(({ mode }) => {
         usePolling: false,
       },
       proxy: {
+        // Big-screen SPA lives in a separate Vite project (bigscreen/, :5174);
+        // serve it under this dev origin so /screen/* works next to the dashboard.
+        "/screen": {
+          target: `http://127.0.0.1:${bigscreenPort}`,
+          changeOrigin: true,
+          // Forward the big-screen dev server's HMR websocket.
+          ws: true,
+        },
         "/api": {
           target: `http://127.0.0.1:${apiPort}`,
           changeOrigin: true,

@@ -26,11 +26,13 @@ build
 tests
 .pre-commit-config.yaml
 
-# Frontend: stage 1 builds dashboard in-image; exclude host dev deps and pre-built output
+# Frontend: stage 1 builds dashboard + big screen in-image; exclude host dev
+# deps and pre-built output
 dashboard/node_modules
 dashboard/.vite
 dashboard/dist
 src/octop/dashboard
+src/octop/bigscreen
 node_modules
 **/node_modules
 **/.vite

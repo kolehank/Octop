@@ -34,14 +34,14 @@ package:
 
 .PHONY: green
 green:
-	$(MAKE) -C $(REPO_ROOT) build-frontend
+	$(MAKE) -C $(REPO_ROOT) build-frontend build-bigscreen
 	bash $(REPO_ROOT)/desktop/portable/bootstrap-runtime.sh $(GREEN_PLAT)
 	bash $(REPO_ROOT)/desktop/portable/package.sh $(GREEN_PLAT)
 	@echo "[green] Done. Zips under $(REPO_ROOT)/desktop/portable/release/"
 
 .PHONY: green-linux
 green-linux:
-	$(MAKE) -C $(REPO_ROOT) build-frontend
+	$(MAKE) -C $(REPO_ROOT) build-frontend build-bigscreen
 	bash $(REPO_ROOT)/desktop/portable/package-linux-docker.sh $(if $(GREEN_PLAT),$(GREEN_PLAT),linux-amd64)
 
 .PHONY: clean

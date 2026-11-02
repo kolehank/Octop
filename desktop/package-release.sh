@@ -69,8 +69,8 @@ ver="$(octop_version)"
 portable_zip="${REPO_ROOT}/desktop/portable/release/$(portable_zip_basename "$plat")"
 
 echo "[desktop-release] platform=${plat}"
-echo "[desktop-release] building Dashboard"
-make -C "$REPO_ROOT" build-frontend
+echo "[desktop-release] building frontends"
+make -C "$REPO_ROOT" build-frontend build-bigscreen
 
 if [[ "$reuse_portable" == 1 && -f "$portable_zip" ]]; then
   echo "[desktop-release] reusing ${portable_zip}"

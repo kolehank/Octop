@@ -57,7 +57,7 @@ env:
 
 jobs:
   frontend:
-    name: Build dashboard
+    name: Build frontends
     if: github.event_name != 'workflow_dispatch' || github.event.inputs.attach_from_run == ''
     runs-on: ubuntu-latest
     steps:
@@ -67,15 +67,24 @@ jobs:
         with:
           node-version: "24"
           cache: npm
-          cache-dependency-path: dashboard/package-lock.json
+          cache-dependency-path: |
+            dashboard/package-lock.json
+            bigscreen/package-lock.json
 
-      - name: Build frontend → src/octop/dashboard
-        run: make build-frontend
+      - name: Build frontends → src/octop/{dashboard,bigscreen}
+        run: make build-frontend build-bigscreen
 
       - uses: actions/upload-artifact@v7
         with:
           name: dashboard-dist
           path: src/octop/dashboard/
+          if-no-files-found: error
+          retention-days: 7
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: bigscreen-dist
+          path: src/octop/bigscreen/
           if-no-files-found: error
           retention-days: 7
 
@@ -155,6 +164,11 @@ jobs:
         with:
           name: dashboard-dist
           path: src/octop/dashboard
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: bigscreen-dist
+          path: src/octop/bigscreen
 
       - uses: astral-sh/setup-uv@v6
         with:

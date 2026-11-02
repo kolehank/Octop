@@ -116,6 +116,9 @@ fi
 echo "[offline_bundle] Building dashboard frontend..."
 (cd dashboard && npm ci && NODE_ENV=production NODE_OPTIONS="--max-old-space-size=2048" npm run build)
 
+echo "[offline_bundle] Building bigscreen frontend..."
+(cd bigscreen && npm ci && NODE_ENV=production npm run build)
+
 echo "[offline_bundle] Building 5 wheels (octop + harness/gateway/memory/browser)..."
 WHEEL_CACHE="$REPO_ROOT/.offline-wheels"
 rm -rf "$WHEEL_CACHE"

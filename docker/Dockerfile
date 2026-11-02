@@ -2,7 +2,7 @@
 # =============================================================================
 # 政务伙伴 — 多阶段 Docker 构建
 #
-# 阶段 1: 构建 React/TypeScript 前端
+# 阶段 1: 构建 dashboard + 大屏 React/TypeScript 前端
 # 阶段 2: Python 运行时 + 预构建前端
 #
 # 用法（在仓库根目录执行，构建上下文为根目录）:
@@ -64,6 +64,27 @@ RUN mkdir -p ../src/octop/dashboard
 
 # 镜像构建跳过完整 tsc；生产打包由 vite/esbuild 完成（使用 lockfile 中的 vite，不用 npx）
 RUN NODE_ENV=production NODE_OPTIONS="--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE}" npm run build:docker
+
+
+# ---------------------------------------------------------------------------
+# 阶段 1b — 大屏前端构建（bigscreen/，独立 Vite 工程 → /screen/*）
+# ---------------------------------------------------------------------------
+WORKDIR /build/bigscreen
+
+COPY bigscreen/package.json bigscreen/package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm,sharing=locked \
+    set -eu; \
+    if [ -n "$NPM_REGISTRY" ]; then npm config set registry "$NPM_REGISTRY"; fi; \
+    npm ci --no-audit \
+    || { echo "npm ci failed — retrying clean"; rm -rf node_modules; npm ci --no-audit; }; \
+    test -x node_modules/.bin/vite
+
+COPY bigscreen/ ./
+
+RUN mkdir -p ../src/octop/bigscreen
+
+# 工程较小，保留 tsc --noEmit 类型检查
+RUN NODE_ENV=production NODE_OPTIONS="--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE}" npm run build
 
 
 # ---------------------------------------------------------------------------
@@ -136,6 +157,7 @@ ENV PATH="/app/.venv/bin:$PATH" \
 
 COPY src/ ./src/
 COPY --from=frontend-builder /build/src/octop/dashboard/ ./src/octop/dashboard/
+COPY --from=frontend-builder /build/src/octop/bigscreen/ ./src/octop/bigscreen/
 
 COPY .env.example ./
 COPY docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
