@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { Dropdown } from "antd";
 import type { MenuProps } from "antd";
 import {
-  ChevronDown,
   ChevronRight,
   GitFork,
   MoreHorizontal,
@@ -350,7 +349,8 @@ export default function MinimalAgentSessionNav({
     [agents],
   );
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const { committed: searchQuery, inputProps: searchInputProps } =
+    useImeSearchInput("");
   const [showingHidden, setShowingHidden] = useState(false);
   const [navScope, setNavScope] = useState<ChatNavScope>(() =>
     initialChatNavScope(

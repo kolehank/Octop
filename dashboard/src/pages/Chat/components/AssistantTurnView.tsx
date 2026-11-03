@@ -489,7 +489,7 @@ export default function AssistantTurnView({
       ) : (
         trailingBody
       )}
-    </>
+    </div>
   );
 
   return (

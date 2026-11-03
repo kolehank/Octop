@@ -91,25 +91,6 @@ async function fetchPublishedExperts(): Promise<PublishedExpert[]> {
   return publishedExpertsApi.list();
 }
 
-const LIBRARY_SCENE_ORDER = [
-  "ecommerce",
-  "finance",
-  "content-creation",
-  "lifestyle",
-  "marketing",
-  "mysticism",
-  "academic",
-  "legal",
-  "tech",
-  "education",
-  "healthcare",
-  "hr",
-  "media",
-  "design",
-] as const;
-
-const LIBRARY_SCENE_ALL = "";
-
 function textMatchesQuery(
   query: string,
   ...parts: Array<string | null | undefined>
@@ -167,7 +148,8 @@ export default function ExpertsPage() {
     loadViewMode(),
   );
   const [refreshing, setRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const { committed: searchQuery, inputProps: searchQueryInputProps } =
+    useImeSearchInput("");
   const searchNeedle = searchQuery.trim().toLowerCase();
   const [locationFilter, setLocationFilter] =
     useState<ExpertLocationFilter>("all");

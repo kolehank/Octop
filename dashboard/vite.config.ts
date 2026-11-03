@@ -23,13 +23,6 @@ function normalizeViteBase(raw: string | undefined): string {
   return withLeading.endsWith("/") ? withLeading : `${withLeading}/`;
 }
 
-function normalizeViteBase(raw: string | undefined): string {
-  const value = (raw || "/").trim() || "/";
-  if (value === "/") return "/";
-  const withLeading = value.startsWith("/") ? value : `/${value}`;
-  return withLeading.endsWith("/") ? withLeading : `${withLeading}/`;
-}
-
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   // Empty = same-origin; frontend and backend served together, no hardcoded host.

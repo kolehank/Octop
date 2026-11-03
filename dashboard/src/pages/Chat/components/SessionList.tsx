@@ -588,7 +588,7 @@ export default function SessionList({
     if (activeAgentId) return null;
     return sortedAgents[0]?.agent_id ?? null;
   }, [activeAgentId, sortedAgents]);
-  const searching = searchQuery.trim().length > 0;
+  const searching = committedSearch.trim().length > 0;
   const fetchAllRequestedRef = useRef(false);
   useEffect(() => {
     if (!searching) {
@@ -623,16 +623,16 @@ export default function SessionList({
         committedSearch,
       ),
     );
-  }, [searchQuery, searching, sessionsFor, sortedAgents]);
+  }, [committedSearch, searching, sessionsFor, sortedAgents]);
   const listedHiddenAgents = useMemo(() => {
     if (!showingHidden) return [];
     const shown = new Set(listedAgents.map((agent) => agent.agent_id));
     return hiddenAgents.filter((agent) => {
       if (shown.has(agent.agent_id)) return false;
       if (!searching) return true;
-      return matchesNavQuery(agent.name, searchQuery);
+      return matchesNavQuery(agent.name, committedSearch);
     });
-  }, [hiddenAgents, listedAgents, searchQuery, searching, showingHidden]);
+  }, [hiddenAgents, listedAgents, committedSearch, searching, showingHidden]);
 
   const deleteOther = useCallback(
     async (agentId: string, id: string, compact: boolean) => {
@@ -674,7 +674,7 @@ export default function SessionList({
     const isActive = agent.agent_id === activeAgentId;
     const hits = searching
       ? sessionsFor(agent.agent_id).filter((session) =>
-          matchesNavQuery(session.name, searchQuery),
+          matchesNavQuery(session.name, committedSearch),
         )
       : [];
     const expanded = hiddenRow
@@ -689,7 +689,7 @@ export default function SessionList({
           agent={agent}
           sessions={isActive ? sessions : hits}
           activeId={activeId}
-          searchQuery={isActive ? searchQuery : ""}
+          searchQuery={isActive ? committedSearch : ""}
           hasMore={isActive ? hasMore : false}
           loadingMore={isActive ? loadingMore : false}
           onLoadMore={isActive ? onLoadMore : () => undefined}

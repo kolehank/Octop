@@ -135,6 +135,7 @@ export const ADVANCED_TAB_PERMISSIONS = {
   observability: "observability",
   backup: "backup",
   https: "tls",
+  updates: "update",
   captcha: "captcha",
   // Same gate as /api/settings/webauthn (require_permission("captcha")).
   webauthn: "captcha",

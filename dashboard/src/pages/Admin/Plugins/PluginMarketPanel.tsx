@@ -129,14 +129,14 @@ export function PluginMarketPanel() {
 
   const filtered = useMemo(() => {
     const byGroup =
-      committed.trim() || activeGroup === GROUP_ALL
+      keyword.trim() || activeGroup === GROUP_ALL
         ? items
         : items.filter(
             (row) => (row.group || "").trim().toLowerCase() === activeGroup,
           );
-    if (!committed.trim()) return byGroup;
-    return byGroup.filter((row) => matchesMarketQuery(row, committed));
-  }, [activeGroup, items, committed]);
+    if (!keyword.trim()) return byGroup;
+    return byGroup.filter((row) => matchesMarketQuery(row, keyword));
+  }, [activeGroup, items, keyword]);
 
   useEffect(() => {
     if (
@@ -231,7 +231,7 @@ export function PluginMarketPanel() {
           description={
             items.length === 0
               ? t("plugins.marketEmpty")
-              : committed.trim()
+              : keyword.trim()
               ? t("plugins.marketSearchEmpty")
               : t("plugins.emptyGroup")
           }

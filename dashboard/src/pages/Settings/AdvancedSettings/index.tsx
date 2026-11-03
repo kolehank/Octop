@@ -4,6 +4,7 @@ import {
   Archive,
   KeyRound,
   Lock,
+  RefreshCw,
   ShieldCheck,
   Variable,
   Activity,
