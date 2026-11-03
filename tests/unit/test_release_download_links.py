@@ -58,5 +58,7 @@ def test_patch_release_body_refreshes_docker_section() -> None:
 def test_patch_release_body_keeps_lite() -> None:
     mod = _load()
     body = mod.render_download_section("0.9.31")
-    patched = mod.patch_release_body(body, "v0.9.31", ["agentbuddy-desktop-darwin-arm64-0.9.31.dmg"])
+    patched = mod.patch_release_body(
+        body, "v0.9.31", ["agentbuddy-desktop-darwin-arm64-0.9.31.dmg"]
+    )
     assert "ghcr.io/kolehank/octop:0.9.31-lite" in patched
