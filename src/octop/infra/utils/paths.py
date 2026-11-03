@@ -32,11 +32,6 @@ class PathLayout:
         return self.root / "agentbuddy-login.txt"
 
     @property
-    def wizard_password_file(self) -> Path:
-        """Initial wizard password file: ``~/.octop/octop-login.txt`` (or ``$OCTOP_HOME/octop-login.txt``)."""
-        return self.root / "octop-login.txt"
-
-    @property
     def db(self) -> Path:
         return self.root / "agentbuddy.db"
 

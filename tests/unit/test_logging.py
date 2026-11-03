@@ -76,8 +76,8 @@ def test_build_log_handler_uses_daily_rotation_and_retention(tmp_path: Path):
 def test_purge_stale_logs_removes_only_old_files(tmp_path: Path):
     log_dir = tmp_path / "logs"
     log_dir.mkdir()
-    old = _stale_path(log_dir, "octop.2020-01-01.log", age_days=100)
-    new = _stale_path(log_dir, "octop.2026-07-16.log", age_days=1)
+    old = _stale_path(log_dir, "agentbuddy.2020-01-01.log", age_days=100)
+    new = _stale_path(log_dir, "agentbuddy.2026-07-16.log", age_days=1)
 
     _purge_stale_logs(log_dir, retention_days=14)
 
@@ -88,7 +88,7 @@ def test_purge_stale_logs_removes_only_old_files(tmp_path: Path):
 def test_purge_stale_logs_skipped_when_retention_non_positive(tmp_path: Path):
     log_dir = tmp_path / "logs"
     log_dir.mkdir()
-    old = _stale_path(log_dir, "octop.2020-01-01.log", age_days=100)
+    old = _stale_path(log_dir, "agentbuddy.2020-01-01.log", age_days=100)
 
     _purge_stale_logs(log_dir, retention_days=0)
 
@@ -217,9 +217,9 @@ def test_log_handler_rotates_when_max_bytes_exceeded(tmp_path: Path):
         for _ in range(40):
             test_logger.info("x" * 40)
         handler.flush()
-        backups = [p for p in tmp_path.glob("octop.*") if p != log_path]
+        backups = [p for p in tmp_path.glob("agentbuddy.*") if p != log_path]
         assert all(
-            re.fullmatch(r"octop\.\d{4}-\d{2}-\d{2}\.log(?:\.\d{3})?(?:\.gz)?", p.name)
+            re.fullmatch(r"agentbuddy\.\d{4}-\d{2}-\d{2}\.log(?:\.\d{3})?(?:\.gz)?", p.name)
             for p in backups
         )
         assert len(backups) >= 1
@@ -237,11 +237,11 @@ def test_log_handler_rotates_when_max_bytes_exceeded(tmp_path: Path):
 
 
 def test_gzip_rotated_log_replaces_plain_file(tmp_path: Path):
-    plain = tmp_path / "octop.2026-09-02.log"
+    plain = tmp_path / "agentbuddy.2026-09-02.log"
     # Binary write keeps LF on Windows (text mode would expand to CRLF).
     plain.write_bytes(b"hello\nworld\n")
     gzip_rotated_log(plain)
-    gz = tmp_path / "octop.2026-09-02.log.gz"
+    gz = tmp_path / "agentbuddy.2026-09-02.log.gz"
     assert not plain.exists()
     assert gz.exists()
     assert gzip.decompress(gz.read_bytes()) == b"hello\nworld\n"
@@ -250,27 +250,27 @@ def test_gzip_rotated_log_replaces_plain_file(tmp_path: Path):
 def test_delaycompress_keeps_newest_plain_on_startup(tmp_path: Path):
     log_dir = tmp_path / "logs"
     log_dir.mkdir()
-    older = log_dir / "octop.2026-08-28.log"
-    newer = log_dir / "octop.2026-08-29.log"
+    older = log_dir / "agentbuddy.2026-08-28.log"
+    newer = log_dir / "agentbuddy.2026-08-29.log"
     older.write_text("older\n", encoding="utf-8")
     newer.write_text("newer\n", encoding="utf-8")
     past = time.time() - 86400
     os.utime(older, (past, past))
     delaycompress_rotated_logs(log_dir, enabled=True)
     assert not older.exists()
-    assert (log_dir / "octop.2026-08-28.log.gz").exists()
+    assert (log_dir / "agentbuddy.2026-08-28.log.gz").exists()
     assert newer.exists()
-    assert not (log_dir / "octop.2026-08-29.log.gz").exists()
+    assert not (log_dir / "agentbuddy.2026-08-29.log.gz").exists()
 
 
 def test_delaycompress_single_plain_stays_uncompressed(tmp_path: Path):
     log_dir = tmp_path / "logs"
     log_dir.mkdir()
-    plain = log_dir / "octop.2026-08-29.log"
+    plain = log_dir / "agentbuddy.2026-08-29.log"
     plain.write_text("only\n", encoding="utf-8")
     delaycompress_rotated_logs(log_dir, enabled=True)
     assert plain.exists()
-    assert not (log_dir / "octop.2026-08-29.log.gz").exists()
+    assert not (log_dir / "agentbuddy.2026-08-29.log.gz").exists()
 
 
 def test_parse_log_compress_env(monkeypatch):
@@ -283,8 +283,8 @@ def test_parse_log_compress_env(monkeypatch):
 def test_purge_stale_logs_removes_old_gz_files(tmp_path: Path):
     log_dir = tmp_path / "logs"
     log_dir.mkdir()
-    old = _stale_path(log_dir, "octop.2020-01-01.log.gz", age_days=100)
-    new = _stale_path(log_dir, "octop.2026-07-16.log.gz", age_days=1)
+    old = _stale_path(log_dir, "agentbuddy.2020-01-01.log.gz", age_days=100)
+    new = _stale_path(log_dir, "agentbuddy.2026-07-16.log.gz", age_days=1)
     _purge_stale_logs(log_dir, retention_days=14)
     assert not old.exists()
     assert new.exists()
@@ -303,30 +303,30 @@ def test_setup_logging_respects_max_bytes_env(tmp_path: Path, monkeypatch):
 
 
 def test_dated_log_namer_puts_date_before_extension():
-    default = os.path.join("logs", "octop.log.2026-10-16")
-    assert _dated_log_namer(default) == os.path.join("logs", "octop.2026-10-16.log")
-    assert _dated_log_namer("octop.log.2026-10-16") == "octop.2026-10-16.log"
+    default = os.path.join("logs", "agentbuddy.log.2026-10-16")
+    assert _dated_log_namer(default) == os.path.join("logs", "agentbuddy.2026-10-16.log")
+    assert _dated_log_namer("agentbuddy.log.2026-10-16") == "agentbuddy.2026-10-16.log"
 
 
 def test_rotation_filename_avoids_same_day_collision(tmp_path: Path):
-    log_path = tmp_path / "octop.log"
+    log_path = tmp_path / "agentbuddy.log"
     handler = _build_log_handler(log_path, retention_days=3, max_bytes=0, compress_rotated=False)
     try:
         first = handler.rotation_filename(str(log_path) + ".2026-10-16")
-        assert Path(first).name == "octop.2026-10-16.log"
+        assert Path(first).name == "agentbuddy.2026-10-16.log"
         Path(first).write_text("kept\n", encoding="utf-8")
         second = handler.rotation_filename(str(log_path) + ".2026-10-16")
-        assert Path(second).name == "octop.2026-10-16.log.001"
+        assert Path(second).name == "agentbuddy.2026-10-16.log.001"
         Path(first).with_name(Path(first).name + ".gz").write_bytes(b"gz")
         Path(first).unlink()
         third = handler.rotation_filename(str(log_path) + ".2026-10-16")
-        assert Path(third).name == "octop.2026-10-16.log.001"
+        assert Path(third).name == "agentbuddy.2026-10-16.log.001"
     finally:
         handler.close()
 
 
 def test_rollover_writes_date_before_extension(tmp_path: Path):
-    log_path = tmp_path / "octop.log"
+    log_path = tmp_path / "agentbuddy.log"
     handler = _build_log_handler(log_path, retention_days=3, max_bytes=0, compress_rotated=False)
     test_logger = logging.getLogger("test.octop.log.date_name")
     test_logger.handlers = []
@@ -341,7 +341,7 @@ def test_rollover_writes_date_before_extension(tmp_path: Path):
         handler.flush()
         rotated = [p for p in tmp_path.iterdir() if p != log_path]
         assert len(rotated) == 1
-        assert re.fullmatch(r"octop\.\d{4}-\d{2}-\d{2}\.log", rotated[0].name)
+        assert re.fullmatch(r"agentbuddy\.\d{4}-\d{2}-\d{2}\.log", rotated[0].name)
         assert "before roll" in rotated[0].read_text(encoding="utf-8")
         assert "after roll" in log_path.read_text(encoding="utf-8")
     finally:
@@ -352,23 +352,23 @@ def test_rollover_writes_date_before_extension(tmp_path: Path):
 def test_migrate_legacy_rotated_logs(tmp_path: Path):
     log_dir = tmp_path / "logs"
     log_dir.mkdir()
-    (log_dir / "octop.log").write_text("active\n", encoding="utf-8")
-    (log_dir / "octop.log.2026-10-15").write_text("day\n", encoding="utf-8")
-    (log_dir / "octop.log.2026-10-15-001").write_text("extra\n", encoding="utf-8")
-    (log_dir / "octop.log.2026-10-14.gz").write_bytes(b"gz")
-    occupied = log_dir / "octop.2026-10-13.log"
+    (log_dir / "agentbuddy.log").write_text("active\n", encoding="utf-8")
+    (log_dir / "agentbuddy.log.2026-10-15").write_text("day\n", encoding="utf-8")
+    (log_dir / "agentbuddy.log.2026-10-15-001").write_text("extra\n", encoding="utf-8")
+    (log_dir / "agentbuddy.log.2026-10-14.gz").write_bytes(b"gz")
+    occupied = log_dir / "agentbuddy.2026-10-13.log"
     occupied.write_text("already\n", encoding="utf-8")
-    (log_dir / "octop.log.2026-10-13").write_text("legacy\n", encoding="utf-8")
+    (log_dir / "agentbuddy.log.2026-10-13").write_text("legacy\n", encoding="utf-8")
 
     _migrate_legacy_rotated_logs(log_dir)
 
-    assert (log_dir / "octop.log").read_text(encoding="utf-8") == "active\n"
-    assert (log_dir / "octop.2026-10-15.log").read_text(encoding="utf-8") == "day\n"
-    assert (log_dir / "octop.2026-10-15.log.001").read_text(encoding="utf-8") == "extra\n"
-    assert (log_dir / "octop.2026-10-14.log.gz").read_bytes() == b"gz"
-    assert not (log_dir / "octop.log.2026-10-15").exists()
+    assert (log_dir / "agentbuddy.log").read_text(encoding="utf-8") == "active\n"
+    assert (log_dir / "agentbuddy.2026-10-15.log").read_text(encoding="utf-8") == "day\n"
+    assert (log_dir / "agentbuddy.2026-10-15.log.001").read_text(encoding="utf-8") == "extra\n"
+    assert (log_dir / "agentbuddy.2026-10-14.log.gz").read_bytes() == b"gz"
+    assert not (log_dir / "agentbuddy.log.2026-10-15").exists()
     assert occupied.read_text(encoding="utf-8") == "already\n"
-    assert (log_dir / "octop.log.2026-10-13").read_text(encoding="utf-8") == "legacy\n"
+    assert (log_dir / "agentbuddy.log.2026-10-13").read_text(encoding="utf-8") == "legacy\n"
 
 
 def test_setup_logging_renames_legacy_rotated_files(tmp_path: Path):

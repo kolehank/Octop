@@ -1,6 +1,6 @@
 import cx from "classnames";
 
-import { OCTOP_EMPTY_MASCOT_SRC } from "../../assets/mascot";
+import { AGENTBUDDY_EMPTY_MASCOT_SRC } from "../../assets/mascot";
 import styles from "./EmptyState.module.less";
 
 interface OctopEmptyMascotProps {

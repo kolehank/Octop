@@ -68,7 +68,7 @@ async def create_agent_from_skillhub_skillset(
     slug: str,
     options: SkillHubMarketAgentCreateOptions,
 ) -> SkillHubMarketAgentCreateResult:
-    """Install an octop.cloud expert package and create an agent from it."""
+    """Install a SkillHub skillset template and create an agentbuddy agent from it."""
     catalog = server.expert_catalog
     if catalog is None:
         raise OctopError(

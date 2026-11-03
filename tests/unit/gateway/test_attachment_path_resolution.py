@@ -85,7 +85,7 @@ async def test_hint_uses_agent_facing_absolute_path() -> None:
 
 
 def test_hint_uses_remote_virtual_root_for_cloud_backend(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Postgres/S3 store the file under /.octop/workspaces/<id>, not the host dir."""
+    """Postgres/S3 store the file under /.agentbuddy/workspaces/<id>, not the host dir."""
     monkeypatch.setattr(
         "octop_harness.backends.workspace.is_cloud_storage_backend",
         lambda _backend: True,
@@ -97,7 +97,7 @@ def test_hint_uses_remote_virtual_root_for_cloud_backend(monkeypatch: pytest.Mon
         workspace = BackendWorkspace(backend, host_ws)
         rel = "inbound/1793068857_page.html"
         resolved = resolve_inbound_attachment_path(workspace, rel)
-        assert resolved == f"/.octop/workspaces/C10WX7/{rel}"
+        assert resolved == f"/.agentbuddy/workspaces/C10WX7/{rel}"
         host_hint = resolve_inbound_attachment_path(workspace, f"{host_ws.as_posix()}/{rel}")
         assert host_hint == resolved
         assert not resolved.startswith(str(host_ws))
@@ -106,7 +106,7 @@ def test_hint_uses_remote_virtual_root_for_cloud_backend(monkeypatch: pytest.Mon
 @pytest.mark.asyncio
 async def test_hint_remaps_scoped_root_to_agent_facing() -> None:
     with tempfile.TemporaryDirectory() as root_dir:
-        host_ws = Path(root_dir) / ".octop" / "workspaces" / "ABC123"
+        host_ws = Path(root_dir) / ".agentbuddy" / "workspaces" / "ABC123"
         host_ws.mkdir(parents=True)
         backend = LocalShellBackend(root_dir=root_dir, virtual_mode=True)
         workspace = BackendWorkspace(backend, host_ws)
@@ -117,7 +117,7 @@ async def test_hint_remaps_scoped_root_to_agent_facing() -> None:
             media_type="application/pdf",
         )
         resolved = resolve_inbound_attachment_path(workspace, stored.path)
-        assert resolved == f"/.octop/workspaces/ABC123/{stored.path}"
+        assert resolved == f"/.agentbuddy/workspaces/ABC123/{stored.path}"
         assert not resolved.startswith(root_dir)
 
 

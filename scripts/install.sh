@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Octop installer (macOS / Linux)
+# agentbuddy installer (macOS / Linux)
 # Usage: bash scripts/install.sh                 # install from PyPI (default)
 #    or: bash scripts/install.sh --from-source   # install from a local checkout
 #    or: curl -fsSL <url>/install.sh | bash      # remote install
@@ -11,9 +11,9 @@
 set -euo pipefail
 
 # ── Defaults ──────────────────────────────────────────────────────────────────
-OCTOP_HOME="${OCTOP_HOME:-$HOME/.octop}"
-OCTOP_VENV="$OCTOP_HOME/venv"
-OCTOP_BIN="$OCTOP_HOME/bin"
+AGENTBUDDY_HOME="${AGENTBUDDY_HOME:-${OCTOP_HOME:-$HOME/.agentbuddy}}"
+AGENTBUDDY_VENV="$AGENTBUDDY_HOME/venv"
+AGENTBUDDY_BIN="$AGENTBUDDY_HOME/bin"
 PYTHON_VERSION="3.12"
 AGENTBUDDY_REPO="${AGENTBUDDY_REPO:-https://github.com/kolehank/Octop.git}"
 # Harness components are published only under their own org; deriving them from
@@ -548,7 +548,7 @@ _ensure_old_glibc_build_toolchain() {
 }
 
 # ── Step 2: create or update the virtualenv ────────────────────────────────────────────────
-if [ -x "$OCTOP_VENV/bin/python" ]; then
+if [ -x "$AGENTBUDDY_VENV/bin/python" ]; then
     info "Existing environment found, upgrading..."
 else
     info "Creating the Python $PYTHON_VERSION environment..."
@@ -744,7 +744,7 @@ _install_playwright_system_deps() {
         info "Detected the apt package manager (Debian/Ubuntu)..."
         info "Installing Playwright system dependencies..."
         # Prefer Playwright's own install-deps.
-        if "$OCTOP_VENV/bin/python" -m playwright install-deps chromium --with-deps 2>/dev/null; then
+        if "$AGENTBUDDY_VENV/bin/python" -m playwright install-deps chromium --with-deps 2>/dev/null; then
             return
         fi
         # Fallback: install packages by hand. Ubuntu 24+ renamed some of them to *t64.
@@ -945,7 +945,7 @@ else
 fi
 
 # ── Step 4: create the wrapper script ─────────────────────────────────────────────────────
-mkdir -p "$OCTOP_BIN"
+mkdir -p "$AGENTBUDDY_BIN"
 
 cat > "$AGENTBUDDY_BIN/octop" << 'WRAPPER'
 #!/usr/bin/env bash
@@ -1115,7 +1115,7 @@ if [ -f "$AGENTBUDDY_VENV/bin/python" ] && [ -d "$AGENTBUDDY_HOME" ]; then
   if [ ! -f "$CONFIG_PATH" ]; then
     echo "{}" > "$CONFIG_PATH"
   fi
-  "$OCTOP_VENV/bin/python" -m octop.infra.control.mobile "$CONFIG_PATH" || true
+  "$AGENTBUDDY_VENV/bin/python" -m octop.infra.control.mobile "$CONFIG_PATH" || true
 fi
 
 # ── Done ──────────────────────────────────────────────────────────────────────

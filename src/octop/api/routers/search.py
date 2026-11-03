@@ -44,7 +44,7 @@ class TestSearchResponse(BaseModel):
         "Run a one-shot query against a web-search provider using the supplied "
         "env vars (TAVILY_API_KEY, BRAVE_API_KEY, DEEPSEEK_API_KEY, "
         "GOOGLE_API_KEY + GOOGLE_CSE_ID, MOONSHOT_API_KEY, or "
-        "TENCENTCLOUD_WSA_APIKEY). Credentials are not written to ~/.octop/env."
+        "TENCENTCLOUD_WSA_APIKEY). Credentials are not written to ~/.agentbuddy/env."
     ),
 )
 async def test_search_provider(

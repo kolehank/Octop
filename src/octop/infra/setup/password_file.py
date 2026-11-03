@@ -29,8 +29,8 @@ def resolve_password_path(home: Path, legacy_home: Path | None = None) -> Path:
 def ensure_password(home: Path, legacy_home: Path | None = None) -> str | None:
     """Generate the file if missing; return password or ``None`` if present.
 
-    If ``<home>/octop-login.txt`` is missing but a legacy password exists at
-    ``<legacy_home>/octop-login.txt`` (defaulting to the OS home), reuse that
+    If ``<home>/agentbuddy-login.txt`` is missing but a legacy password exists at
+    ``<legacy_home>/agentbuddy-login.txt`` (defaulting to the OS home), reuse that
     legacy password and write it to the primary path so both locations stay
     consistent and no conflicting secret is generated.
     """
@@ -76,8 +76,8 @@ def ensure_password(home: Path, legacy_home: Path | None = None) -> str | None:
 def read_password(home: Path, legacy_home: Path | None = None) -> str | None:
     """Return the wizard password, or ``None`` if the file is absent/empty.
 
-    Checks ``<home>/octop-login.txt`` first. If absent, falls back to
-    ``<legacy_home>/octop-login.txt`` (defaulting to the OS home).
+    Checks ``<home>/agentbuddy-login.txt`` first. If absent, falls back to
+    ``<legacy_home>/agentbuddy-login.txt`` (defaulting to the OS home).
 
     Supports two layouts:
       * Plain — the password is the file's first non-empty line, as written

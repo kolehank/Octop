@@ -32,7 +32,7 @@ else:
 # middleware issues a fresh access token via ACCESS_TOKEN_RESPONSE_HEADER.
 # 2/3 means a 24h token renews after about 8h of use, so a workday's last
 # request still covers the next morning. A full day idle still expires.
-ACCESS_TOKEN_RESPONSE_HEADER = "X-Octop-Access-Token"
+ACCESS_TOKEN_RESPONSE_HEADER = "X-Agentbuddy-Access-Token"
 _SLIDING_RENEW_REMAINING_FRACTION = 2 / 3
 
 

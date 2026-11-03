@@ -44,41 +44,15 @@ def portable_name(os_name: str, arch: str, version: str) -> str:
     return f"agentbuddy-portable-{os_name}-{arch}-{version}.zip"
 
 
-def fnos_assets(version: str) -> tuple[tuple[str, str], ...]:
-    """FnOS download links in release-page order."""
-    return (
-        (f"Octop-fnos-docker-lite-{version}.fpk", "Docker lite (x86 and ARM)"),
-        (
-            f"Octop-fnos-docker-{version}.fpk",
-            "Docker full (desktop, OCR, local models; x86 and ARM)",
-        ),
-        (f"Octop-fnos-native-amd64-{version}.fpk", "Native x86_64"),
-        (f"Octop-fnos-native-arm64-{version}.fpk", "Native ARM64 (no Docker)"),
-    )
-
-
 def docker_image_section(version: str, *, lite: bool) -> str:
     lines = [
         "### Docker image",
         "",
-        f"- Full: `ghcr.io/tencentcloud/octop:{version}` (`:latest`)",
+        f"- Full: `ghcr.io/kolehank/octop:{version}` (`:latest`)",
     ]
     if lite:
-        lines.append(f"- Lite: `ghcr.io/tencentcloud/octop:{version}-lite` (`:lite`)")
+        lines.append(f"- Lite: `ghcr.io/kolehank/octop:{version}-lite` (`:lite`)")
     return "\n".join(lines)
-
-
-def fnos_section(version: str, present: set[str] | None) -> str:
-    """Return the fnOS block. ``present is None`` keeps every package."""
-    tag, _version = split_tag(version)
-    links = [
-        md_link(label, tag, filename)
-        for filename, label in fnos_assets(version)
-        if present is None or filename in present
-    ]
-    if not links:
-        return ""
-    return "### fnOS NAS\n- " + " | ".join(links)
 
 
 def render_download_section(raw_version: str) -> str:
@@ -126,8 +100,6 @@ def render_download_section(raw_version: str) -> str:
             "",
             docker_image_section(version, lite=True),
             "",
-            fnos_section(version, None),
-            "",
         ]
     )
 
@@ -154,18 +126,11 @@ def _replace_section(body: str, heading: str, replacement: str) -> str:
 
 
 def patch_release_body(body: str, raw_version: str, present: Iterable[str]) -> str:
-    """Keep desktop links, and keep only the FnOS packages that were uploaded.
-
-    The lite image line follows the lite FnOS package: that tag is published
-    only when both CPU architectures exist, which is also when the package is built.
-    """
+    """Keep desktop links, and refresh the Docker section from the uploaded assets."""
     _tag, version = split_tag(raw_version)
-    names = {Path(name).name for name in present}
-    lite_name = f"Octop-fnos-docker-lite-{version}.fpk"
-    updated = _replace_section(
-        body, "Docker image", docker_image_section(version, lite=lite_name in names)
+    return _replace_section(
+        body, "Docker image", docker_image_section(version, lite=True)
     )
-    return _replace_section(updated, "fnOS NAS", fnos_section(version, names))
 
 
 def _asset_names(payload: dict[str, object]) -> list[str]:

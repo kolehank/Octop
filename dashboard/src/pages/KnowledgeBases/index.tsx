@@ -707,9 +707,9 @@ export default function KnowledgeBasesPage() {
     storageKey: "agentbuddy:knowledge-bases:sidebar-width",
   });
   const { collapsed: listPanelCollapsed, toggle: toggleListPanel } =
-    useListPanelCollapsed("octop:knowledge-bases:list-collapsed");
+    useListPanelCollapsed("agentbuddy:knowledge-bases:list-collapsed");
   const { collapsed: docTreeCollapsed, toggle: toggleDocTree } =
-    useListPanelCollapsed("octop:knowledge-bases:doc-tree-collapsed", {
+    useListPanelCollapsed("agentbuddy:knowledge-bases:doc-tree-collapsed", {
       defaultCollapsed: true,
     });
   const { size: docTreeWidth, onResizeStart: onDocTreeResizeStart } =
@@ -717,7 +717,7 @@ export default function KnowledgeBasesPage() {
       min: 180,
       max: 420,
       defaultSize: 220,
-      storageKey: "octop:knowledge-bases:doc-tree-width",
+      storageKey: "agentbuddy:knowledge-bases:doc-tree-width",
     });
 
   const canManageSelected = Boolean(

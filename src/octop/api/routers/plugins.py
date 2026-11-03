@@ -249,7 +249,7 @@ async def install_market_plugin(
     server: OctopServer = Depends(get_server),
     _user: Any = Depends(require_permission("plugin_market")),
 ) -> dict[str, Any]:
-    """Download one catalog release into ``~/.octop/plugins``."""
+    """Download one catalog release into ``~/.agentbuddy/plugins``."""
     mgr = _plugin_manager(server)
     loop = asyncio.get_running_loop()
     try:

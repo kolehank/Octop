@@ -78,7 +78,7 @@ async function fetchAgentPreview(
   };
 }
 
-const FOLDER_COLLAPSED_KEY = "octop:minimal-agent-folders-collapsed";
+const FOLDER_COLLAPSED_KEY = "agentbuddy:minimal-agent-folders-collapsed";
 
 function loadCollapsedFolders(): Set<string> {
   try {

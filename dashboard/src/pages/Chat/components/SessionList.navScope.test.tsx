@@ -131,11 +131,11 @@ describe("SessionList nav scopes", () => {
     const user = userEvent.setup();
     const onAgentSelect = vi.fn();
     localStorage.setItem(
-      "octop:pinned-experts",
+      "agentbuddy:pinned-experts",
       JSON.stringify(["local-expert"]),
     );
     localStorage.setItem(
-      "octop:hidden-shared-experts",
+      "agentbuddy:hidden-shared-experts",
       JSON.stringify(["shared-expert", "idle-expert"]),
     );
     const shared = {
@@ -192,7 +192,7 @@ describe("SessionList nav scopes", () => {
   it("leaves the active hidden expert in the hidden group", async () => {
     const user = userEvent.setup();
     localStorage.setItem(
-      "octop:hidden-shared-experts",
+      "agentbuddy:hidden-shared-experts",
       JSON.stringify(["idle-expert"]),
     );
     render(

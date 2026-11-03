@@ -20,7 +20,7 @@ import pytest
 
 from tests.unit.test_docker_image_arch import native_import_failed, normalized_cpu_arch
 
-IMAGE = os.environ.get("OCTOP_TEST_IMAGE", "octop:test")
+IMAGE = os.environ.get("AGENTBUDDY_TEST_IMAGE", "octop:test")
 READY_TIMEOUT_S = 180
 
 
@@ -124,10 +124,10 @@ def docker_boot() -> Iterator[Any]:
             "-e",
             "AGENTBUDDY_PORT=8088",
             "-e",
-            "OCTOP_LOG_LEVEL=warning",
+            "AGENTBUDDY_LOG_LEVEL=warning",
             "--shm-size=1g",
             "-v",
-            f"{volume}:/data/.octop",
+            f"{volume}:/data/.agentbuddy",
         ]
         if password is not None:
             cmd.extend(["-e", f"AGENTBUDDY_DEFAULT_PASSWORD={password}"])
@@ -285,7 +285,7 @@ def test_docker_image_runs_on_this_cpu_and_stays_disabled(docker_boot: Any) -> N
 
     Run on the machine that fails, for example an ARM FnOS host::
 
-        OCTOP_TEST_IMAGE=ghcr.io/tencentcloud/octop:1.0.2 \\
+        AGENTBUDDY_TEST_IMAGE=ghcr.io/kolehank/octop:1.0.2 \\
             uv run pytest tests/integration/test_docker_image_boot.py -m live -q
 
     Exit 132 / ``Illegal instruction`` is the failure in issues #2190 and #2301.

@@ -236,7 +236,7 @@ async def change_password(
     """Verify the old password and set a new one for the current user.
 
     Previously issued access tokens stop working. This response carries a
-    replacement in ``X-Octop-Access-Token`` so the current client stays signed in.
+    replacement in ``X-Agentbuddy-Access-Token`` so the current client stays signed in.
     """
     await server.user_manager.change_password(user.username, body.old_password, body.new_password)
     token, _ttl = MfaService(server.services).mint_access_token(user)

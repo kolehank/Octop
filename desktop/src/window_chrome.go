@@ -16,7 +16,7 @@ func dragOverlayJS() string {
 		document.documentElement.dataset.agentbuddyDragReady = '1';
 		var armed = false, startX = 0, startY = 0;
 		var resizeEdge = '', resizeArmed = false;
-		var noDrag = 'button, a, input, textarea, select, [role="button"], [role="menuitem"], [data-octop-no-drag], .octop-desktop-no-drag';
+		var noDrag = 'button, a, input, textarea, select, [role="button"], [role="menuitem"], [data-agentbuddy-no-drag], .agentbuddy-desktop-no-drag';
 		function targetEl(t) {
 			if (t && t.nodeType === 1) return t;
 			return t && t.parentElement ? t.parentElement : null;

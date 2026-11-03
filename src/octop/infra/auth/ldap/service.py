@@ -159,7 +159,7 @@ class LdapAuthService:
             ) from exc
 
     async def resolve_user(self, identity: LdapIdentity, *, login_name: str = "") -> User:
-        """Return the Octop user for a verified directory identity, provisioning if allowed."""
+        """Return the agentbuddy user for a verified directory identity, provisioning if allowed."""
         row = self._row()
         if row is None:
             raise OctopError(ErrorCode.LDAP_UNAVAILABLE, "LDAP is not configured")

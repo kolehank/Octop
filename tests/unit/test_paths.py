@@ -8,13 +8,13 @@ from octop.infra.utils.paths import PathLayout
 
 
 def test_root_paths(tmp_path: Path):
-    p = PathLayout(tmp_path / ".octop")
-    assert p.root == tmp_path / ".octop"
-    assert p.db == tmp_path / ".octop" / "octop.db"
-    assert p.logs_dir == tmp_path / ".octop" / "logs"
-    assert p.log == tmp_path / ".octop" / "logs" / "octop.log"
-    assert p.config == tmp_path / ".octop" / "config.json"
-    assert p.wizard_password_file == tmp_path / ".octop" / "octop-login.txt"
+    p = PathLayout(tmp_path / ".agentbuddy")
+    assert p.root == tmp_path / ".agentbuddy"
+    assert p.db == tmp_path / ".agentbuddy" / "agentbuddy.db"
+    assert p.logs_dir == tmp_path / ".agentbuddy" / "logs"
+    assert p.log == tmp_path / ".agentbuddy" / "logs" / "agentbuddy.log"
+    assert p.config == tmp_path / ".agentbuddy" / "config.json"
+    assert p.wizard_password_file == tmp_path / ".agentbuddy" / "agentbuddy-login.txt"
 
 
 def test_log_dir_creation(tmp_path: Path):
