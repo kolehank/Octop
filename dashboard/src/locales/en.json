@@ -726,6 +726,12 @@
         },
         "yuanbao": {
           "desc": "Tencent Yuanbao Search over the open web and Tencent content"
+        },
+        "doubao": {
+          "desc": "Volcengine Doubao Search — global web coverage, low latency in China"
+        },
+        "exa": {
+          "desc": "Exa semantic web search with query-relevant highlights"
         }
       },
       "test": "Test Connection",
@@ -1867,6 +1873,8 @@
     "tavily_search": "Tavily web search",
     "brave_search": "Brave web search",
     "deepseek_search": "DeepSeek web search",
+    "doubao_search": "Doubao web search",
+    "exa_search": "Exa web search",
     "google_search": "Google web search",
     "kimi_search": "Kimi web search",
     "yuanbao_search": "Yuanbao web search",

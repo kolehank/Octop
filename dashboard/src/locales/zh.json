@@ -726,6 +726,12 @@
         },
         "yuanbao": {
           "desc": "腾讯元宝搜索，覆盖公开网页与腾讯内容生态"
+        },
+        "doubao": {
+          "desc": "火山引擎豆包搜索，全球站点覆盖，国内低延迟"
+        },
+        "exa": {
+          "desc": "Exa 语义搜索，返回与查询相关的高亮片段"
         }
       },
       "test": "测试连接",
@@ -1867,6 +1873,8 @@
     "tavily_search": "Tavily 联网搜索",
     "brave_search": "Brave 联网搜索",
     "deepseek_search": "DeepSeek 网页搜索",
+    "doubao_search": "豆包网页搜索",
+    "exa_search": "Exa 网页搜索",
     "google_search": "Google 联网搜索",
     "kimi_search": "Kimi 联网搜索",
     "yuanbao_search": "元宝联网搜索",
