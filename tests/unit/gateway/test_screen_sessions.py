@@ -331,6 +331,7 @@ def test_touch_thread_after_turn_strips_s2_prefix_from_autotitle() -> None:
 
     proc = GlobalProcessor.__new__(GlobalProcessor)
     proc._thread_registry = MagicMock()
+    proc._title_inflight = set()
     proc._touch_thread_after_turn(
         "thr_1", "〔当前页：招商（仅供参考，以用户问题为准）〕帮我分析投资"
     )
@@ -343,5 +344,6 @@ def test_touch_thread_after_turn_keeps_plain_autotitle() -> None:
 
     proc = GlobalProcessor.__new__(GlobalProcessor)
     proc._thread_registry = MagicMock()
+    proc._title_inflight = set()
     proc._touch_thread_after_turn("thr_1", "帮我分析投资")
     proc._thread_registry.set_title_if_null.assert_called_once_with("thr_1", "帮我分析投资")
