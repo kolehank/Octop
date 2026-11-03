@@ -189,6 +189,24 @@ def test_hf_snapshot_emits_tqdm_byte_progress(monkeypatch, tmp_path: Path) -> No
     monkeypatch.setenv("AGENTBUDDY_HOME", str(tmp_path))
     seen: list[tuple[int, int | None, str]] = []
 
+    # tqdm lives behind optional extras; inject a minimal stand-in so the test
+    # runs in the CI environment (uv sync without extras).
+    tqdm_mod = types.ModuleType("tqdm")
+    tqdm_auto = types.ModuleType("tqdm.auto")
+
+    class FakeProgressTqdm:
+        def __init__(self, **kwargs: object) -> None:
+            self.desc = str(kwargs.get("desc", ""))
+            self.total = kwargs.get("total")
+            self.n = 0
+
+        def update(self, n: float = 1) -> None:
+            self.n += n
+
+    tqdm_auto.tqdm = FakeProgressTqdm
+    monkeypatch.setitem(sys.modules, "tqdm", tqdm_mod)
+    monkeypatch.setitem(sys.modules, "tqdm.auto", tqdm_auto)
+
     def fake_snapshot_download(**kwargs: object) -> str:
         tqdm_class = kwargs.get("tqdm_class")
         assert callable(tqdm_class)
