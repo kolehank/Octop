@@ -136,6 +136,8 @@ export const ADVANCED_TAB_PERMISSIONS = {
   backup: "backup",
   https: "tls",
   captcha: "captcha",
+  // Same gate as /api/settings/webauthn (require_permission("captcha")).
+  webauthn: "captcha",
 } as const;
 
 export const SECURITY_TAB_PERMISSIONS = {

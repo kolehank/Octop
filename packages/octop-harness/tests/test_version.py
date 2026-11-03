@@ -10,7 +10,8 @@ from octop_harness._version import __version__ as module_version
 
 
 def _pyproject_version() -> str:
-    text = Path("pyproject.toml").read_text(encoding="utf-8")
+    package_root = Path(__file__).resolve().parents[1]
+    text = (package_root / "pyproject.toml").read_text(encoding="utf-8")
     match = re.search(r'(?m)^version\s*=\s*"([^"]+)"', text)
     assert match is not None
     return match.group(1)

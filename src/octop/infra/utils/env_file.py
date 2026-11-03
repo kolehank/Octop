@@ -28,6 +28,7 @@ SEARCH_ENV_KEYS = frozenset(
         "DEEPSEEK_API_KEY",
         "EXA_API_KEY",
         "MOONSHOT_API_KEY",
+        "TENCENTCLOUD_WSA_APIKEY",
     }
 )
 

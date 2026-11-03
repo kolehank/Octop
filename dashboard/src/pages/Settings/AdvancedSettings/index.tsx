@@ -1,11 +1,19 @@
 import { useTranslation } from "react-i18next";
 import { Navigate, useSearchParams } from "react-router-dom";
-import { Archive, Lock, ShieldCheck, Variable, Activity } from "lucide-react";
+import {
+  Archive,
+  KeyRound,
+  Lock,
+  ShieldCheck,
+  Variable,
+  Activity,
+} from "lucide-react";
 import EnvironmentsPage from "../Environments";
 import { ObservabilitySettingsPanel } from "../Observability";
 import BackupRestorePanel from "../BackupRestore";
 import { HttpsSettingsPanel } from "../HttpsSettings";
 import CaptchaSettingsPanel from "./CaptchaSettings";
+import WebauthnSettingsPanel from "./WebauthnSettings";
 import PageShell from "../../../layouts/PageShell";
 import TabBar, { type TabBarItem } from "../../../components/TabLabel/TabBar";
 import tabStyles from "./tabContent.module.less";
@@ -13,7 +21,13 @@ import ForbiddenPage from "../../../components/ForbiddenPage";
 import { useGatedSearchTabs } from "../../../hooks/useGatedSearchTabs";
 import { ADVANCED_TAB_PERMISSIONS } from "../../../utils/permissions";
 
-type TabKey = "env-vars" | "observability" | "backup" | "https" | "captcha";
+type TabKey =
+  | "env-vars"
+  | "observability"
+  | "backup"
+  | "https"
+  | "captcha"
+  | "webauthn";
 
 const TABS: TabBarItem<TabKey>[] = [
   { key: "env-vars", labelKey: "nav.environments", icon: Variable },
@@ -21,6 +35,7 @@ const TABS: TabBarItem<TabKey>[] = [
   { key: "backup", labelKey: "nav.backupRestore", icon: Archive },
   { key: "https", labelKey: "nav.https", icon: Lock },
   { key: "captcha", labelKey: "nav.loginCaptcha", icon: ShieldCheck },
+  { key: "webauthn", labelKey: "nav.passkeys", icon: KeyRound },
 ];
 
 function parseTab(raw: string | null): TabKey {
@@ -28,7 +43,8 @@ function parseTab(raw: string | null): TabKey {
     raw === "observability" ||
     raw === "backup" ||
     raw === "https" ||
-    raw === "captcha"
+    raw === "captcha" ||
+    raw === "webauthn"
   ) {
     return raw;
   }
@@ -67,6 +83,8 @@ export default function AdvancedSettingsPage() {
         return <HttpsSettingsPanel />;
       case "captcha":
         return <CaptchaSettingsPanel />;
+      case "webauthn":
+        return <WebauthnSettingsPanel />;
     }
   };
 
