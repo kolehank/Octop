@@ -86,6 +86,8 @@ LEGACY_PINNED=(
     "psycopg==3.2.13"              # 3.3.x aarch64 无 2014 档(amd64 有);3.2.13 双架构有
     "psycopg-binary==3.2.13"
     "psycopg-pool==3.2.6"          # 与 psycopg 3.2.x 配套
+    "cbor2==5.9.0"                # 6.x 仅 2_28 档;5.9.0 有 2014/2_17 档(webauthn 2.7.0 接受 >=5.6.5)
+    "webauthn==2.7.0"             # 3.0.1 硬性要求 cbor2>=6.1.2(无 2014 档);2.7.0 提供同样 API
 )
 
 # legacy 从清单中**整包剔除**的依赖(不下载、不装):
