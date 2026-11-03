@@ -10,6 +10,8 @@ import pytest
 
 from octop.infra.control.mobile import docker_install
 from octop.infra.control.mobile.docker_install import (
+    _merge_registry_mirror,
+    _probe_tencent_mirror,
     select_download_source,
 )
 

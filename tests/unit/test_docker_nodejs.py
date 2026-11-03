@@ -13,9 +13,7 @@ def test_images_ship_nodejs_runtime() -> None:
     does not drop Node.
     """
     repo = Path(__file__).resolve().parents[2]
-    """Both Dockerfiles copy Node 20 from the frontend stage into the runtime."""
-    repo = Path(__file__).resolve().parents[2]
-    for rel in ("docker/Dockerfile",):
+    for rel in ("docker/Dockerfile", "fnos/docker/Dockerfile"):
         text = (repo / rel).read_text(encoding="utf-8")
         assert "COPY --from=frontend-builder /usr/local/bin/node /usr/local/bin/node" in text
         assert (

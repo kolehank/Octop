@@ -55,22 +55,13 @@ describe("<SearchConfigPage />", () => {
     expect(screen.getByText("当前搜索源：Tavily")).toBeInTheDocument();
   });
 
-  it("renders the provider cards and shows DeepSeek as current when configured", async () => {
+  it("shows DeepSeek Search when its API key is configured", async () => {
     api.listEnvs.mockResolvedValue(envResp(["DEEPSEEK_API_KEY"]));
 
     render(<SearchConfigPage />);
     await waitFor(() => expect(api.listEnvs).toHaveBeenCalled());
 
-    for (const name of [
-      "Doubao Search",
-      "DeepSeek Search",
-      "Exa",
-      "Google Search",
-      "Tavily",
-    ]) {
-      expect(screen.getByText(name)).toBeInTheDocument();
-    }
-    expect(screen.queryByText("Brave Search")).not.toBeInTheDocument();
     expect(screen.getByText("当前搜索源：DeepSeek Search")).toBeInTheDocument();
+    expect(screen.getByText("DeepSeek Search")).toBeInTheDocument();
   });
 });

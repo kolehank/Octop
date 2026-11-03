@@ -9,6 +9,7 @@ import os
 import re
 import shutil
 import time
+import uuid
 from collections.abc import Iterator
 from contextlib import suppress
 from dataclasses import dataclass
@@ -99,7 +100,7 @@ class SizeTimedRotatingFileHandler(TimedRotatingFileHandler):
 
 
 def _dated_log_namer(default_name: str) -> str:
-    """Turn ``agentbuddy.log.2026-10-16`` into ``agentbuddy.2026-10-16.log``."""
+    """Turn ``octop.log.2026-10-16`` into ``octop.2026-10-16.log``."""
     directory, filename = os.path.split(default_name)
     if "." not in filename:
         return default_name
@@ -111,14 +112,11 @@ def _dated_log_namer(default_name: str) -> str:
     return os.path.join(directory, renamed) if directory else renamed
 
 
-# ``agentbuddy.log.2026-10-16``, ``agentbuddy.log.2026-10-16-001``, and their ``.gz``
-# forms, plus the pre-rebrand ``octop.log.*`` names.
-_LEGACY_ROTATED_LOG = re.compile(
-    r"^(?:agentbuddy|octop)\.log\.(\d{4}-\d{2}-\d{2})(?:-(\d+))?(\.gz)?$"
-)
+# ``octop.log.2026-10-16``, ``octop.log.2026-10-16-001``, and their ``.gz`` forms.
+_LEGACY_ROTATED_LOG = re.compile(r"^octop\.log\.(\d{4}-\d{2}-\d{2})(?:-(\d+))?(\.gz)?$")
 # New names plus any legacy file a rename could not move.
 _ROTATED_LOG_NAME = re.compile(
-    r"^(?:agentbuddy|octop)\.(?:"
+    r"^octop\.(?:"
     r"\d{4}-\d{2}-\d{2}\.log(?:\.\d+)?"
     r"|"
     r"log\.\d{4}-\d{2}-\d{2}(?:-\d+)?"
@@ -127,7 +125,7 @@ _ROTATED_LOG_NAME = re.compile(
 
 
 def _migrate_legacy_rotated_logs(log_dir: Path) -> None:
-    """Rename ``agentbuddy.log.YYYY-MM-DD`` (or legacy ``octop.log.…``) to the dated form."""
+    """Rename ``octop.log.YYYY-MM-DD`` to ``octop.YYYY-MM-DD.log``."""
     if not log_dir.is_dir():
         return
     for entry in list(log_dir.iterdir()):
@@ -136,8 +134,7 @@ def _migrate_legacy_rotated_logs(log_dir: Path) -> None:
             continue
         date, index, gz = match.group(1), match.group(2), match.group(3) or ""
         index_part = f".{index}" if index else ""
-        stem = entry.name.split(".", 1)[0]
-        dest = log_dir / f"{stem}.{date}.log{index_part}{gz}"
+        dest = log_dir / f"octop.{date}.log{index_part}{gz}"
         if dest.exists():
             continue
         with suppress(OSError):
@@ -332,6 +329,8 @@ class OctopServer:
         self.wizard_tokens = WizardTokenStore(ttl_seconds=300)
         self._started = False
         self._started_at: int | None = None
+        self.instance_id = uuid.uuid4().hex
+        self._serve_background = True
         self._sso_service: SsoService | None = None
         self._ldap_service: LdapAuthService | None = None
         self._ldap_bind_throttle: LdapBindThrottle | None = None
@@ -398,9 +397,10 @@ class OctopServer:
     def database_bound(self) -> bool:
         return self.services is not None and self.app_runtime is not None
 
-    async def start(self) -> None:
+    async def start(self, *, serve_background: bool = True) -> None:
         if self._started:
             return
+        self._serve_background = serve_background
         self.paths.ensure_root()
         # 容器内非 root 用户场景：把用户级 npm 全局 bin 目录（~/.npm-global）
         # 纳入进程 PATH，保证连接器 CLI（wecom-cli / lark-cli）可被检测与调用。
@@ -543,8 +543,9 @@ class OctopServer:
             repos=self.services.repos,
             trajectory_service=trajectory_service,
             history_archive=history_archive,
+            instance_id=self.instance_id,
         )
-        await gateway.boot()
+        await gateway.boot(serve_background=self._serve_background)
 
         from octop import __version__  # noqa: PLC0415
 
@@ -568,16 +569,18 @@ class OctopServer:
             delivery_service=cron_delivery,
             repos=self.services.repos,
             timezone=config.default_timezone,
+            instance_id=self.instance_id,
         )
-        await cron_mgr.boot()
+        await cron_mgr.boot(serve_background=self._serve_background)
 
-        from octop.infra.setup.tls.renewal import install_auto_renewal_job
+        if self._serve_background:
+            from octop.infra.setup.tls.renewal import install_auto_renewal_job
 
-        install_auto_renewal_job(cron_mgr, paths=self.paths)
+            install_auto_renewal_job(cron_mgr, paths=self.paths)
 
-        from octop.infra.backup.auto import install_auto_backup_job
+            from octop.infra.backup.auto import install_auto_backup_job
 
-        install_auto_backup_job(cron_mgr, server=self)
+            install_auto_backup_job(cron_mgr, server=self)
 
         registry.set_cron_manager(cron_mgr)
         registry.set_team_processor(gateway.processor.teams)

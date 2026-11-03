@@ -8,8 +8,9 @@
 
 <p align="center">
   <a href="https://www.python.org/downloads/"><img alt="Python 3.12+" src="https://img.shields.io/badge/python-3.12%2B-blue?logo=python&logoColor=white" /></a>
-  <a href="about:blank"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green" /></a>
-  <a href="about:blank"><img alt="Version" src="https://img.shields.io/badge/version-1.0.2b9-orange" /></a>
+  <a href="https://github.com/TencentCloud/Octop/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green" /></a>
+  <a href="https://github.com/TencentCloud/Octop/releases"><img alt="Version" src="https://img.shields.io/badge/version-1.0.3b2-orange" /></a>
+  <a href="https://pypi.org/project/octop/"><img src="https://img.shields.io/pypi/v/octop" alt="PyPI" /></a>
   <a href="https://github.com/astral-sh/ruff"><img alt="Code Style: Ruff" src="https://img.shields.io/badge/code%20style-ruff-000000?logo=ruff&logoColor=white" /></a>
   <a href="about:blank"><img alt="Discord" src="https://img.shields.io/badge/Discord-Join%20Us-5865F2?logo=discord&logoColor=white" /></a>
 </p>
@@ -217,9 +218,10 @@ See [scripts/README.md](scripts/README.md) for all install options (`--version`,
 
 | Platform | Artifact |
 |----------|----------|
-| Windows | `agentbuddy-desktop-windows-amd64-<version>.exe` (64-bit) / `agentbuddy-desktop-windows-arm64-<version>.exe` (ARM64) — NSIS installer |
-| macOS | `agentbuddy-desktop-darwin-arm64-<version>.dmg` (Apple Silicon) / `agentbuddy-desktop-darwin-amd64-<version>.dmg` (Intel) |
-| Linux | `agentbuddy-desktop-linux-amd64-<version>.tar.gz` / `agentbuddy-desktop-linux-arm64-<version>.tar.gz` |
+| Windows | `Octop-desktop-windows-amd64-<version>.exe` (64-bit) / `Octop-desktop-windows-arm64-<version>.exe` (ARM64) — NSIS installer |
+| macOS | `Octop-desktop-darwin-arm64-<version>.dmg` (Apple Silicon) / `Octop-desktop-darwin-amd64-<version>.dmg` (Intel) |
+| Linux | `Octop-desktop-linux-amd64-<version>.tar.gz` / `Octop-desktop-linux-arm64-<version>.tar.gz` |
+| FnOS NAS | `Octop-fnos-docker-lite-<version>.fpk` (smaller image) / `Octop-fnos-docker-<version>.fpk` (full: desktop, OCR, local models) / `Octop-fnos-native-amd64-<version>.fpk` (x86_64, no Docker) / `Octop-fnos-native-arm64-<version>.fpk` (ARM64 fallback if no Docker) — install via App Center |
 
 See [desktop/README.md](desktop/README.md) for the desktop shell.
 
@@ -470,7 +472,7 @@ Interactive API docs: **http://127.0.0.1:8088/api/docs** (disabled by default �
 
 The control plane can also use PostgreSQL — set `database` in `config.json`, or `AGENTBUDDY_DATABASE_*` / the first-run wizard. With PostgreSQL, agent memory reuses the same DSN by default (per-agent schema); to keep file-based memory, set `"memory": { "backend": { "type": "sqlite" } }` in the agent config. See [docs/configuration.md](docs/configuration.md) and [docs/adr/002-database-backends.md](docs/adr/002-database-backends.md).
 
-See [docs/configuration.md](docs/configuration.md) for env vars and `config.json`.
+See [docs/configuration.md](docs/configuration.md) for env vars and `config.json`. Hosts that cannot reach the public catalog can run a private plugin and expert market; the HTTP contract is in [docs/private-market.md](docs/private-market.md). A private SkillHub-compatible skill market is [docs/skill-market.md](docs/skill-market.md) (`SKILL_MARKET_ORIGIN`).
 
 ## 🏗️ Architecture
 

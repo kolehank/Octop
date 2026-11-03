@@ -33,7 +33,7 @@ def _bash_path(path: Path) -> str:
 
 
 def _source_helpers() -> str:
-    return f'AGENTBUDDY_ENTRYPOINT_LIB=1; source "{_bash_path(ENTRYPOINT)}"'
+    return f'OCTOP_ENTRYPOINT_LIB=1; source "{_bash_path(ENTRYPOINT)}"'
 
 
 def _bash(script: str, *, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:

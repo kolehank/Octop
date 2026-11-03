@@ -20,7 +20,7 @@ import pytest
 
 from tests.unit.test_docker_image_arch import native_import_failed, normalized_cpu_arch
 
-IMAGE = os.environ.get("AGENTBUDDY_TEST_IMAGE", "octop:test")
+IMAGE = os.environ.get("OCTOP_TEST_IMAGE", "octop:test")
 READY_TIMEOUT_S = 180
 
 
@@ -124,7 +124,7 @@ def docker_boot() -> Iterator[Any]:
             "-e",
             "AGENTBUDDY_PORT=8088",
             "-e",
-            "AGENTBUDDY_LOG_LEVEL=warning",
+            "OCTOP_LOG_LEVEL=warning",
             "--shm-size=1g",
             "-v",
             f"{volume}:/data/.octop",
@@ -302,6 +302,15 @@ def test_docker_image_runs_on_this_cpu_and_stays_disabled(docker_boot: Any) -> N
         "and Docker started the amd64 one."
     )
 
+    if os.environ.get("OCTOP_IMAGE_VARIANT", "full") == "lite":
+        marker = _run(["docker", "exec", name, "cat", "/etc/octop/bundled-components.json"])
+        assert marker.returncode == 0, marker.stderr
+        payload = json.loads(marker.stdout)
+        assert payload.get("desktop") is False
+        assert payload.get("browser") is False
+        assert payload.get("laya") is False
+        return
+
     probe = _run(
         [
             "docker",
@@ -362,7 +371,7 @@ def test_docker_image_runs_on_this_cpu_and_stays_disabled(docker_boot: Any) -> N
             name,
             "/app/.venv/bin/python",
             "-c",
-            "import mss, pynput",
+            "import mss, importlib.util; assert importlib.util.find_spec('pynput')",
         ],
         timeout=60,
     )

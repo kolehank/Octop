@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { ChevronRight, FilePen, Globe } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import cx from "classnames";
 import type { HitlDecisionHandler } from "../../../api/types/hitl";
 import type { ChatMessage } from "../hooks/useChat";
 import {
@@ -348,9 +349,10 @@ export default function AssistantTurnView({
         <div className={styles.turnInset}>
           <button
             type="button"
-            className={`${styles.openBrowserPrompt} ${
-              turnStreaming ? styles.openBrowserPromptActive : ""
-            }`}
+            className={cx(
+              styles.openBrowserPrompt,
+              turnStreaming && styles.openBrowserPromptActive,
+            )}
             onClick={onOpenBrowser}
             aria-label={t("chat.openBrowser")}
           >
@@ -373,9 +375,10 @@ export default function AssistantTurnView({
         <div className={styles.turnInset}>
           <button
             type="button"
-            className={`${styles.openBrowserPrompt} ${
-              turnStreaming ? styles.openBrowserPromptActive : ""
-            }`}
+            className={cx(
+              styles.openBrowserPrompt,
+              turnStreaming && styles.openBrowserPromptActive,
+            )}
             onClick={onEditFile}
             aria-label={t("chat.editFileCard", {
               count: Math.max(turnFileCount, 1),
@@ -401,6 +404,90 @@ export default function AssistantTurnView({
             />
           </button>
         </div>
+      )}
+    </>
+  );
+
+  return (
+    <div className={styles.assistantTurn}>
+      {todoAtTop ? <div className={styles.turnInset}>{todoAtTop}</div> : null}
+      {segmentProcess.map(({ split, hitl }, idx) => {
+        const showProcess =
+          !compactProcess && hasProcessContent(split, deferLoneDecision);
+        // Freeze process spinner while a pending approval card is open.
+        const processStreaming =
+          turnStreaming &&
+          !hasPendingHitl &&
+          idx === segmentProcess.length - 1 &&
+          hitlLayout.trailingMessages.length === 0;
+        return (
+          <div key={hitl.id} className={styles.hitlSegment}>
+            {showProcess ? (
+              <>
+                <TurnProcessBlocks
+                  split={split}
+                  isStreaming={processStreaming}
+                  onAcpPermissionSelect={onAcpPermissionSelect}
+                  hideToolMedia={hasToolMedia}
+                  agentId={speakerAgentId}
+                  showAvatar={idx === firstSummaryIdx}
+                />
+                {todoPanel && idx === firstProcessSegmentIdx ? (
+                  <div className={styles.turnInset}>{todoPanel}</div>
+                ) : null}
+              </>
+            ) : null}
+            {split.answerMessage ? (
+              <div className={styles.assistantTurnAnswer}>
+                <MessageBubble
+                  message={toAnswerOnlyMessage(split.answerMessage)}
+                  agentId={agentId}
+                  showAvatar={!showProcess}
+                  groupPosition="only"
+                  onRegenerate={onRegenerate}
+                  onDisableStreamUsage={onDisableStreamUsage}
+                  onEditUserMessage={onEditUserMessage}
+                  onForkAssistantMessage={onForkAssistantMessage}
+                  forkDisabled={forkDisabled}
+                  forkDisabledHint={forkDisabledHint}
+                  onRunShellCommand={onRunShellCommand}
+                  shellCommandDisabled={shellCommandDisabled}
+                  shellCommandDisabledTitle={shellCommandDisabledTitle}
+                />
+              </div>
+            ) : null}
+            <TurnErrorBubbles
+              messages={split.errorMessages}
+              agentId={agentId}
+              showAvatar={!showProcess && !split.answerMessage}
+              onRegenerate={onRegenerate}
+              onDisableStreamUsage={onDisableStreamUsage}
+              onEditUserMessage={onEditUserMessage}
+              onForkAssistantMessage={onForkAssistantMessage}
+              forkDisabled={forkDisabled}
+              forkDisabledHint={forkDisabledHint}
+              onRunShellCommand={onRunShellCommand}
+              shellCommandDisabled={shellCommandDisabled}
+              shellCommandDisabledTitle={shellCommandDisabledTitle}
+            />
+            <MessageBubble
+              message={hitl}
+              agentId={agentId}
+              onHitlDecision={onHitlDecision}
+              groupPosition="only"
+            />
+          </div>
+        );
+      })}
+      {isWrapupTurn ? (
+        <div className={styles.teamWrapupTurn}>
+          <span className={styles.teamWrapupBadge}>
+            {t("chat.teamWrapupBadge", { defaultValue: "主持人总结" })}
+          </span>
+          {trailingBody}
+        </div>
+      ) : (
+        trailingBody
       )}
     </>
   );

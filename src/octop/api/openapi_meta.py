@@ -26,7 +26,7 @@ Most endpoints require a JWT bearer token:
 
 Access tokens use sliding renewal: when less than two-thirds of
 `access_token_ttl_seconds` remains, authenticated responses may include a fresh
-token in the `X-Agentbuddy-Access-Token` header. Clients should replace the stored
+token in the `X-Octop-Access-Token` header. Clients should replace the stored
 token when present. Changing the password invalidates previously issued tokens.
 
 Public endpoints (no token): `/api/docs`, `/api/openapi.json`, `/api/health`,
@@ -115,7 +115,7 @@ OPENAPI_TAGS: list[dict[str, str]] = [
     },
     {
         "name": "search",
-        "description": "Web-search provider API key probes (Tavily, Doubao, DeepSeek, Exa, Kimi, Yuanbao).",
+        "description": "Web-search provider API key probes (Tavily, Brave, DeepSeek, Google, Kimi).",
     },
     {"name": "providers", "description": "LLM provider configuration and active model selection."},
     {"name": "voice", "description": "Speech-to-text and text-to-speech provider configuration."},

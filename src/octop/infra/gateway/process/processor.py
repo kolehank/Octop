@@ -110,6 +110,14 @@ def _elapsed_ms(started: float) -> int:
     return max(0, int((time.perf_counter() - started) * 1000))
 
 
+def _inbound_thread_id(msg: InboundMessage) -> str | None:
+    """Dashboard turns stamp ``metadata.thread_id``; IM often omits it."""
+    raw = (msg.metadata or {}).get("thread_id")
+    if isinstance(raw, str) and raw.strip():
+        return raw.strip()
+    return None
+
+
 def _stream_error(exc: Exception, locale: str) -> tuple[str, str | None]:
     if isinstance(exc, OctopError):
         return exc.localized_message(locale), exc.code.value
@@ -950,6 +958,7 @@ class GlobalProcessor:
                 session_key,
                 agent_id=agent_id,
                 user_id=user_id,
+                thread_id=_inbound_thread_id(msg),
             )
             if ask_record is not None:
                 usage_tracker = UsageTracker()
@@ -1290,6 +1299,7 @@ class GlobalProcessor:
                 session_key,
                 agent_id=agent_id,
                 user_id=user_id,
+                thread_id=_inbound_thread_id(msg),
             )
             if ask_record is not None:
                 usage_tracker = UsageTracker()
@@ -2013,11 +2023,7 @@ class GlobalProcessor:
         self._thread_registry.touch_last_active(thread_id)
         # An in-flight AI title must not be overwritten by the raw question.
         if title_source and thread_id not in self._title_inflight:
-            # Big-screen messages carry a page-navigation line; keep auto titles
-            # free of the injected prefix (ADR 004 D9).
-            self._thread_registry.set_title_if_null(
-                thread_id, strip_s2_page_prefix(title_source)
-            )
+            self._thread_registry.set_title_if_null(thread_id, title_source)
 
     def _plain_title(self, thread_id: str) -> str | None:
         """Stored title, or ``None`` when the thread is still untitled.

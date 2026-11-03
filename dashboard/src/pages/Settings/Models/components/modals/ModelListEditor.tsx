@@ -20,8 +20,8 @@ import {
   Zap,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import cx from "classnames";
 import { request } from "../../../../../api/request";
-import { useImeSearchInput } from "../../../../../hooks/useImeSearchInput";
 import type { ResourceVisibilityMode } from "../../../../../api/modules/userGroups";
 import {
   ResourceVisibilityFields,
@@ -526,9 +526,11 @@ export function ModelListEditor({
             return (
               <div
                 key={m.id}
-                className={`${styles.modelListItem}${
-                  isCurrentEditing ? ` ${styles.modelListItemEditing}` : ""
-                }${!isEnabled ? ` ${styles.modelListItemDisabled}` : ""}`}
+                className={cx(
+                  styles.modelListItem,
+                  isCurrentEditing && styles.modelListItemEditing,
+                  !isEnabled && styles.modelListItemDisabled,
+                )}
               >
                 <Tooltip
                   title={

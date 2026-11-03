@@ -75,7 +75,7 @@ export default function PersonalizationPage() {
   const { activeTab, handleTabChange, isMounted } = usePathTabs({
     basePath: "/personalization",
     tabs: PERSONALIZATION_TABS,
-    storageKey: "agentbuddy:personalization:tab",
+    storageKey: "octop:personalization:tab",
     defaultTab,
     isAllowed,
   });

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "octop"
-version = "1.0.13"
+version = "1.0.3b2"
 description = "Smarter self-hosted AI assistant for multiple users and agents, built on octop-harness"
 readme = "README.md"
 license = { text = "MIT" }
@@ -38,7 +38,7 @@ dependencies = [
     "psycopg[binary]>=3.2",
     "langgraph-checkpoint-postgres>=2.0",
     "mcp>=1.9,<2",
-    "pillow>=10.0",
+    "pillow>=13.0.0",
     "pypdf>=5.0",
     "python-docx>=1.2.0",
     "python-pptx>=1.0",

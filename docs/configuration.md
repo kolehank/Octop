@@ -167,43 +167,47 @@ Each variable, when set, takes precedence over the matching key in
 
 | Variable | Type | Default | Effect |
 |----------|------|---------|--------|
-| `AGENTBUDDY_HOME` | path | `~/.agentbuddy` | Install root (DB, secrets, workspaces, plugins) |
-| `AGENTBUDDY_BIND_HOST` | string | `127.0.0.1` | Listen address (use `0.0.0.0` for LAN access) |
-| `AGENTBUDDY_PORT` | int | `8088` | Listen port (`0`–`65535`; `0` asks the OS for a free port) |
-| `AGENTBUDDY_LOG_LEVEL` | string | `info` | One of `debug` `info` `warning` `error` |
-| `AGENTBUDDY_LOG_RETENTION_DAYS` | int | `14` | Keep rotated `octop.YYYY-MM-DD.log` files for this many days |
-| `AGENTBUDDY_LOG_MAX_BYTES` | int | `104857600` (100 MiB) | Roll the active log when it exceeds this size (in addition to daily rotation) |
-| `AGENTBUDDY_LOG_COMPRESS` | bool | `true` | logrotate-style `compress` + `delaycompress`: gzip prior rotated plains on the next cycle (`octop.YYYY-MM-DD.log.gz`); the newest rotated file stays uncompressed until then |
-| `AGENTBUDDY_ACCESS_TOKEN_TTL` | int (seconds) | `86400` | JWT access-token lifetime |
-| `AGENTBUDDY_LOGIN_MAX_ATTEMPTS` | int | `5` | Failed-login attempts before lockout |
-| `AGENTBUDDY_LOGIN_LOCKOUT_SECONDS` | int | `900` | Lockout duration after `AGENTBUDDY_LOGIN_MAX_ATTEMPTS` failures |
-| `AGENTBUDDY_CAPTCHA_PROVIDER` | slug | `slider` | Login captcha (`slider`, `turnstile`, `hcaptcha`, `recaptcha-v3`, `tencent`, `geetest-v4`; `recaptcha` v2 stays resolvable for existing configs but is unlisted). Boot snapshot; restart after change |
-| `AGENTBUDDY_CAPTCHA_SITE_KEY` | string | empty | Public site key (Tencent: CaptchaAppId; required when the env snapshot is a strong provider) |
-| `AGENTBUDDY_CAPTCHA_SECRET` | string | empty | Siteverify secret (Tencent: AppSecretKey; never logged; `GET /api/envs` redacts it) |
-| `AGENTBUDDY_CAPTCHA_CAM_SECRET_ID` | string | empty | Tencent only: CAM API SecretId signing `DescribeCaptchaResult`; required when the env snapshot is `tencent` |
-| `AGENTBUDDY_CAPTCHA_CAM_SECRET_KEY` | string | empty | Tencent only: CAM API SecretKey; never logged; `GET /api/envs` redacts it |
-| `AGENTBUDDY_CAPTCHA_V3_MIN_SCORE` | float | `0.5` | Minimum `recaptcha-v3` score; admin UI is read-only |
-| `AGENTBUDDY_DEFAULT_TIMEZONE` | IANA tz | `Asia/Shanghai` | Default timezone for display, scheduling, and harness (`cron_timezone` / `AGENTBUDDY_CRON_TIMEZONE` still accepted) |
-| `AGENTBUDDY_CORS_ORIGINS` | comma-sep list | empty | Permitted CORS origins for the dashboard / external callers |
-| `AGENTBUDDY_ENABLE_DASHBOARD` | bool | `true` | Serve the built React SPA at `/` |
-| `AGENTBUDDY_ENABLE_API_DOCS` | bool | `false` | Expose Scalar API docs at `/api/docs` |
-| `AGENTBUDDY_REQUIRE_SETUP_PASSWORD` | bool | `true` | Require wizard password during initial setup |
-| `AGENTBUDDY_MAX_UPLOAD_MB` | int | `100` | Max upload size in MiB for chat attachments, IM inbound, and knowledge documents (1–1024) |
-| `AGENTBUDDY_DATABASE_URL` | string | empty | Full DSN — overrides the `AGENTBUDDY_DATABASE_*` fields below |
-| `AGENTBUDDY_DATABASE_DRIVER` | `sqlite` \| `postgresql` | `sqlite` | Storage backend |
-| `AGENTBUDDY_DATABASE_SQLITE_PATH` | path | `agentbuddy.db` | SQLite file path (relative to `AGENTBUDDY_HOME` unless absolute) |
-| `AGENTBUDDY_DATABASE_HOST` | string | `127.0.0.1` | PostgreSQL host (when `driver=postgresql`) |
-| `AGENTBUDDY_DATABASE_PORT` | int | `5432` | PostgreSQL port |
-| `AGENTBUDDY_DATABASE_NAME` | string | `octop` | PostgreSQL database name |
-| `AGENTBUDDY_DATABASE_USER` | string | `octop` | PostgreSQL user |
-| `AGENTBUDDY_DATABASE_PASSWORD` | string | empty | PostgreSQL password (overrides file; prefer env in production) |
-| `AGENTBUDDY_ADMIN_USERNAME` | string | empty | Pre-fills the first-admin username in `octop init` |
-| `AGENTBUDDY_ADMIN_PASSWORD` | string | empty | Pre-fills the first-admin password in `octop init` |
-| `AGENTBUDDY_ADMIN_DISPLAY_NAME` | string | empty | Pre-fills the admin display name |
-| `AGENTBUDDY_USER` | string | empty | Default `--user` for CLI subcommands |
-| `AGENTBUDDY_AGENT` | string | empty | Default `--agent` for CLI subcommands |
-| `AGENTBUDDY_SERVICE_MODE` | `systemd` \| `launchd` | auto | Override the service backend (used by `octop service`) |
-| `AGENTBUDDY_SERVICE_SCOPE` | `user` \| `system` | auto | systemd `--user` vs system unit (Linux only) |
+| `OCTOP_HOME` | path | `~/.octop` | Install root (DB, secrets, workspaces, plugins) |
+| `OCTOP_BIND_HOST` | string | `127.0.0.1` | Listen address (use `0.0.0.0` for LAN access) |
+| `OCTOP_PORT` | int | `8088` | Listen port (`0`–`65535`; `0` asks the OS for a free port) |
+| `OCTOP_LOG_LEVEL` | string | `info` | One of `debug` `info` `warning` `error` |
+| `OCTOP_LOG_RETENTION_DAYS` | int | `14` | Keep rotated `octop.YYYY-MM-DD.log` files for this many days |
+| `OCTOP_LOG_MAX_BYTES` | int | `104857600` (100 MiB) | Roll the active log when it exceeds this size (in addition to daily rotation) |
+| `OCTOP_LOG_COMPRESS` | bool | `true` | logrotate-style `compress` + `delaycompress`: gzip prior rotated plains on the next cycle (`octop.YYYY-MM-DD.log.gz`); the newest rotated file stays uncompressed until then |
+| `OCTOP_ACCESS_TOKEN_TTL` | int (seconds) | `86400` | JWT access-token lifetime |
+| `OCTOP_LOGIN_MAX_ATTEMPTS` | int | `5` | Failed-login attempts before lockout |
+| `OCTOP_LOGIN_LOCKOUT_SECONDS` | int | `900` | Lockout duration after `OCTOP_LOGIN_MAX_ATTEMPTS` failures |
+| `OCTOP_CAPTCHA_PROVIDER` | slug | `slider` | Login captcha (`slider`, `turnstile`, `hcaptcha`, `recaptcha-v3`, `tencent`, `geetest-v4`; `recaptcha` v2 stays resolvable for existing configs but is unlisted). Boot snapshot; restart after change |
+| `OCTOP_CAPTCHA_SITE_KEY` | string | empty | Public site key (Tencent: CaptchaAppId; required when the env snapshot is a strong provider) |
+| `OCTOP_CAPTCHA_SECRET` | string | empty | Siteverify secret (Tencent: AppSecretKey; never logged; `GET /api/envs` redacts it) |
+| `OCTOP_CAPTCHA_CAM_SECRET_ID` | string | empty | Tencent only: CAM API SecretId signing `DescribeCaptchaResult`; required when the env snapshot is `tencent` |
+| `OCTOP_CAPTCHA_CAM_SECRET_KEY` | string | empty | Tencent only: CAM API SecretKey; never logged; `GET /api/envs` redacts it |
+| `OCTOP_CAPTCHA_V3_MIN_SCORE` | float | `0.5` | Minimum `recaptcha-v3` score; admin UI is read-only |
+| `OCTOP_DEFAULT_TIMEZONE` | IANA tz | `Asia/Shanghai` | Default timezone for display, scheduling, and harness (`cron_timezone` / `OCTOP_CRON_TIMEZONE` still accepted) |
+| `OCTOP_CORS_ORIGINS` | comma-sep list | empty | Permitted CORS origins for the dashboard / external callers |
+| `OCTOP_ENABLE_DASHBOARD` | bool | `true` | Serve the built React SPA at `/` |
+| `OCTOP_ENABLE_API_DOCS` | bool | `false` | Expose Scalar API docs at `/api/docs` |
+| `OCTOP_REQUIRE_SETUP_PASSWORD` | bool | `true` | Require wizard password during initial setup |
+| `OCTOP_MAX_UPLOAD_MB` | int | `100` | Max upload size in MiB for chat attachments, IM inbound, and knowledge documents (1–1024) |
+| `OCTOP_DATABASE_URL` | string | empty | Full DSN — overrides the `OCTOP_DATABASE_*` fields below |
+| `OCTOP_DATABASE_DRIVER` | `sqlite` \| `postgresql` | `sqlite` | Storage backend |
+| `OCTOP_DATABASE_SQLITE_PATH` | path | `octop.db` | SQLite file path (relative to `OCTOP_HOME` unless absolute) |
+| `OCTOP_DATABASE_HOST` | string | `127.0.0.1` | PostgreSQL host (when `driver=postgresql`) |
+| `OCTOP_DATABASE_PORT` | int | `5432` | PostgreSQL port |
+| `OCTOP_DATABASE_NAME` | string | `octop` | PostgreSQL database name |
+| `OCTOP_DATABASE_USER` | string | `octop` | PostgreSQL user |
+| `OCTOP_DATABASE_PASSWORD` | string | empty | PostgreSQL password (overrides file; prefer env in production) |
+| `OCTOP_ADMIN_USERNAME` | string | empty | Pre-fills the first-admin username in `octop init` |
+| `OCTOP_ADMIN_PASSWORD` | string | empty | Pre-fills the first-admin password in `octop init` |
+| `OCTOP_ADMIN_DISPLAY_NAME` | string | empty | Pre-fills the admin display name |
+| `OCTOP_USER` | string | empty | Default `--user` for CLI subcommands |
+| `OCTOP_AGENT` | string | empty | Default `--agent` for CLI subcommands |
+| `OCTOP_SERVICE_MODE` | `systemd` \| `launchd` | auto | Override the service backend (used by `octop service`) |
+| `OCTOP_SERVICE_SCOPE` | `user` \| `system` | auto | systemd `--user` vs system unit (Linux only) |
+| `OCTOP_PORTAL_ORIGIN` | origin | `https://octop.cloud` | Plugin and expert catalog origin. No path. Empty disables the remote catalog. See [private market](private-market.md) |
+| `OCTOP_MARKET_REMOTE_ORIGIN` | origin | `https://download.octop.cloud` | Origin allowed for market archive `download_url` values. Any path on that origin is accepted. The variable itself has no path. See [private market](private-market.md) |
+| `SKILL_MARKET_ORIGIN` | origin | `https://api.skillhub.cn` | Skill search, rankings, and per-skill zip download. No path. Empty keeps the default. See [skill market](skill-market.md) |
+| `SKILLSET_ORIGIN` | origin | `https://api.skillhub.cn` | Skillset detail and skillset package used when importing a skill package. No path. Empty keeps the default. See [skill market](skill-market.md) |
 
 Invalid integer values are logged and ignored — the on-disk default
 remains in effect. `database_env_configured()` returns `True` when any
@@ -214,6 +218,16 @@ configured backend at boot.
 they are listed under `environment:` in `docker/docker-compose.yml`
 (Compose uses `.env` for interpolation only; unset keys do not enter the
 container). Writing the same keys to the mounted `~/.agentbuddy/env` also works.
+
+When `database.driver` is `postgresql`, skill-package sources and knowledge-base
+originals are stored in that same database (`public.skill_package_files` and
+`public.knowledge_files`), and knowledge vectors use pgvector
+(`public.knowledge_chunks`). Names sit next to `skill_packages` and
+`knowledge_bases`. SQLite keeps the local `skill-packages/` and
+`knowledge/` directories. The `vector` extension is not created by Octop
+migrations; enable it with `docker/postgres/init-vector.sql` or
+`CREATE EXTENSION vector` before indexing knowledge. There is no sqlite→PostgreSQL
+content migration in this release — pick the driver at install time.
 
 ### Agent memory vs control plane
 

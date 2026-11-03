@@ -487,7 +487,7 @@ export default function LoginPage() {
           ? publicUrl("logo_horizontal_white.png")
           : publicUrl("logo_horizontal_dark.png")
       }
-      alt="agentbuddy"
+      alt="Octop"
       style={{
         height: 48,
         width: "auto",

@@ -147,7 +147,7 @@ export default function ProactiveConfig({
           <p className={styles.configDesc}>
             {t(
               "proactiveConfig.description",
-              "等对话闲下来、并且处在关心时段里，agentbuddy 才会主动说一句",
+              "等对话闲下来、并且处在关心时段里，才会主动说一句",
             )}
           </p>
         </div>

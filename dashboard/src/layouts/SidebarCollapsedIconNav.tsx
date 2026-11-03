@@ -1,5 +1,6 @@
 import type { TFunction } from "i18next";
 import { Tooltip } from "antd";
+import cx from "classnames";
 import { prefetchRoute } from "../routes/prefetch";
 import { COLLAPSED_WIDTH, type NavItem } from "./sidebarNav";
 
@@ -62,6 +63,16 @@ export default function SidebarCollapsedIconNav({
               }}
             >
               {item.icon}
+              {showUpdateBadge ? (
+                <span
+                  className={cx(
+                    styles.navUpdateBadge,
+                    styles.navUpdateBadgeCollapsed,
+                  )}
+                >
+                  {t("nav.newVersionBadgeShort", "新")}
+                </span>
+              ) : null}
               {item.badge && (
                 <span
                   className="nav-badge-new nav-badge-new--collapsed"

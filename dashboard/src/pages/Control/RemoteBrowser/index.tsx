@@ -38,6 +38,7 @@ import {
   X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import cx from "classnames";
 
 import StreamEdgeControls from "../../../components/StreamEdgeControls/StreamEdgeControls";
 import StreamSetupGuide from "../../../components/StreamSetupGuide/StreamSetupGuide";
@@ -979,7 +980,7 @@ export default function RemoteBrowserPage({
   ) => (
     <div
       ref={installLogRef}
-      className={`${styles.installLog} ${extraClass ?? ""}`}
+      className={cx(styles.installLog, extraClass)}
       style={maxHeight !== undefined ? { maxHeight } : undefined}
     >
       {installLogs.length === 0 ? (
@@ -1170,7 +1171,7 @@ export default function RemoteBrowserPage({
             ? t("remoteBrowser.enableHint")
             : t(
                 "remoteBrowser.notInstalledHint",
-                "agentbuddy 需要浏览器才能帮你自动打开网页、填写表单和截图。点击下方按钮即可自动安装，无需手动配置。",
+                "Octop 需要浏览器才能帮你自动打开网页、填写表单和截图。点击下方按钮即可自动安装，无需手动配置。",
               )
         }
         style={{ padding: "8px 0" }}
@@ -1368,11 +1369,7 @@ export default function RemoteBrowserPage({
             style={{ marginBottom: 0 }}
           />
         ) : null}
-        <div
-          className={`${styles.mainRow} ${
-            isMobile ? styles.mainRowMobile : ""
-          }`}
-        >
+        <div className={cx(styles.mainRow, isMobile && styles.mainRowMobile)}>
           <div className={styles.browserColumn} ref={containerRef}>
             {session ? (
               <>

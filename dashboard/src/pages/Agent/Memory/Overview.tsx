@@ -27,6 +27,7 @@ import {
 } from "recharts";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
+import cx from "classnames";
 
 import LastExtractionStatus from "./LastExtractionStatus";
 import {
@@ -213,7 +214,7 @@ export default function Overview({
       />
 
       <Card
-        className={`${styles.overviewChartCard} ${styles.overviewTurnsCard}`}
+        className={cx(styles.overviewChartCard, styles.overviewTurnsCard)}
         title={t("memory.overview.turnsTitle", "近 7 天对话轮次")}
       >
         {state.firstLoading && !state.growth ? (
@@ -386,7 +387,7 @@ function SummaryCard({
   warn?: boolean;
 }) {
   return (
-    <div className={`${styles.summaryCard} ${styles[`summary_${tone}`]}`}>
+    <div className={cx(styles.summaryCard, styles[`summary_${tone}`])}>
       <span className={styles.summaryIcon}>{icon}</span>
       <div className={styles.summaryContent}>
         <span>{label}</span>
@@ -494,9 +495,11 @@ function PipelineStage({
   return (
     <button
       type="button"
-      className={`${styles.pipelineStage} ${
-        onClick ? styles.pipelineStageClickable : ""
-      } ${warn ? styles.pipelineStageWarn : ""}`}
+      className={cx(
+        styles.pipelineStage,
+        onClick && styles.pipelineStageClickable,
+        warn && styles.pipelineStageWarn,
+      )}
       onClick={onClick}
       disabled={!onClick}
     >

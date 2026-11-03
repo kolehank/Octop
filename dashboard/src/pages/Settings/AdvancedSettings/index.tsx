@@ -26,6 +26,7 @@ type TabKey =
   | "observability"
   | "backup"
   | "https"
+  | "updates"
   | "captcha"
   | "webauthn";
 
@@ -36,6 +37,7 @@ const TABS: TabBarItem<TabKey>[] = [
   { key: "https", labelKey: "nav.https", icon: Lock },
   { key: "captcha", labelKey: "nav.loginCaptcha", icon: ShieldCheck },
   { key: "webauthn", labelKey: "nav.passkeys", icon: KeyRound },
+  { key: "updates", labelKey: "nav.checkUpdates", icon: RefreshCw },
 ];
 
 function parseTab(raw: string | null): TabKey {
@@ -43,6 +45,7 @@ function parseTab(raw: string | null): TabKey {
     raw === "observability" ||
     raw === "backup" ||
     raw === "https" ||
+    raw === "updates" ||
     raw === "captcha" ||
     raw === "webauthn"
   ) {

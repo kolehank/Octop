@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import AvatarDropdown from "../components/AvatarDropdown";
 import { ArrowRightLeft, ChevronDown, X } from "lucide-react";
+import cx from "classnames";
 import { useTheme } from "../context/ThemeContext";
 import { useLayoutMode } from "../context/LayoutModeContext";
 import { useCurrentUser, useSetCurrentUser } from "../hooks/useCurrentUser";
@@ -125,6 +126,8 @@ function NavItemButton({
   onToggleChatRail,
   showChatRailToggle,
   chatRailOpen,
+  role,
+  hasUpdate,
   t,
 }: {
   item: NavItem;
@@ -135,6 +138,8 @@ function NavItemButton({
   showChatRailToggle?: boolean;
   /** History rail is currently visible (classic chat route, panel open). */
   chatRailOpen?: boolean;
+  role: string | null;
+  hasUpdate: boolean;
   t: TFunction<"translation", undefined>;
 }) {
   const showToggle = Boolean(
@@ -314,6 +319,8 @@ function NavList({
                     onToggleChatRail={onToggleChatRail}
                     showChatRailToggle={showChatRailToggle}
                     chatRailOpen={chatRailOpen}
+                    role={role}
+                    hasUpdate={hasUpdate}
                     t={t}
                   />
                 ))}
@@ -336,9 +343,10 @@ function NavList({
               <ChevronDown
                 size={12}
                 strokeWidth={2}
-                className={`${styles.navGroupChevron} ${
-                  groupCollapsed ? styles.navGroupChevronFolded : ""
-                }`}
+                className={cx(
+                  styles.navGroupChevron,
+                  groupCollapsed && styles.navGroupChevronFolded,
+                )}
                 aria-hidden
               />
             </button>
@@ -355,6 +363,8 @@ function NavList({
                     onToggleChatRail={onToggleChatRail}
                     showChatRailToggle={showChatRailToggle}
                     chatRailOpen={chatRailOpen}
+                    role={role}
+                    hasUpdate={hasUpdate}
                     t={t}
                   />
                 ))}
@@ -771,7 +781,7 @@ export default function Sidebar({
       }}
     >
       <div
-        className={`${styles.sidebarBrand} ${DESKTOP_DRAG_REGION_CLASS}`}
+        className={cx(styles.sidebarBrand, DESKTOP_DRAG_REGION_CLASS)}
         style={{
           display: "flex",
           alignItems: "center",

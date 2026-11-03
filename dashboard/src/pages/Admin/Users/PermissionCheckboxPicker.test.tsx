@@ -16,9 +16,6 @@ import {
   PermissionCheckboxPicker,
   type PermissionCatalogItem,
 } from "./UsersListPanel";
-  PermissionCheckboxPicker,
-  type PermissionCatalogItem,
-} from "./UsersListPanel";
 
 vi.mock("../../../api/modules/preferences", () => ({
   preferencesApi: {

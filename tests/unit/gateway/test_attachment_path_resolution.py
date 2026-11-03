@@ -97,7 +97,7 @@ def test_hint_uses_remote_virtual_root_for_cloud_backend(monkeypatch: pytest.Mon
         workspace = BackendWorkspace(backend, host_ws)
         rel = "inbound/1793068857_page.html"
         resolved = resolve_inbound_attachment_path(workspace, rel)
-        assert resolved == f"/.agentbuddy/workspaces/C10WX7/{rel}"
+        assert resolved == f"/.octop/workspaces/C10WX7/{rel}"
         host_hint = resolve_inbound_attachment_path(workspace, f"{host_ws.as_posix()}/{rel}")
         assert host_hint == resolved
         assert not resolved.startswith(str(host_ws))
