@@ -1,0 +1,1806 @@
+/* Big-screen board styling — visual parity with the approved demo prototype. */
+
+.viewport {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: radial-gradient(
+      circle at 8% 82%,
+      rgba(255, 255, 255, 0.95) 0 2%,
+      transparent 18%
+    ),
+    radial-gradient(
+      circle at 91% 12%,
+      rgba(255, 255, 255, 0.72),
+      transparent 25%
+    ),
+    linear-gradient(
+      128deg,
+      transparent 0 68%,
+      rgba(119, 158, 226, 0.08) 68% 69%,
+      transparent 69%
+    ),
+    linear-gradient(35deg, #edf3ff 0%, #dce7fa 48%, #eef4ff 100%);
+}
+
+.viewport::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+      154deg,
+      transparent 0 52px,
+      rgba(91, 132, 204, 0.035) 53px 54px
+    ),
+    radial-gradient(
+      ellipse at 50% 115%,
+      rgba(100, 143, 222, 0.13),
+      transparent 52%
+    );
+}
+
+.board {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  grid-template-rows: 116px minmax(0, 1fr);
+  gap: 16px;
+  width: 1920px;
+  height: 1080px;
+  padding: 12px 20px 26px;
+  color: #31528e;
+  font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+  transform-origin: center center;
+}
+
+/* ── Title bar (prototype wings + curved banner) ────────────────────────── */
+
+.titleBar {
+  position: relative;
+}
+
+.titleWrap {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 880px;
+  height: 76px;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 8px 8px rgba(55, 100, 190, 0.18));
+}
+
+.titleWing {
+  position: absolute;
+  top: 5px;
+  width: 13%;
+  height: 31px;
+  background: linear-gradient(180deg, #6096ed, #78a9ef);
+}
+
+.titleWingLeft {
+  left: 0;
+  clip-path: polygon(18% 0, 100% 0, 100% 100%, 0 100%, 8% 52%);
+}
+
+.titleWingRight {
+  right: 0;
+  clip-path: polygon(0 0, 82% 0, 92% 52%, 100% 100%, 0 100%);
+}
+
+.titleBanner {
+  position: absolute;
+  inset: 0 7%;
+  display: grid;
+  place-items: center;
+  border-radius: 0 0 48% 48% / 0 0 42% 42%;
+  background: linear-gradient(
+      105deg,
+      transparent 42%,
+      rgba(255, 255, 255, 0.14) 42.4% 46%,
+      transparent 46.4%
+    ),
+    linear-gradient(180deg, #5a91ec 0%, #4e83e5 72%, #79a7ee 100%);
+  clip-path: polygon(
+    4% 0,
+    96% 0,
+    100% 18%,
+    96% 33%,
+    95% 68%,
+    88% 88%,
+    50% 100%,
+    12% 88%,
+    5% 68%,
+    4% 33%,
+    0 18%
+  );
+}
+
+.titleMain {
+  margin: -5px 0 0;
+  color: #fff;
+  font-size: 40px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
+  text-shadow: 0 3px 0 rgba(42, 91, 173, 0.18);
+}
+
+.titleSub {
+  position: absolute;
+  right: 4px;
+  bottom: 16px;
+  color: #46506a;
+  font-size: 15px;
+  letter-spacing: 0.08em;
+}
+
+.topicNav {
+  position: absolute;
+  top: 22px;
+  left: 2px;
+  display: flex;
+  gap: 10px;
+  z-index: 2;
+}
+
+.topicButton {
+  padding: 7px 18px;
+  border: 1px solid rgba(78, 131, 229, 0.35);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #2a5fae;
+  font-size: 15px;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.topicButton:hover {
+  background: #e8f0ff;
+}
+
+.topicButtonActive {
+  border-color: #4e83e5;
+  background: #4e83e5;
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ── Three-column dashboard ─────────────────────────────────────────────── */
+
+.body {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.94fr) minmax(500px, 2.12fr) minmax(
+      230px,
+      0.86fr
+    );
+  gap: 20px;
+  min-height: 0;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* The last panel in a column fills the remaining height (区块 / 业务系统). */
+.column > .panel:last-child {
+  flex: 1;
+}
+
+/* Center column: agent panel + collapsible bottom tables. */
+.centerColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+}
+
+.centerColumn > .agentPanel,
+.centerColumn > .floatPlaceholder {
+  flex: 1;
+}
+
+.bottomPanels {
+  position: relative;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 16px;
+  flex: 0 0 172px;
+  min-height: 0;
+  transition: flex-basis 0.25s ease;
+}
+
+.bottomPanels[data-collapsed="true"] {
+  flex-basis: 0;
+}
+
+.collapseToggle {
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 14px 14px 6px 6px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 2px 8px rgba(64, 105, 175, 0.12);
+  color: #86a5da;
+  cursor: pointer;
+  transform: translateX(-50%);
+}
+
+.collapseToggle:hover {
+  background: rgba(255, 255, 255, 0.95);
+  color: #477fda;
+}
+
+.collapseToggle svg {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.3s ease;
+}
+
+.bottomPanels[data-collapsed="true"] .collapseToggle svg {
+  transform: rotate(180deg);
+}
+
+/* Remove the legacy full-width footer rule. */
+.footer {
+  display: none;
+}
+
+/* ── Panels / cards ─────────────────────────────────────────────────────── */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 18px 22px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 6px 20px rgba(65, 102, 166, 0.08);
+  backdrop-filter: blur(12px);
+  overflow: hidden;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 14px;
+}
+
+.panelHeader::before {
+  content: "";
+  flex: none;
+  width: 4px;
+  height: 20px;
+  border-radius: 2px;
+  background: #4e88e8;
+}
+
+.panelTitle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  color: #31528e;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+/* Title-row switch buttons (区块/部门, system groups). */
+.titleTab {
+  padding: 4px 14px;
+  border: 1px solid rgba(78, 131, 229, 0.3);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  color: #35598a;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.titleTabActive {
+  border-color: #4e83e5;
+  background: #4e83e5;
+  color: #fff;
+}
+
+.panelBody {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.muted {
+  color: #7d89a3;
+  font-size: 12px;
+}
+
+.error {
+  padding: 8px 11px;
+  border-left: 3px solid #d64545;
+  border-radius: 6px;
+  background: rgba(214, 69, 69, 0.08);
+  color: #a12323;
+  font-size: 12px;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+/* ── Metrics (prototype row list) ───────────────────────────────────────── */
+
+.metricRows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.metricRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "name values"
+    "note note";
+  align-items: center;
+  gap: 3px 12px;
+  min-height: 64px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: linear-gradient(
+    105deg,
+    rgba(236, 243, 255, 0.92),
+    rgba(255, 255, 255, 0.36)
+  );
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.metricRow:hover {
+  background: linear-gradient(
+    105deg,
+    rgba(244, 248, 255, 0.96),
+    rgba(255, 255, 255, 0.52)
+  );
+  box-shadow: 0 6px 20px rgba(65, 102, 166, 0.08);
+}
+
+.metricRow[data-alt="true"] {
+  background: linear-gradient(
+    105deg,
+    rgba(255, 241, 235, 0.95),
+    rgba(255, 252, 245, 0.42)
+  );
+}
+
+.metricName {
+  grid-area: name;
+  font-size: 17px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.metricValues {
+  grid-area: values;
+  color: #31528e;
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+.metricValues strong {
+  margin-left: 4px;
+  color: #1c4f8f;
+  font-size: 1.6em;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.metricValues small {
+  margin-left: 2px;
+  font-size: 0.9em;
+}
+
+.metricNote {
+  grid-area: note;
+  color: #7d89a3;
+  font-size: 13px;
+}
+
+/* ── Towns / region chips ───────────────────────────────────────────────── */
+
+.towns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px 12px;
+}
+
+.town {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 42px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: linear-gradient(100deg, #fff, rgba(255, 255, 255, 0.34));
+  color: #31528e;
+  font-size: 16px;
+  cursor: pointer;
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.town:hover {
+  transform: translateX(2px);
+  box-shadow: 0 3px 10px rgba(71, 127, 218, 0.14);
+}
+
+.town span {
+  color: #81b5ef;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ── View nav (topic view switcher) ─────────────────────────────────────── */
+
+.regionList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.viewButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border: 1px solid rgba(78, 131, 229, 0.22);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.6);
+  color: #31528e;
+  font-size: 16px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.viewButton:hover {
+  border-color: #4e83e5;
+  background: rgba(226, 238, 255, 0.95);
+}
+
+.viewButtonActive {
+  border-color: #4e83e5;
+  background: #4e83e5;
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ── Agent panel (center) ───────────────────────────────────────────────── */
+
+/* Differences-only overlay on .panel (ChatPanel mounts `${styles.panel} ${styles.agentPanel}`). */
+.agentPanel {
+  position: relative;
+  padding: 22px 24px 16px;
+  border-radius: 16px;
+}
+
+.agentDialog {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0 4px;
+  border-radius: 14px;
+  background: linear-gradient(
+    110deg,
+    rgba(248, 251, 255, 0.66),
+    rgba(255, 255, 255, 0.86)
+  );
+}
+
+.welcomeRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.robot {
+  flex: 0 0 72px;
+  width: 72px;
+  height: 91px;
+  margin-top: 2px;
+  filter: drop-shadow(0 5px 4px rgba(38, 85, 155, 0.17));
+}
+
+.welcome {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-height: 66px;
+  margin-top: 5px;
+  padding: 12px 26px;
+  border-radius: 14px;
+  background: linear-gradient(100deg, #dceefe 0%, #e9f5ff 55%, #edf5ff 100%);
+  color: #31528e;
+  font-size: 22px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 1px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.suggestions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 14px 0 0 88px;
+  flex: 0 0 auto;
+}
+
+.suggestionCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 13px;
+  min-height: 140px;
+  padding: 36px 20px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.91);
+  color: #31528e;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+  box-shadow: 0 4px 14px rgba(74, 110, 168, 0.035);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.suggestionCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(74, 110, 168, 0.12);
+}
+
+.suggestionLabel {
+  position: absolute;
+  top: 13px;
+  left: 20px;
+  color: #7894bd;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.presetQuestion {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    translate 0.15s ease;
+}
+
+.presetQuestion:hover {
+  color: #477fda;
+  translate: 2px 0;
+}
+
+/* ── Conversation + composer ────────────────────────────────────────────── */
+
+.conversationSpace {
+  display: flex;
+  flex: 1 1 180px;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 50px;
+  padding: 12px 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.messageRow {
+  display: flex;
+}
+
+.messageRow[data-role="user"] {
+  justify-content: flex-end;
+}
+
+.messageRow[data-role="assistant"] {
+  justify-content: flex-start;
+}
+
+.messageBubble {
+  max-width: 78%;
+  padding: 13px 18px;
+  border-radius: 14px 14px 4px 14px;
+  background: linear-gradient(135deg, #6c9ceb, #4c80d8);
+  box-shadow: 0 4px 12px rgba(71, 127, 218, 0.14);
+  color: #fff;
+  font-size: 16px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.messageRow[data-role="assistant"] .messageBubble {
+  border-radius: 4px 14px 14px 14px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 14px rgba(74, 110, 168, 0.08);
+  color: #263858;
+}
+
+.messageText > :first-child {
+  margin-top: 0;
+}
+
+.messageText > :last-child {
+  margin-bottom: 0;
+}
+
+.messageText p {
+  margin: 0 0 8px;
+}
+
+.messageText ul,
+.messageText ol {
+  margin: 0 0 8px;
+  padding-left: 20px;
+}
+
+.messageText code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(16, 48, 90, 0.08);
+  font-size: 0.92em;
+}
+
+.messageText table {
+  border-collapse: collapse;
+  margin: 6px 0;
+  font-size: 14px;
+}
+
+.messageText th,
+.messageText td {
+  padding: 4px 10px;
+  border: 1px solid rgba(91, 132, 204, 0.25);
+}
+
+.typing {
+  color: #7d89a3;
+  font-size: 14px;
+}
+
+.chatError {
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  border-left: 3px solid #d64545;
+  border-radius: 6px;
+  background: rgba(214, 69, 69, 0.08);
+  color: #a12323;
+  font-size: 14px;
+}
+
+.composer {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  margin-top: 12px;
+  border: 1.5px solid #a4b8e4;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 8px 24px rgba(68, 105, 168, 0.08);
+}
+
+.composer:focus-within {
+  border-color: #7da2e8;
+  box-shadow:
+    0 0 0 3px rgba(82, 139, 230, 0.09),
+    0 8px 24px rgba(68, 105, 168, 0.08);
+}
+
+.composer textarea {
+  flex: 1;
+  width: 100%;
+  min-height: 64px;
+  padding: 15px 17px 6px;
+  border: 0;
+  outline: 0;
+  resize: none;
+  background: transparent;
+  color: #263858;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.composer textarea::placeholder {
+  color: #b7bfce;
+}
+
+.composerTools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 10px 10px;
+  color: #8b98af;
+  font-size: 14px;
+}
+
+.composerLeading,
+.composerActions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.composerCircle {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #f3f6fc;
+  color: #8d9bb3;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.composerCircle:hover {
+  background: #e8f0ff;
+  color: #477fda;
+}
+
+.composerCircle svg {
+  width: 19px;
+  height: 19px;
+}
+
+.microphone {
+  background: #edf3ff;
+  color: #477fda;
+}
+
+.inputCount {
+  color: #b7bfce;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sendCircle {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: linear-gradient(160deg, #6fb2ff, #3f78d8);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sendCircle svg {
+  width: 19px;
+  height: 19px;
+}
+
+.sendCircle:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Bottom record list (scrolling) ─────────────────────────────────────── */
+
+.recordList {
+  height: 100%;
+  padding: 2px 6px;
+  overflow: hidden;
+}
+
+.recordTrack {
+  display: flex;
+  flex-direction: column;
+  animation: record-marquee 20s linear infinite;
+  will-change: transform;
+}
+
+.recordList:hover .recordTrack {
+  animation-play-state: paused;
+}
+
+@keyframes record-marquee {
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+.recordRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  white-space: nowrap;
+}
+
+.recordDot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #6fb2ff;
+}
+
+.recordText {
+  overflow: hidden;
+  color: #53637c;
+  font-size: 14px;
+  text-overflow: ellipsis;
+}
+
+/* ── Alerts (compact rows) ──────────────────────────────────────────────── */
+
+.alertList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.alertItem {
+  padding: 7px 10px;
+  border-left: 3px solid #e6a23c;
+  border-radius: 9px;
+  background: rgba(230, 162, 60, 0.08);
+}
+
+.alertItem[data-level="danger"] {
+  border-left-color: #d64545;
+  background: rgba(214, 69, 69, 0.08);
+}
+
+.alertTitle {
+  display: block;
+  color: #31528e;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.alertDetail {
+  display: block;
+  margin-top: 3px;
+  color: #7d89a3;
+  font-size: 13px;
+}
+
+/* ── Business systems (round icons) ─────────────────────────────────────── */
+
+.businessList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.businessItem {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 72px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  background: linear-gradient(
+    105deg,
+    rgba(239, 244, 255, 0.94),
+    rgba(255, 255, 255, 0.24)
+  );
+  color: #31528e;
+  font-size: 15px;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.businessItem:hover {
+  transform: translateX(2px);
+  box-shadow: 0 10px 28px rgba(64, 111, 198, 0.14);
+}
+
+.businessIcon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #8db4f5, #6b9aec);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.35);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.businessName {
+  display: -webkit-box;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 19px;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.systemStatus {
+  flex: none;
+  color: #3fae8f;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.systemStatus[data-status="建设中"] {
+  color: #b8842f;
+}
+
+/* ── Analysis / highlight card ──────────────────────────────────────────── */
+
+.analysisCard {
+  display: flex;
+  flex: 0 0 216px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  min-height: 0;
+  padding: 20px 26px;
+  border-radius: 12px;
+  background: radial-gradient(
+      circle at 90% 0%,
+      rgba(255, 255, 255, 0.16),
+      transparent 42%
+    ),
+    linear-gradient(140deg, #69a5f1, #5289e7 72%);
+  box-shadow: 0 10px 28px rgba(64, 111, 198, 0.14);
+  color: #fff;
+}
+
+.analysisCard h2 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: 1.5px;
+}
+
+.analysisStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.analysisStat {
+  text-align: center;
+}
+
+.analysisStatLabel {
+  display: block;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 15px;
+}
+
+.analysisStatValue {
+  display: block;
+  margin-top: 2px;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.analysisNote {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+/* ── Drill-down back button ─────────────────────────────────────────────── */
+
+.backButton {
+  position: absolute;
+  top: 24px;
+  left: 2px;
+  padding: 6px 14px;
+  border: 1px solid rgba(78, 131, 229, 0.35);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #2a5fae;
+  font-size: 14px;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.backButton:hover {
+  background: #e8f0ff;
+}
+
+/* ── Login overlay ──────────────────────────────────────────────────────── */
+
+.loginOverlay {
+  flex: 1;
+  display: grid;
+  place-items: center;
+}
+
+.loginCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 340px;
+  padding: 24px 26px;
+  border: 1px solid rgba(91, 132, 204, 0.25);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 16px 40px rgba(64, 105, 175, 0.18);
+}
+
+.loginTitle {
+  margin: 0;
+  color: #174d94;
+  font-size: 20px;
+}
+
+.loginHint {
+  margin: -4px 0 4px;
+  color: #7d89a3;
+  font-size: 13px;
+}
+
+.loginField {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: #35598a;
+  font-size: 13px;
+}
+
+.loginField input {
+  padding: 9px 12px;
+  border: 1px solid rgba(91, 132, 204, 0.35);
+  border-radius: 9px;
+  outline: none;
+  color: #10305a;
+  font-size: 15px;
+}
+
+.loginField input:focus {
+  border-color: #4e83e5;
+}
+
+.loginError {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(214, 69, 69, 0.08);
+  color: #a12323;
+  font-size: 13px;
+}
+
+.loginSubmit {
+  padding: 10px;
+  border: none;
+  border-radius: 9px;
+  background: linear-gradient(160deg, #6fb2ff, #3f78d8);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.loginSubmit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Float chat (D10) — shared classes with the board chat ──────────────── */
+
+.chatMessages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 6px 4px 0;
+}
+
+.bubble {
+  max-width: 82%;
+  padding: 10px 14px;
+  border-radius: 14px 14px 14px 4px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 4px 14px rgba(64, 105, 175, 0.1);
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.messageRow[data-role="user"] .bubble {
+  border-radius: 14px 14px 4px 14px;
+  background: linear-gradient(160deg, #6fb2ff, #4e83e5);
+  color: #fff;
+}
+
+.chatWelcomeText {
+  margin: 0;
+  color: #174d94;
+  font-size: 18px;
+  line-height: 1.7;
+}
+
+.chatPrompts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chatPrompt {
+  padding: 8px 14px;
+  border: 1px solid rgba(78, 131, 229, 0.3);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+  color: #2a5fae;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.sendButton,
+.stopButton {
+  flex: none;
+  padding: 10px 22px;
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sendButton {
+  background: linear-gradient(160deg, #6fb2ff, #3f78d8);
+}
+
+.sendButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.stopButton {
+  background: #d64545;
+}
+
+.chatComposer {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(91, 132, 204, 0.25);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.chatComposer textarea {
+  flex: 1;
+  min-height: 46px;
+  max-height: 120px;
+  padding: 4px 2px;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: #10305a;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.chatComposer textarea::placeholder {
+  color: rgba(16, 48, 90, 0.38);
+}
+
+.floatPill {
+  position: absolute;
+  right: 28px;
+  bottom: 26px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 12px 30px rgba(64, 105, 175, 0.18);
+  color: #31528e;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+}
+
+.floatRobot {
+  display: grid;
+  flex: none;
+  place-items: center;
+}
+
+.floatRobot .robot {
+  width: 40px;
+  height: 49px;
+  flex: 0 0 40px;
+}
+
+.floatPillText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+
+.floatPillText strong {
+  color: #174d94;
+  font-size: 18px;
+  letter-spacing: 0.06em;
+}
+
+.floatPillText small {
+  color: #7894bd;
+  font-size: 13px;
+}
+
+.floatPillAction {
+  margin-left: 6px;
+  padding-left: 14px;
+  border-left: 1px solid rgba(78, 131, 229, 0.28);
+  color: #3f78d8;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.floatPanel {
+  position: absolute;
+  right: 28px;
+  bottom: 26px;
+  display: flex;
+  flex-direction: column;
+  width: 430px;
+  height: 640px;
+  padding: 16px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 18px 44px rgba(64, 105, 175, 0.2);
+  backdrop-filter: blur(14px);
+  color: #31528e;
+}
+
+.floatPanel .chatMessages {
+  padding-right: 4px;
+}
+
+.floatHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(78, 131, 229, 0.18);
+}
+
+.floatHeading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.floatHeading .robot {
+  width: 34px;
+  height: 42px;
+  flex: 0 0 34px;
+}
+
+.floatHeading strong {
+  color: #174d94;
+  font-size: 20px;
+  letter-spacing: 0.08em;
+}
+
+.floatHeading small {
+  display: block;
+  margin-top: 2px;
+  color: #7894bd;
+  font-size: 12px;
+}
+
+.floatCollapse {
+  padding: 5px 12px;
+  border: 1px solid rgba(78, 131, 229, 0.35);
+  border-radius: 999px;
+  background: transparent;
+  color: #3f78d8;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.floatContext {
+  margin: 10px 0 4px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: rgba(78, 131, 229, 0.08);
+  color: #35598a;
+  font-size: 12px;
+}
+
+.floatEmpty {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 4px;
+}
+
+.floatReport {
+  margin-top: 10px;
+  padding: 9px;
+  border: 1px dashed rgba(78, 131, 229, 0.35);
+  border-radius: 10px;
+  background: transparent;
+  color: #3f78d8;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.floatPlaceholder {
+  display: grid;
+  place-items: center;
+  border: 1px dashed rgba(78, 131, 229, 0.22);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.45);
+  color: #7d89a3;
+  font-size: 16px;
+}
+
+/* ── Chat panel header (history entry) ──────────────────────────────────── */
+
+.chatPanelHeader {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.chatPanelTitle {
+  color: #31528e;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.historyEntryButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border: 1px solid rgba(78, 131, 229, 0.35);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+  color: #3f78d8;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.historyEntryButton:hover {
+  background: #e8f0ff;
+  color: #2a5fae;
+}
+
+.historyEntryButton svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ── "Load older" history paging (ADR D9) ──────────────────────────────── */
+
+.loadOlderButton {
+  align-self: center;
+  padding: 5px 14px;
+  border: 1px solid rgba(78, 131, 229, 0.3);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+  color: #3f78d8;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.loadOlderButton:hover {
+  background: #e8f0ff;
+}
+
+.loadOlderButton:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* ── History drawer (board chat column overlay, ADR D8) ────────────────── */
+
+.historyBackdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgba(20, 38, 71, 0.22);
+}
+
+.historyDrawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 21;
+  display: flex;
+  width: 420px;
+  flex-direction: column;
+  min-height: 0;
+  padding: 16px 18px;
+  border-left: 1px solid rgba(78, 131, 229, 0.28);
+  border-radius: 12px 0 0 12px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: -14px 0 34px rgba(64, 105, 175, 0.18);
+  backdrop-filter: blur(16px);
+  animation: history-slide-in 0.22s ease-out;
+}
+
+@keyframes history-slide-in {
+  from {
+    transform: translateX(30px);
+    opacity: 0.4;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.historyHeader {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.historyTitle {
+  flex: 1;
+  color: #174d94;
+  font-size: 16px;
+  letter-spacing: 0.08em;
+}
+
+.historyCloseButton {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid rgba(78, 131, 229, 0.3);
+  border-radius: 50%;
+  background: transparent;
+  color: #7894bd;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.historyCloseButton:hover {
+  background: #e8f0ff;
+  color: #3f78d8;
+}
+
+.historyBackButton {
+  padding: 5px 12px;
+  border: 1px solid rgba(78, 131, 229, 0.35);
+  border-radius: 999px;
+  background: transparent;
+  color: #3f78d8;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.historyBackButton:hover {
+  background: #e8f0ff;
+}
+
+/* ── History list toolbar / tabs / rows ────────────────────────────────── */
+
+.historyToolbar {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10px;
+}
+
+.historySearch {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid rgba(91, 132, 204, 0.35);
+  border-radius: 9px;
+  outline: none;
+  background: rgba(248, 251, 255, 0.9);
+  color: #10305a;
+  font-size: 13px;
+}
+
+.historySearch:focus {
+  border-color: #4e83e5;
+}
+
+.historyNewButton {
+  flex: none;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 9px;
+  background: linear-gradient(160deg, #6fb2ff, #3f78d8);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.historyNewButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.historyTabs {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  margin: 12px 0 4px;
+}
+
+.historyTab {
+  padding: 5px 14px;
+  border: 1px solid rgba(78, 131, 229, 0.3);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  color: #35598a;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.historyTabActive {
+  border-color: #4e83e5;
+  background: #4e83e5;
+  color: #fff;
+}
+
+.historyList {
+  flex: 1;
+  min-height: 0;
+  margin-top: 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.historyGroup {
+  margin-bottom: 12px;
+}
+
+.historyGroupLabel {
+  margin: 6px 2px 6px;
+  color: #7d89a3;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.historyRow {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  margin-bottom: 8px;
+  border: 1px solid rgba(78, 131, 229, 0.16);
+  border-radius: 10px;
+  background: linear-gradient(100deg, rgba(244, 248, 255, 0.9), #fff);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.historyRow:hover {
+  border-color: rgba(78, 131, 229, 0.45);
+  box-shadow: 0 3px 10px rgba(71, 127, 218, 0.1);
+}
+
+.historyRowActive {
+  border-color: #4e83e5;
+  background: linear-gradient(100deg, rgba(226, 238, 255, 0.95), #fff);
+}
+
+.historyRowMain {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.historyRowMain:disabled {
+  cursor: default;
+}
+
+.historyRowTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.historyRowTitle {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: #263858;
+  font-size: 14px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.historyRowTime {
+  flex: none;
+  color: #7d89a3;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.historyActiveTag {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #4e83e5;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.historyRowPreview {
+  display: block;
+  margin-top: 5px;
+  overflow: hidden;
+  color: #7d89a3;
+  font-size: 12px;
+  line-height: 1.5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.historyPinButton {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 38px;
+  margin: 8px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #b4c1d8;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.historyRow:hover .historyPinButton,
+.historyPinButton:focus-visible {
+  opacity: 1;
+}
+
+.historyPinButton:hover {
+  background: rgba(78, 131, 229, 0.1);
+  color: #3f78d8;
+}
+
+.historyPinButtonActive {
+  opacity: 1;
+  color: #3f78d8;
+}
+
+.historyPinButton svg {
+  width: 15px;
+  height: 15px;
+}
+
+.historyEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 0 24px;
+  color: #7d89a3;
+  font-size: 14px;
+}
+
+.historyHint {
+  padding: 34px 0;
+  color: #7d89a3;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ── History list inside the floating panel (in-place swap, ADR D8) ────── */
+
+.historyFloat {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.floatHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.floatHistoryButton {
+  padding: 5px 12px;
+  border: 1px solid rgba(78, 131, 229, 0.35);
+  border-radius: 999px;
+  background: transparent;
+  color: #3f78d8;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.floatHistoryButton:hover {
+  background: #e8f0ff;
+}

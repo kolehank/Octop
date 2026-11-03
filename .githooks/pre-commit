@@ -61,4 +61,13 @@ echo "[pre-commit] dashboard npm run build"
   npm run build
 )
 
+echo "[pre-commit] bigscreen npm run build"
+(
+  cd "$ROOT/bigscreen"
+  if [ ! -d node_modules ]; then
+    npm ci
+  fi
+  npm run build
+)
+
 echo "[pre-commit] all checks passed"

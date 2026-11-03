@@ -1,0 +1,14 @@
+{
+  "items": [
+    {
+      "level": "warning",
+      "title": "存储水位告警",
+      "detail": "对象存储使用率超过 85%"
+    },
+    {
+      "level": "warning",
+      "title": "证书即将到期",
+      "detail": "3 个域名证书将在 14 天内到期"
+    }
+  ]
+}

@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import JSONResponse, Response
@@ -13,7 +13,12 @@ from fastapi.responses import JSONResponse, Response
 from octop.api.common.agent import require_agent_row
 from octop.api.common.agent_workspace import resolve_agent_workspace_dir
 from octop.api.deps import current_user, get_server
-from octop.api.routers.chat.models import ForkThreadBody, RebindSessionBody, RenameThreadBody
+from octop.api.routers.chat.models import (
+    ForkThreadBody,
+    NewThreadBody,
+    RebindSessionBody,
+    RenameThreadBody,
+)
 from octop.api.routers.chat.serialize import (
     HISTORY_DEFAULT_LIMIT,
     _backfill_thread_projection,
@@ -28,13 +33,51 @@ from octop.infra.agents.threads.fork import fork_dashboard_thread
 from octop.infra.agents.workspace.dir import agent_facing_workspace_dir_from_config
 from octop.infra.errors import ErrorCode, OctopError
 from octop.infra.gateway.hitl.coordinator import pending_hitl_payload
-from octop.infra.gateway.threads import ThreadRegistry, thread_row_has_messages
+from octop.infra.gateway.threads import (
+    ThreadRegistry,
+    is_valid_screen_key,
+    strip_s2_page_prefix,
+    thread_row_has_messages,
+)
 from octop.infra.history.service import HistoryArchive
 from octop.infra.history.trajectory.service import TrajectoryService
 from octop.infra.utils.locale import resolve_request_locale
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+#: Thread-list paging defaults (ADR 004 D7); unlike history, this endpoint
+#: pages newest-first with an offset.
+THREADS_DEFAULT_LIMIT = 30
+THREADS_MAX_LIMIT = 100
+
+
+def _require_valid_screen_key(screen_key: str) -> None:
+    """Reject screen keys outside ADR 004 D2's contracted format with a 400."""
+    if not is_valid_screen_key(screen_key):
+        raise OctopError(ErrorCode.SLASH_BAD_ARGS, f"invalid screen_key {screen_key!r}")
+
+
+def _thread_summary(message_repo: Any, thread_id: str) -> str | None:
+    """First user message with the big-screen page prefix stripped (ADR 004 D7/D9)."""
+    if message_repo is None:
+        return None
+    raw = message_repo.first_user_text(thread_id)
+    if not isinstance(raw, str) or not raw:
+        return None
+    return strip_s2_page_prefix(raw) or None
+
+
+def _thread_is_active(
+    thread_registry: Any,
+    default_bound: str | None,
+    scope: str | None,
+    row: Any,
+) -> bool:
+    """Active flag per ADR 004 D7: screen/topic/all bind per own session_key."""
+    if scope in ("topic", "all", "dashboard"):
+        return bool(thread_registry.get_bound_thread_id(row.session_key) == row.thread_id)
+    return bool(row.thread_id == default_bound)
 
 
 def _agent_is_busy(server: Any, agent_id: str) -> bool:
@@ -101,23 +144,73 @@ def _require_thread(
 @router.get("/agents/{agent_id}/threads", summary="List threads")
 async def list_threads(
     agent_id: str,
-    limit: int = 50,
+    limit: int = THREADS_DEFAULT_LIMIT,
+    offset: int = 0,
+    screen_key: str | None = Query(
+        default=None,
+        description="Big-screen screen key (ADR 004 D2); validated whenever present.",
+    ),
+    scope: Literal["screen", "topic", "dashboard", "all"] | None = Query(
+        default=None,
+        description=(
+            "screen: one screen session; topic: every screen under demo/<topic>; "
+            "dashboard: exclude screen sessions; all: screen sessions only. "
+            "Omitted keeps the legacy full list."
+        ),
+    ),
+    q: str | None = Query(
+        default=None,
+        description="LIKE-match the title or the first user message.",
+    ),
     as_user: int | None = None,
     user: Any = Depends(current_user),
     server: Any = Depends(get_server),
 ) -> list[dict[str, Any]]:
     """List conversation threads for an agent, including which thread is active for this user.
 
-    ``turn_active`` is true while a turn is still streaming; ``awaiting_user``
-    is true when the thread is paused on a HITL approval or question.
+    ``screen_key`` + ``scope`` filter big-screen sessions (ADR 004 D7); ``q``
+    LIKE-matches the title or the first user message. Each row's ``summary``
+    is the first user message with the big-screen page prefix stripped
+    (``null`` when the thread has no messages). ``turn_active`` is true while
+    a turn is still streaming; ``awaiting_user`` is true when the thread is
+    paused on a HITL approval or question.
     """
     require_agent_row(agent_id, user=user, as_user=as_user, server=server)
     thread_registry = server.app_runtime.gateway.thread_registry
     effective_uid = as_user if as_user is not None else user.id
-    rows = thread_registry.list_threads(agent_id=agent_id, user_id=effective_uid, limit=limit)
-    bound = thread_registry.get_bound_thread_id(
-        ThreadRegistry.dashboard_key(agent_id=agent_id, user_id=effective_uid)
+    if isinstance(screen_key, str):
+        _require_valid_screen_key(screen_key)
+    if scope in ("screen", "topic") and screen_key is None:
+        raise OctopError(
+            ErrorCode.SLASH_BAD_ARGS,
+            "screen_key is required when scope is screen or topic",
+        )
+    clean_q = q.strip() if isinstance(q, str) else None
+    if clean_q == "":
+        clean_q = None
+    page_limit = max(1, min(limit, THREADS_MAX_LIMIT))
+    page_offset = max(0, offset)
+    rows = thread_registry.list_threads(
+        agent_id=agent_id,
+        user_id=effective_uid,
+        limit=page_limit,
+        offset=page_offset,
+        scope=scope,
+        screen_key=screen_key,
+        q=clean_q,
     )
+    if scope == "screen":
+        assert screen_key is not None
+        bound = thread_registry.get_bound_thread_id(
+            ThreadRegistry.screen_key(
+                agent_id=agent_id, user_id=effective_uid, screen_key=screen_key
+            )
+        )
+    else:
+        bound = thread_registry.get_bound_thread_id(
+            ThreadRegistry.dashboard_key(agent_id=agent_id, user_id=effective_uid)
+        )
+    message_repo = server.services.thread_message_repo
     workspace_dir = _agent_facing_workspace_dir(server, agent_id)
     hub = server.app_runtime.gateway.ws_hub
     awaiting_ids = server.app_runtime.gateway.processor.hitl_coordinator.store.pending_thread_ids(
@@ -131,7 +224,7 @@ async def list_threads(
             "session_key": r.session_key,
             "last_active": r.last_active,
             "created_at": r.created_at,
-            "is_active": r.thread_id == bound,
+            "is_active": _thread_is_active(thread_registry, bound, scope, r),
             "has_messages": thread_row_has_messages(r),
             "pinned": r.pinned,
             "model_ref": r.model_ref,
@@ -142,6 +235,7 @@ async def list_threads(
             "hitl_policy": _hitl_policy_payload(r),
             "turn_active": hub.is_turn_active(r.thread_id),
             "awaiting_user": r.thread_id in awaiting_ids,
+            "summary": _thread_summary(message_repo, r.thread_id),
             **thread_artifacts_payload(
                 r.artifacts,
                 workspace_dir,
@@ -150,6 +244,32 @@ async def list_threads(
         }
         for r in rows
     ]
+
+
+@router.get(
+    "/agents/{agent_id}/screen-session",
+    summary="Big-screen session binding",
+    description=(
+        "Return the session key and bound thread for one screen (ADR 004 D4). "
+        "thread_id is null when the screen has no live session yet — create one "
+        "with POST /threads {screen_key}."
+    ),
+)
+async def get_screen_session(
+    agent_id: str,
+    screen: str = Query(..., description="Big-screen screen key, e.g. demo/investment."),
+    as_user: int | None = None,
+    user: Any = Depends(current_user),
+    server: Any = Depends(get_server),
+) -> dict[str, Any]:
+    """Read one screen session's binding without creating a thread (ADR 004 D4)."""
+    require_agent_row(agent_id, user=user, as_user=as_user, server=server)
+    _require_valid_screen_key(screen)
+    effective_uid = as_user if as_user is not None else user.id
+    thread_registry = server.app_runtime.gateway.thread_registry
+    sk = ThreadRegistry.screen_key(agent_id=agent_id, user_id=effective_uid, screen_key=screen)
+    tid = thread_registry.get_bound_thread_id(sk)
+    return {"session_key": sk, "thread_id": tid}
 
 
 @router.get(
@@ -225,15 +345,34 @@ async def start_history_migration(
 @router.post("/agents/{agent_id}/threads", status_code=201, summary="New thread")
 async def create_thread(
     agent_id: str,
+    body: NewThreadBody | None = None,
     as_user: int | None = None,
     user: Any = Depends(current_user),
     server: Any = Depends(get_server),
 ) -> dict[str, Any]:
-    """Start a new conversation (/new equivalent for dashboard)."""
+    """Start a new conversation (/new equivalent for dashboard).
+
+    ``screen_key`` starts a new thread bound to that big-screen session
+    (ADR 004 D5); without it the dashboard session is reset as before.
+    """
     require_agent_row(agent_id, user=user, as_user=as_user, server=server)
     effective_uid = as_user if as_user is not None else user.id
+    registry = server.app_runtime.gateway.thread_registry
+    if body is not None and body.screen_key is not None:
+        _require_valid_screen_key(body.screen_key)
+        sk = ThreadRegistry.screen_key(
+            agent_id=agent_id, user_id=effective_uid, screen_key=body.screen_key
+        )
+        tid = await registry.reset(
+            agent_id=agent_id,
+            user_id=effective_uid,
+            channel_type=ThreadRegistry.CHANNEL_DASHBOARD,
+            channel_subject_id=str(effective_uid),
+            channel_chat_type=f"screen:{body.screen_key}",
+        )
+        return {"thread_id": tid, "session_key": sk}
     sk = ThreadRegistry.dashboard_key(agent_id=agent_id, user_id=effective_uid)
-    tid = await server.app_runtime.gateway.thread_registry.reset(
+    tid = await registry.reset(
         agent_id=agent_id,
         user_id=effective_uid,
         channel_type=ThreadRegistry.CHANNEL_DASHBOARD,
@@ -476,9 +615,19 @@ async def rebind_session(
     user: Any = Depends(current_user),
     server: Any = Depends(get_server),
 ) -> dict[str, Any]:
-    """Point the user's dashboard session at an existing thread."""
+    """Point the user's dashboard session at an existing thread.
+
+    ``screen_key`` rebinds that big-screen session instead (ADR 004 D6); the
+    thread is still validated against the current user and agent.
+    """
     _require_thread(server, agent_id, body.thread_id, user, as_user=None)
-    sk = ThreadRegistry.dashboard_key(agent_id=agent_id, user_id=user.id)
+    if body.screen_key is not None:
+        _require_valid_screen_key(body.screen_key)
+        sk = ThreadRegistry.screen_key(
+            agent_id=agent_id, user_id=user.id, screen_key=body.screen_key
+        )
+    else:
+        sk = ThreadRegistry.dashboard_key(agent_id=agent_id, user_id=user.id)
     await server.app_runtime.gateway.thread_registry.rebind(
         session_key=sk, thread_id=body.thread_id, agent_id=agent_id
     )

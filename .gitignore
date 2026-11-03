@@ -76,6 +76,11 @@ src/octop/dashboard/assets/*
 !src/octop/dashboard/__init__.py
 !src/octop/dashboard/.gitkeep
 
+# Big-screen SPA build artifacts (source: bigscreen/).
+bigscreen/node_modules/
+src/octop/bigscreen/**
+!src/octop/bigscreen/.gitkeep
+
 # Ship Meituan pt-passport runtime; override global node_modules/ ignore.
 !src/octop/infra/agents/experts/library/meituan-living-assistant/skills/meituan-deals/scripts/node_modules/
 !src/octop/infra/agents/experts/library/meituan-living-assistant/skills/meituan-deals/scripts/node_modules/**
@@ -107,7 +112,3 @@ scripts/lh_image_install_octop_tencentos.sh
 # Local conda environment
 .conda-octop/
 .offline-py312/
-
-# Local MFA E2E scratch (recovery codes, screenshots with secrets)
-.tmp-mfa/
-.tmp-mfa-e2e/

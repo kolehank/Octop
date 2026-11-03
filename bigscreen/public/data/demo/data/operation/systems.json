@@ -1,0 +1,20 @@
+{
+  "groups": [
+    {
+      "id": "platform",
+      "label": "平台系统",
+      "items": [
+        {
+          "name": "监控告警中心",
+          "status": "已接入",
+          "icon": "activity"
+        },
+        {
+          "name": "日志检索中心",
+          "status": "已接入",
+          "icon": "search"
+        }
+      ]
+    }
+  ]
+}

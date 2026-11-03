@@ -1,0 +1,44 @@
+{
+  "dimensions": [
+    {
+      "id": "region",
+      "label": "分区",
+      "items": [
+        {
+          "id": "zone-a",
+          "name": "A 区"
+        },
+        {
+          "id": "zone-b",
+          "name": "B 区"
+        },
+        {
+          "id": "zone-c",
+          "name": "C 区"
+        }
+      ]
+    },
+    {
+      "id": "category",
+      "label": "类别",
+      "items": [
+        {
+          "id": "compute",
+          "name": "计算资源"
+        },
+        {
+          "id": "storage",
+          "name": "存储资源"
+        },
+        {
+          "id": "network",
+          "name": "网络资源"
+        },
+        {
+          "id": "app",
+          "name": "应用服务"
+        }
+      ]
+    }
+  ]
+}

@@ -10,7 +10,13 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import (
+    FileResponse,
+    HTMLResponse,
+    JSONResponse,
+    PlainTextResponse,
+    Response,
+)
 from scalar_fastapi import get_scalar_api_reference
 
 from octop.api.middleware.jwt_auth import install as install_jwt_auth
@@ -67,6 +73,49 @@ def _dashboard_fallback(index_file: Path, full_path: str) -> FileResponse:
     if is_dashboard_asset_path(full_path):
         raise HTTPException(status_code=404, detail="Not Found")
     return _dashboard_response(index_file, "")
+
+
+def _bigscreen_dir() -> Path:
+    """Big-screen SPA build directory (mirrors the dashboard artifacts)."""
+    return Path(__file__).parent.parent / "bigscreen"
+
+
+_BIGSCREEN_MISSING_HTML = """<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>大屏尚未构建</title>
+<style>
+body{font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:#eef4ff;color:#31528e;
+padding:48px 56px;line-height:1.9}
+code{background:#fff;padding:2px 8px;border-radius:6px;border:1px solid #d6e2f5}
+a{color:#3f78d8}
+</style></head>
+<body>
+<h1>大屏尚未构建</h1>
+<p>开发模式：在仓库根目录运行 <code>make dev</code>（会同时启动大屏 Vite），然后访问
+<a href="http://localhost:5173/screen/">http://localhost:5173/screen/</a>（dashboard 代理，与登录态同源）。</p>
+<p>或构建产物：运行 <code>make build-bigscreen</code> 后刷新本页。</p>
+</body>
+</html>"""
+
+
+def _bigscreen_index_response(bigscreen_dir: Path) -> FileResponse | HTMLResponse:
+    index_file = bigscreen_dir / "index.html"
+    if not index_file.exists():
+        # Friendly hint instead of a bare 404 while the SPA has not been built.
+        return HTMLResponse(_BIGSCREEN_MISSING_HTML)
+    return _dashboard_response(index_file, "")
+
+
+def _bigscreen_fallback(bigscreen_dir: Path, full_path: str) -> FileResponse | HTMLResponse:
+    """Serve the big-screen shell for routes; 404 for missing files.
+
+    Missing data files (``data/**/*.json``) must 404: answering with the SPA
+    shell makes the frontend fail JSON parsing instead of falling back to the
+    overview view.
+    """
+    if is_dashboard_asset_path(full_path) or Path(full_path).suffix:
+        raise HTTPException(status_code=404, detail="Not Found")
+    return _bigscreen_index_response(bigscreen_dir)
 
 
 def _mount_routers(app: FastAPI, mounts: Sequence[_RouterMount]) -> None:
@@ -165,7 +214,6 @@ def build_app(server: OctopServer) -> FastAPI:
         agents,
         auth,
         auth_ldap,
-        auth_mfa,
         auth_oauth,
         auth_oidc,
         backup,
@@ -229,7 +277,6 @@ def build_app(server: OctopServer) -> FastAPI:
         [
             _RouterMount(setup.router, "/api", ["setup"]),
             _RouterMount(auth.router, "/api/auth", ["auth"]),
-            _RouterMount(auth_mfa.router, "/api/auth", ["auth"]),
             _RouterMount(auth_oidc.router, "/api/auth", ["auth"]),
             _RouterMount(auth_oauth.router, "/api/auth", ["auth"]),
             _RouterMount(auth_ldap.router, "/api/auth", ["auth"]),
@@ -318,6 +365,36 @@ def build_app(server: OctopServer) -> FastAPI:
                 openapi_url=app.openapi_url,
                 title="agentbuddy API",
             )
+
+    # Big-screen SPA: served same-origin with /api so the chat WebSocket and
+    # browser login reuse the dashboard session. Routes stay registered even
+    # before the frontend is built so /screen never falls through to the
+    # dashboard SPA shell.
+    bigscreen_dir = _bigscreen_dir()
+
+    # FastAPI would treat a Union of response types (FileResponse | HTMLResponse)
+    # as a Pydantic response model, which is invalid — annotate the base Response
+    # so the raw response is passed through (see _bigscreen_index_response).
+    @app.get("/screen", include_in_schema=False)
+    async def bigscreen_root() -> Response:
+        return _bigscreen_index_response(bigscreen_dir)
+
+    @app.get("/screen/{full_path:path}", include_in_schema=False)
+    async def bigscreen_spa(full_path: str) -> Response:
+        if full_path:
+            raw_path = Path(full_path)
+            # Reject absolute paths and parent-dir references before joining,
+            # so user input never drives a path expression.
+            if raw_path.is_absolute() or ".." in raw_path.parts:
+                raise HTTPException(status_code=404, detail="Not Found")
+            candidate = (bigscreen_dir / Path(*raw_path.parts)).resolve()
+            try:
+                candidate.relative_to(bigscreen_dir.resolve())
+            except ValueError:
+                raise HTTPException(status_code=404, detail="Not Found") from None
+            if candidate.is_file():
+                return _dashboard_response(candidate, full_path)
+        return _bigscreen_fallback(bigscreen_dir, full_path)
 
     if enable_dashboard:
         dashboard_dir = Path(__file__).parent.parent / "dashboard"

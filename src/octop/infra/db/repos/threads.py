@@ -28,6 +28,11 @@ __all__ = [
 ]
 
 
+def _escape_like(text: str) -> str:
+    """Escape SQL LIKE wildcards so user input matches literally (SQLite/PG)."""
+    return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 @dataclass(frozen=True)
 class ThreadRow:
     id: int
@@ -248,6 +253,63 @@ class ThreadRepo:
                 "CASE WHEN last_active > 0 THEN last_active ELSE created_at END DESC, "
                 "thread_id DESC LIMIT ?",
                 (agent_id, user_id, limit),
+            ).fetchall()
+        return map_rows(rows, ThreadRow)
+
+    def list_by_agent_user_filtered(
+        self,
+        *,
+        agent_id: str,
+        user_id: int,
+        session_key: str | None = None,
+        session_prefix: str | None = None,
+        screen_only: bool = False,
+        exclude_screen: bool = False,
+        q: str | None = None,
+        limit: int = 30,
+        offset: int = 0,
+    ) -> list[ThreadRow]:
+        """List the user's threads under ``agent_id`` with ADR 004 D7 filters.
+
+        ``session_key`` exact-matches one screen session; ``session_prefix``
+        matches a topic with a segment boundary (``screen:demo/investment`` or
+        ``screen:demo/investment/…`` so ``demo/investment`` never matches
+        ``demo/investmentx``); ``screen_only`` / ``exclude_screen`` include /
+        drop ``screen:`` sessions; ``q`` LIKE-matches the title or the first
+        user message JSON. ``%``/``_`` are escaped so user input is literal.
+        """
+        clauses = ["agent_id = ?", "user_id = ?"]
+        params: list[object] = [agent_id, user_id]
+        if session_key is not None:
+            clauses.append("session_key = ?")
+            params.append(session_key)
+        if session_prefix is not None:
+            escaped = _escape_like(session_prefix)
+            clauses.append("(session_key = ? OR session_key LIKE ? ESCAPE '\\')")
+            params.extend([session_prefix, f"{escaped}/%"])
+        if screen_only:
+            clauses.append("session_key LIKE '%:screen:%'")
+        if exclude_screen:
+            clauses.append("session_key NOT LIKE '%:screen:%'")
+        if q is not None:
+            pattern = f"%{_escape_like(q)}%"
+            clauses.append(
+                "(title LIKE ? ESCAPE '\\' OR EXISTS ("
+                "SELECT 1 FROM thread_messages m "
+                "WHERE m.thread_id = threads.thread_id "
+                "AND m.role IN ('user', 'human') "
+                "AND m.message_json LIKE ? ESCAPE '\\'"
+                "))"
+            )
+            params.extend([pattern, pattern])
+        params.extend([limit, offset])
+        with self._db.connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM threads WHERE " + " AND ".join(clauses) + " "
+                "ORDER BY pinned DESC, "
+                "CASE WHEN last_active > 0 THEN last_active ELSE created_at END DESC, "
+                "thread_id DESC LIMIT ? OFFSET ?",
+                params,
             ).fetchall()
         return map_rows(rows, ThreadRow)
 

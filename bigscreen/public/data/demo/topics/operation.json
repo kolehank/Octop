@@ -1,0 +1,96 @@
+{
+  "id": "operation",
+  "title": "运行专题",
+  "subtitle": "专题分析",
+  "views": [
+    {
+      "id": "overview",
+      "label": "总览"
+    },
+    {
+      "id": "incidents",
+      "label": "告警事件"
+    },
+    {
+      "id": "tickets",
+      "label": "工单"
+    },
+    {
+      "id": "capacity",
+      "label": "容量水位"
+    }
+  ],
+  "layout": {
+    "left": [
+      {
+        "type": "view-nav"
+      },
+      {
+        "type": "region-list",
+        "title": "分区",
+        "source": "data/operation/regions.json"
+      }
+    ],
+    "right": [
+      {
+        "type": "analysis-card",
+        "source": "data/operation/analysis.json"
+      },
+      {
+        "type": "system-links",
+        "title": "接入系统",
+        "source": "data/operation/systems.json"
+      }
+    ],
+    "bottom": [
+      {
+        "type": "ticker",
+        "source": "data/operation/ticker.json"
+      },
+      {
+        "type": "metric-cards",
+        "title": "本期摘要",
+        "source": "data/operation/{view}/summary.json"
+      },
+      {
+        "type": "alert-cards",
+        "title": "运行告警",
+        "source": "data/operation/alerts.json"
+      }
+    ]
+  },
+  "chat": {
+    "agentId": "main",
+    "title": "演示助手",
+    "subtitle": "循证问答 · 报告生成",
+    "welcome": "您好！我是演示助手，可以问运行、问告警、问容量。",
+    "quickGroups": [
+      {
+        "title": "运行情况",
+        "prompts": [
+          {
+            "label": "本期告警趋势如何？",
+            "prompt": "本期告警趋势如何？"
+          },
+          {
+            "label": "容量水位有什么风险？",
+            "prompt": "容量水位有什么风险？"
+          }
+        ]
+      },
+      {
+        "title": "分析报告",
+        "prompts": [
+          {
+            "label": "生成运行专题分析报告",
+            "prompt": "生成运行专题分析报告"
+          }
+        ]
+      }
+    ],
+    "chatOptions": {
+      "conversationMode": "craft"
+    },
+    "contextInjection": "nav"
+  }
+}

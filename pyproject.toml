@@ -21,7 +21,7 @@ dependencies = [
     "apscheduler>=3.10,<4",
     "argon2-cffi>=23.1",
     "pyjwt>=2.8",
-    "octop-harness[all]>=1.0.6",
+    "octop-harness[all]>=1.0.5",
     "octop-memory>=1.0.2",
     "lark-oapi>=1.7.3",
     "octop-gateway>=1.0.3",
@@ -47,8 +47,6 @@ dependencies = [
     "xlrd>=2.0.1",
     "ldap3>=2.9.1",
     "firecrawl-anydoc>=0.2.4",
-    "pyotp>=2.10.0",
-    "webauthn>=3.0.1",
 ]
 
 [project.optional-dependencies]
@@ -127,6 +125,7 @@ include = [
     "src/octop/**/*.sh",
     "src/octop/**/*.png",
     "src/octop/dashboard/**/*",
+    "src/octop/bigscreen/**/*",
     "src/octop/infra/agents/experts/library/**/*",
     "src/octop/infra/agents/plugins/bundled/**/*",
     "src/octop/infra/agents/subagents/library/**/*",
@@ -135,6 +134,7 @@ include = [
 ]
 artifacts = [
     "src/octop/dashboard/**/*",
+    "src/octop/bigscreen/**/*",
 ]
 
 [tool.ruff]
@@ -158,6 +158,7 @@ ignore_missing_imports = true
 files = ["src/octop"]
 exclude = [
     "src/octop/dashboard/",
+    "src/octop/bigscreen/",
     "src/octop/infra/agents/experts/library/",
     "src/octop/infra/agents/plugins/bundled/",
     "src/octop/infra/agents/subagents/library/",

@@ -1,0 +1,14 @@
+{
+  "items": [
+    {
+      "level": "warning",
+      "title": "容量水位偏高",
+      "detail": "storage 分区水位 87%，建议评估扩容"
+    },
+    {
+      "level": "danger",
+      "title": "节点异常",
+      "detail": "zone-b 有 2 个节点处于 NotReady 状态"
+    }
+  ]
+}

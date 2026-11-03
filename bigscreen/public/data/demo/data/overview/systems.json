@@ -1,0 +1,51 @@
+{
+  "groups": [
+    {
+      "id": "platform",
+      "label": "平台系统",
+      "items": [
+        {
+          "name": "监控告警中心",
+          "status": "已接入",
+          "icon": "activity"
+        },
+        {
+          "name": "日志检索中心",
+          "status": "已接入",
+          "icon": "search"
+        },
+        {
+          "name": "持续交付流水线",
+          "status": "已接入",
+          "icon": "git-branch"
+        },
+        {
+          "name": "配置管理中心",
+          "status": "建设中",
+          "icon": "settings"
+        }
+      ]
+    },
+    {
+      "id": "infra",
+      "label": "基础设施",
+      "items": [
+        {
+          "name": "容器调度集群",
+          "status": "已接入",
+          "icon": "server"
+        },
+        {
+          "name": "对象存储",
+          "status": "已接入",
+          "icon": "database"
+        },
+        {
+          "name": "负载均衡",
+          "status": "建设中",
+          "icon": "network"
+        }
+      ]
+    }
+  ]
+}

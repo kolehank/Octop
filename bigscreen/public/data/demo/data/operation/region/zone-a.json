@@ -1,0 +1,22 @@
+{
+  "items": [
+    {
+      "label": "运行服务",
+      "value": "46",
+      "unit": "个",
+      "note": "A 区"
+    },
+    {
+      "label": "当前告警",
+      "value": "3",
+      "unit": "起",
+      "note": "A 区"
+    },
+    {
+      "label": "平均水位",
+      "value": "58",
+      "unit": "%",
+      "note": "A 区"
+    }
+  ]
+}
