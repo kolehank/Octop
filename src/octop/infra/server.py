@@ -114,7 +114,9 @@ def _dated_log_namer(default_name: str) -> str:
 
 # ``agentbuddy.log.2026-10-16``, ``agentbuddy.log.2026-10-16-001``, and their ``.gz``
 # forms, plus the pre-rebrand ``octop.log.*`` names.
-_LEGACY_ROTATED_LOG = re.compile(r"^(?:agentbuddy|octop)\.log\.(\d{4}-\d{2}-\d{2})(?:-(\d+))?(\.gz)?$")
+_LEGACY_ROTATED_LOG = re.compile(
+    r"^(?:agentbuddy|octop)\.log\.(\d{4}-\d{2}-\d{2})(?:-(\d+))?(\.gz)?$"
+)
 # New names plus any legacy file a rename could not move.
 _ROTATED_LOG_NAME = re.compile(
     r"^(?:agentbuddy|octop)\.(?:"

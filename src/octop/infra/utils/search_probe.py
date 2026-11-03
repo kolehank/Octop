@@ -25,7 +25,9 @@ ErrorType = Literal[
 
 _TIMEOUT_S = 30.0
 _TEST_QUERY = "octop connectivity probe"
-_KNOWN: frozenset[str] = frozenset({"tavily", "brave", "doubao", "deepseek", "exa", "google", "kimi", "yuanbao"})
+_KNOWN: frozenset[str] = frozenset(
+    {"tavily", "brave", "doubao", "deepseek", "exa", "google", "kimi", "yuanbao"}
+)
 _REQUIRED: dict[str, tuple[str, ...]] = {
     "tavily": ("TAVILY_API_KEY",),
     "brave": ("BRAVE_API_KEY",),

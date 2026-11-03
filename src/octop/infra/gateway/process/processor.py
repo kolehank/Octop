@@ -2025,9 +2025,7 @@ class GlobalProcessor:
         if title_source and thread_id not in self._title_inflight:
             # Big-screen messages carry a page-navigation line; keep auto titles
             # free of the injected prefix (ADR 004 D9).
-            self._thread_registry.set_title_if_null(
-                thread_id, strip_s2_page_prefix(title_source)
-            )
+            self._thread_registry.set_title_if_null(thread_id, strip_s2_page_prefix(title_source))
 
     def _plain_title(self, thread_id: str) -> str | None:
         """Stored title, or ``None`` when the thread is still untitled.
