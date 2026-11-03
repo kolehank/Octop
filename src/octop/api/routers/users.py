@@ -341,27 +341,6 @@ def _expert_template_id(body: UserCreateBody) -> str | None:
     return (body.expert_template_id or "").strip() or DEFAULT_EXPERT_ID
 
 
-def _expert_template_id(body: UserCreateBody, server: Any) -> str | None:
-    """Catalog id to bootstrap, or ``None`` when the caller opted out."""
-    if not body.create_default_expert:
-        return None
-    from octop.infra.agents.experts.default_agent import DEFAULT_EXPERT_ID
-
-    template_id = (body.expert_template_id or "").strip() or DEFAULT_EXPERT_ID
-    catalog = getattr(server, "expert_catalog", None)
-    if catalog is None or catalog.get(template_id) is None:
-        raise OctopError(ErrorCode.EXPERT_TEMPLATE_NOT_FOUND, "expert template not found")
-    return template_id
-
-
-async def _discard_new_user(server: Any, username: str) -> None:
-    registry = getattr(getattr(server, "app_runtime", None), "agent_registry", None)
-    try:
-        await server.user_manager.remove(username, agent_manager=registry)
-    except Exception:
-        logger.exception("failed to roll back user %s after expert bootstrap error", username)
-
-
 @router.post("", status_code=201)
 async def create_user(
     body: UserCreateBody,
