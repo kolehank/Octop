@@ -100,7 +100,7 @@ if TYPE_CHECKING:
     from octop.infra.db.repos.connectors import ConnectorRepo
     from octop.infra.db.repos.users import UserRepo
     from octop.infra.gateway.slash.dispatcher import SlashDispatcher
-    from octop.infra.gateway.threads import ThreadRegistry
+    from octop.infra.gateway.threads import ThreadRegistry, strip_s2_page_prefix
 
 logger = logging.getLogger(__name__)
 install_harness_hitl_compat()
@@ -2023,7 +2023,11 @@ class GlobalProcessor:
         self._thread_registry.touch_last_active(thread_id)
         # An in-flight AI title must not be overwritten by the raw question.
         if title_source and thread_id not in self._title_inflight:
-            self._thread_registry.set_title_if_null(thread_id, title_source)
+            # Big-screen messages carry a page-navigation line; keep auto titles
+            # free of the injected prefix (ADR 004 D9).
+            self._thread_registry.set_title_if_null(
+                thread_id, strip_s2_page_prefix(title_source)
+            )
 
     def _plain_title(self, thread_id: str) -> str | None:
         """Stored title, or ``None`` when the thread is still untitled.

@@ -39,32 +39,17 @@ def _desktop_smoke_import(dockerfile: str) -> bool:
     )
 
 
-def test_images_bake_desktop_without_starting_or_downloading_laya() -> None:
-    """Both images install the desktop stack and leave Xvnc stopped."""
-    repo = Path(__file__).resolve().parents[2]
-    dockerfile = (repo / "fnos" / "docker" / "Dockerfile").read_text(encoding="utf-8")
-    assert ".[desktop,local-embedding,knowledge-ocr]" in dockerfile
-    assert _desktop_smoke_import(dockerfile)
-    assert "bake-desktop.sh" in dockerfile
-
-
 def test_variant_is_validated_and_compiler_is_purged_in_the_install_layer() -> None:
     """A typo must not silently build the full image, and gcc must not stay in it."""
     repo = Path(__file__).resolve().parents[2]
-    for rel, install_marker in (
-        ("docker/Dockerfile", "uv sync "),
-        ("fnos/docker/Dockerfile", "uv pip install "),
-    ):
-        text = (repo / rel).read_text(encoding="utf-8")
-        assert "OCTOP_IMAGE_VARIANT must be full or lite" in text
-        layers = text.split("\nRUN ")
-        runtime = next(
-            layer for layer in layers if "libgl1" in layer and install_marker not in layer
-        )
-        assert "build-essential" not in runtime
-        install = next(layer for layer in layers if install_marker in layer)
-        assert "build-essential" in install
-        assert "apt-get purge" in install
+    text = (repo / "docker" / "Dockerfile").read_text(encoding="utf-8")
+    assert "OCTOP_IMAGE_VARIANT must be full or lite" in text
+    layers = text.split("\nRUN ")
+    runtime = next(layer for layer in layers if "libgl1" in layer)
+    assert "build-essential" not in runtime
+    install = next(layer for layer in layers if "uv sync " in layer)
+    assert "build-essential" in install
+    assert "apt-get purge" in install
 
 
 def test_images_bake_desktop_without_starting_or_downloading_laya() -> None:
@@ -81,7 +66,7 @@ def test_images_bake_desktop_without_starting_or_downloading_laya() -> None:
     assert "firefox-esr" in bake
     assert "chromium-browser" in install
     assert 'if [ "$NO_START" = 1 ]' in install
-    for rel in ("docker/Dockerfile", "fnos/docker/Dockerfile"):
+    for rel in ("docker/Dockerfile",):
         text = (repo / rel).read_text(encoding="utf-8")
         assert "bake-desktop.sh" in text
         assert "playwright install" not in text

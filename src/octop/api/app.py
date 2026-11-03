@@ -263,7 +263,6 @@ def build_app(server: OctopServer) -> FastAPI:
         teams,
         terminal,
         text_assist,
-        update,
         uploads,
         usage,
         user_groups,

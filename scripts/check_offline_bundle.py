@@ -69,7 +69,6 @@ def main() -> int:
         if not m:
             failures.append(f"无法解析 wheel 文件名: {name}")
             continue
-        norm = m.group("name").lower().replace("_", "-")
         baseline = wheel_tag_baseline_glibc(m.group("tags"))
         if baseline is None:
             tags_field = m.group("tags")
@@ -96,13 +95,14 @@ def main() -> int:
     req_path = os.path.join(bundle, "requirements-third-party.txt")
     if os.path.exists(req_path):
         pinned: dict[str, str] = {}
-        for line in open(req_path).read().splitlines():
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            pm = re.match(r"^([A-Za-z0-9_.-]+)==([^;\s]+)", line)
-            if pm:
-                pinned[pm.group(1).lower().replace("_", "-")] = pm.group(2)
+        with open(req_path, encoding="utf-8") as req_file:
+            for line in req_file.read().splitlines():
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                pm = re.match(r"^([A-Za-z0-9_.-]+)==([^;\s]+)", line)
+                if pm:
+                    pinned[pm.group(1).lower().replace("_", "-")] = pm.group(2)
 
         actual: dict[str, str] = {}
         for whl in wheels:

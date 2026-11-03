@@ -39,7 +39,7 @@ def test_render_download_section_matches_github_asset_names() -> None:
     assert f"{base}/agentbuddy-portable-linux-amd64-0.9.31.zip" in body
     assert f"{base}/agentbuddy-portable-linux-arm64-0.9.31.zip" in body
     assert "### fnOS NAS" not in body
-    assert f"ghcr.io/kolehank/octop:0.9.31" in body
+    assert "ghcr.io/kolehank/octop:0.9.31" in body
     assert "pip install" not in body
     assert "## Downloads" in body
 
@@ -49,7 +49,7 @@ def test_patch_release_body_refreshes_docker_section() -> None:
     body = mod.render_download_section("0.9.31") + "\n## What's Changed\n\n- kept\n"
     present = ["agentbuddy-desktop-windows-amd64-0.9.31.exe"]
     patched = mod.patch_release_body(body, "0.9.31", present)
-    assert f"ghcr.io/kolehank/octop:0.9.31" in patched
+    assert "ghcr.io/kolehank/octop:0.9.31" in patched
     assert "agentbuddy-desktop-windows-amd64-0.9.31.exe" in patched
     assert "## What's Changed" in patched
     assert "- kept" in patched
