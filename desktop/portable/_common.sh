@@ -294,6 +294,10 @@ write_green_overrides() {
         echo "psycopg==3.2.13"
         echo "psycopg-binary==3.2.13"
         echo "psycopg-pool==3.2.6"
+        # cbor2 6.x 只有 manylinux_2_28 档;5.9.0 有 2014/2_17 双架构档(webauthn 2.7.0 接受 >=5.6.5)
+        echo "cbor2==5.9.0"
+        # webauthn 3.0.1 硬性要求 cbor2>=6.1.2(无 2014 档);2.7.0 提供同样 API
+        echo "webauthn==2.7.0"
       } > "$out"
       echo "$out"
       ;;

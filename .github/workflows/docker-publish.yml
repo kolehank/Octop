@@ -168,9 +168,12 @@ jobs:
           set -euo pipefail
           uv venv /tmp/octop-docker-test
           uv pip install --python /tmp/octop-docker-test/bin/python pytest pytest-asyncio
+          # --noconftest: tests/integration/conftest.py imports the whole app
+          # (httpx + octop.*), which this throwaway venv deliberately does not
+          # install. The boot test needs docker and its own fixtures only.
           /tmp/octop-docker-test/bin/pytest \
             tests/integration/test_docker_image_boot.py::test_docker_image_runs_on_this_cpu_and_stays_disabled \
-            -q --tb=short
+            -q --tb=short --noconftest
 
       - name: Push image
         env:
@@ -195,9 +198,12 @@ jobs:
           set -euo pipefail
           uv venv /tmp/octop-docker-test
           uv pip install --python /tmp/octop-docker-test/bin/python pytest pytest-asyncio
+          # --noconftest: tests/integration/conftest.py imports the whole app
+          # (httpx + octop.*), which this throwaway venv deliberately does not
+          # install. The boot test needs docker and its own fixtures only.
           /tmp/octop-docker-test/bin/pytest \
             tests/integration/test_docker_image_boot.py::test_docker_image_runs_on_this_cpu_and_stays_disabled \
-            -q --tb=short
+            -q --tb=short --noconftest
 
       - name: Push image
         env:
