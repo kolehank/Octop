@@ -2,6 +2,8 @@
 # Pre-commit gate: make precommit (format BE+FE + lint + typecheck + testmon-scoped
 # tests) + dashboard build. The full suite still runs in CI (`make all`); this is a
 # fast, change-aware local gate so commits don't wait on the whole test matrix.
+# Commits that only touch documentation (README*.md, docs/**) skip the gate entirely —
+# a prose change cannot break lint/typecheck/tests, and the full gate costs minutes.
 # Enable once per clone:  make install-hooks
 # Bypass (emergency only): SKIP_PRECOMMIT=1 git commit ...
 # Or: git commit --no-verify
@@ -22,7 +24,7 @@ HAS_CHANGES=0
 while IFS= read -r -d '' path; do
   HAS_CHANGES=1
   case "$path" in
-    README.md|README.*.md) ;;
+    README*.md|docs/*|*/README.md) ;;
     *) DOCS_ONLY=0 ;;
   esac
 done < <(git diff --cached --name-only --no-renames -z)
