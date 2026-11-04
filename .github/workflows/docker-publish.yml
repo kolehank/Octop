@@ -166,7 +166,7 @@ jobs:
           OCTOP_IMAGE_VARIANT: ${{ matrix.variant }}
         run: |
           set -euo pipefail
-          uv venv /tmp/octop-docker-test
+          uv venv --clear /tmp/octop-docker-test
           uv pip install --python /tmp/octop-docker-test/bin/python pytest pytest-asyncio
           # --noconftest: tests/integration/conftest.py imports the whole app
           # (httpx + octop.*), which this throwaway venv deliberately does not
@@ -193,10 +193,10 @@ jobs:
 
       - name: Boot-test image before publish
         env:
-          OCTOP_TEST_IMAGE: octop:ci
+          OCTOP_TEST_IMAGE: octop:ci-${{ matrix.variant }}
         run: |
           set -euo pipefail
-          uv venv /tmp/octop-docker-test
+          uv venv --clear /tmp/octop-docker-test
           uv pip install --python /tmp/octop-docker-test/bin/python pytest pytest-asyncio
           # --noconftest: tests/integration/conftest.py imports the whole app
           # (httpx + octop.*), which this throwaway venv deliberately does not

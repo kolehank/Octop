@@ -162,7 +162,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
          uv sync --frozen --no-install-project --no-dev \
            --extra browser --extra desktop --extra local-embedding --extra knowledge-ocr; \
        fi \
-    && apt-get purge -y --auto-remove build-essential \
+    && (dpkg -s build-essential >/dev/null 2>&1 && apt-get purge -y --auto-remove build-essential || true) \
     && rm -rf /var/lib/apt/lists/*
 
 ENV PATH="/app/.venv/bin:$PATH" \
@@ -193,7 +193,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
          && .venv/bin/python -c "import cv2, fastembed, huggingface_hub, mss, rapidocr, onnxruntime, pymupdf; import importlib.util; assert importlib.util.find_spec('pynput')" \
          && apt-get update && apt-get install -y --no-install-recommends fonts-noto-cjk; \
        fi \
-    && apt-get purge -y --auto-remove build-essential \
+    && (dpkg -s build-essential >/dev/null 2>&1 && apt-get purge -y --auto-remove build-essential || true) \
     && rm -rf /var/lib/apt/lists/* /tmp/*
 
 # full 只装桌面包，不启动 Xvnc。lite 写明未捆绑桌面和浏览器。
