@@ -131,6 +131,56 @@ async def test_doubao_ok(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     assert result["success"] is True
     assert result["result_count"] == 1
+    assert result["provider_id"] == "doubao"
+
+
+@pytest.mark.asyncio
+async def test_doubao_business_auth_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "ResponseMetadata": {"RequestId": "r2"},
+                "Result": None,
+                # API-layer error rides HTTP 200.
+            }
+            | {
+                "ResponseMetadata": {
+                    "RequestId": "r2",
+                    "Error": {"Code": "700901", "Message": "APIKey invalid"},
+                }
+            },
+        )
+
+    _patch_client(monkeypatch, httpx.MockTransport(handler))
+    result = await search_probe.probe_search_provider(
+        "doubao",
+        {"DOUBAO_SEARCH_API_KEY": "bad"},
+    )
+    assert result["success"] is False
+    assert result["error_type"] == "auth_error"
+    assert "700901" in (result.get("error") or "")
+
+
+@pytest.mark.asyncio
+async def test_doubao_quota_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "ResponseMetadata": {"RequestId": "r3"},
+                "Result": {"ErrorCode": 10406, "ErrorMsg": "quota exhausted"},
+            },
+        )
+
+    _patch_client(monkeypatch, httpx.MockTransport(handler))
+    result = await search_probe.probe_search_provider(
+        "doubao",
+        {"DOUBAO_SEARCH_API_KEY": "key"},
+    )
+    assert result["success"] is False
+    assert result["error_type"] == "auth_error"
+    assert "10406" in (result.get("error") or "")
 
 
 @pytest.mark.asyncio
@@ -152,6 +202,27 @@ async def test_deepseek_ok(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.asyncio
+async def test_exa_ok(monkeypatch: pytest.MonkeyPatch) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.host == "api.exa.ai"
+        assert request.url.path == "/search"
+        assert request.headers.get("x-api-key") == "exa-key"
+        return httpx.Response(
+            200,
+            json={"results": [{"title": "T", "url": "https://example.com"}]},
+        )
+
+    _patch_client(monkeypatch, httpx.MockTransport(handler))
+    result = await search_probe.probe_search_provider(
+        "exa",
+        {"EXA_API_KEY": "exa-key"},
+    )
+    assert result["success"] is True
+    assert result["result_count"] == 1
+    assert result["provider_id"] == "exa"
+
+
 @pytest.mark.parametrize(
     ("status", "error_type"),
     [(402, "insufficient_balance"), (429, "rate_limit")],
