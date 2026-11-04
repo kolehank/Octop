@@ -18,7 +18,7 @@ def test_init_default_uses_global_home(tmp_path: Path, monkeypatch: object) -> N
     result = runner.invoke(cli, ["init"])
     assert result.exit_code == 0, result.output
 
-    harness = fake_home / ".octop-harness"
+    harness = fake_home / ".agentbuddy" / "harness"
     assert (harness / "config.json").is_file()
     assert (harness / "sessions").is_dir()
     assert (harness / "workspace" / "_builtin_skills" / ".version").is_file()
@@ -38,8 +38,8 @@ def test_init_default_config_uses_workspace_dir(tmp_path: Path, monkeypatch: obj
     result = runner.invoke(cli, ["init"])
     assert result.exit_code == 0, result.output
 
-    cfg = json.loads((fake_home / ".octop-harness" / "config.json").read_text())
-    assert cfg["workspace_dir"] == str(fake_home / ".octop-harness" / "workspace")
+    cfg = json.loads((fake_home / ".agentbuddy" / "harness" / "config.json").read_text())
+    assert cfg["workspace_dir"] == str(fake_home / ".agentbuddy" / "harness" / "workspace")
     assert cfg["language"] == "en"
     assert "providers" in cfg
     # ``root_dir`` is no longer a top-level field — it has been folded
@@ -132,8 +132,8 @@ def test_init_scope_project_uses_cwd(tmp_path: Path, monkeypatch: object) -> Non
     result = runner.invoke(cli, ["init", "--scope", "project"])
     assert result.exit_code == 0, result.output
 
-    project_home = project / ".octop-harness"
+    project_home = project / "harness"
     assert (project_home / "config.json").is_file()
     assert (project_home / "workspace" / "_builtin_skills" / ".version").is_file()
     # Global home should NOT have been touched.
-    assert not (fake_home / ".octop-harness").exists()
+    assert not (fake_home / ".agentbuddy" / "harness").exists()

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ProviderPreset } from "./useProviders";
 import {
-  groupPresets,
   isEmbeddingLaneProvider,
   isLocalProviderRow,
   isOllamaProviderRow,

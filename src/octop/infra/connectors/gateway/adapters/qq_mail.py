@@ -111,7 +111,7 @@ def _email_search(creds: dict[str, Any], args: dict[str, Any]) -> str:
         out: list[dict[str, str]] = []
         for uid in reversed(uids):
             _typ, msg_data = imap.uid(
-                "fetch", uid, "(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])"
+                "fetch", uid.decode("ascii"), "(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])"
             )
             if not msg_data or not msg_data[0]:
                 continue

@@ -372,25 +372,25 @@ def test_migrate_legacy_rotated_logs(tmp_path: Path):
 
 
 def test_setup_logging_renames_legacy_rotated_files(tmp_path: Path):
-    home = tmp_path / ".agentbuddy"
+    home = tmp_path / ".octop"
     log_dir = home / "logs"
     log_dir.mkdir(parents=True)
-    legacy = log_dir / "agentbuddy.log.2026-10-01"
+    legacy = log_dir / "octop.log.2026-10-01"
     legacy.write_text("old rotation\n", encoding="utf-8")
     server = OctopServer(home=home)
 
     server._setup_logging()
 
     assert not legacy.exists()
-    assert (log_dir / "agentbuddy.2026-10-01.log").read_text(encoding="utf-8") == "old rotation\n"
+    assert (log_dir / "octop.2026-10-01.log").read_text(encoding="utf-8") == "old rotation\n"
 
 
 def test_purge_stale_logs_still_removes_legacy_names(tmp_path: Path):
     log_dir = tmp_path / "logs"
     log_dir.mkdir()
-    old = _stale_path(log_dir, "agentbuddy.log.2020-01-01", age_days=100)
-    old_gz = _stale_path(log_dir, "agentbuddy.log.2020-01-02.gz", age_days=100)
-    new = _stale_path(log_dir, "agentbuddy.log.2026-07-16", age_days=1)
+    old = _stale_path(log_dir, "octop.log.2020-01-01", age_days=100)
+    old_gz = _stale_path(log_dir, "octop.log.2020-01-02.gz", age_days=100)
+    new = _stale_path(log_dir, "octop.log.2026-07-16", age_days=1)
 
     _purge_stale_logs(log_dir, retention_days=14)
 

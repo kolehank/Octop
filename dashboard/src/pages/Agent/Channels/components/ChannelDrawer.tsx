@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import type { FormInstance } from "antd";
 import type { Rule } from "antd/es/form";
 import { QRCodeSVG } from "qrcode.react";
+import cx from "classnames";
 import {
   CHANNEL_FIELDS,
   CHANNEL_ICONS,
@@ -90,7 +91,12 @@ const QUICK_CONFIG_CHANNELS: ChannelKey[] = [
   "weixin",
   "dingtalk",
   "feishu",
+  "yuanbao",
 ];
+
+const YUANBAO_DEFAULT_API_DOMAIN = "https://bot.yuanbao.tencent.com";
+const YUANBAO_DEFAULT_WS_URL =
+  "wss://bot-wss.yuanbao.tencent.com/wss/connection";
 
 // QR State Machine
 type QrPhase =
@@ -127,6 +133,10 @@ type QrPhase =
       botName?: string;
       manageUrl?: string;
     }
+  | { phase: "yuanbao_creating"; message: string }
+  | { phase: "yuanbao_scan"; scanCode: string; scanUrl?: string }
+  | { phase: "yuanbao_progress"; message: string }
+  | { phase: "yuanbao_done"; appKey: string; appSecret: string }
   | { phase: "error"; reason: string };
 
 interface ChannelDrawerProps {
@@ -257,9 +267,11 @@ function PolicyTagGroup<T extends string>({
         return (
           <button
             key={option.value}
-            className={`${styles.qqGroupPolicyTag} ${
-              checked ? styles.qqGroupPolicyTagChecked : ""
-            } ${option.disabled ? styles.qqGroupPolicyTagDisabled : ""}`}
+            className={cx(
+              styles.qqGroupPolicyTag,
+              checked && styles.qqGroupPolicyTagChecked,
+              option.disabled && styles.qqGroupPolicyTagDisabled,
+            )}
             type="button"
             role="radio"
             aria-checked={checked}
@@ -522,6 +534,7 @@ export function ChannelDrawer({
   const [configMode, setConfigMode] = useState<"quick" | "manual">("quick");
   const [qrState, setQrState] = useState<QrPhase>({ phase: "idle" });
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const qrSessionRef = useRef(0);
   const autoSaveTriggeredRef = useRef(false);
   const [autoSaveFailed, setAutoSaveFailed] = useState(false);
 
@@ -536,11 +549,15 @@ export function ChannelDrawer({
   const restoringDraftRef = useRef(false);
 
   const stopPolling = useCallback(() => {
+    // Invalidate pending generation/poll requests as well as the timer.
+    qrSessionRef.current += 1;
     if (pollTimerRef.current) {
       clearInterval(pollTimerRef.current);
       pollTimerRef.current = null;
     }
   }, []);
+
+  useEffect(() => stopPolling, [stopPolling]);
 
   const resetQr = useCallback(() => {
     stopPolling();
@@ -584,20 +601,24 @@ export function ChannelDrawer({
   // Restore session draft after server/default values are applied.
   useEffect(() => {
     if (!open || loadingConfig || !draftScope) return;
+    if (form.getFieldValue("kind") !== selectedKind) return;
     const draft = loadFormDraft<ChannelFormValues>(draftScope);
-    if (!draft) return;
+    // Older versions saved the new kind under the previous kind's scope.
+    if (!draft || (draft.kind && draft.kind !== selectedKind)) return;
     restoringDraftRef.current = true;
     form.setFieldsValue(draft);
     if (draft.kind) setSelectedKind(draft.kind);
     restoringDraftRef.current = false;
-  }, [open, loadingConfig, draftScope, form]);
+  }, [open, loadingConfig, draftScope, form, selectedKind]);
 
   // ── QQ Bot Flow ────────────────────────────────────────────────────────
   const startQqQr = async () => {
     stopPolling();
+    const session = qrSessionRef.current;
     setQrState({ phase: "loading" });
     try {
       const res = await channelApi.qqQrcodeGenerate(agentId);
+      if (session !== qrSessionRef.current) return;
       setQrState({
         phase: "qq_ready",
         qrcodeUrl: res.qrcode_url,
@@ -606,6 +627,7 @@ export function ChannelDrawer({
       const timer = setInterval(async () => {
         try {
           const poll = await channelApi.qqQrcodePoll(agentId, res.qrcode_token);
+          if (session !== qrSessionRef.current) return;
           if (poll.status === "success" && poll.app_id && poll.secret) {
             stopPolling();
             setQrState({
@@ -626,6 +648,7 @@ export function ChannelDrawer({
       }, 2000);
       pollTimerRef.current = timer;
     } catch (e: unknown) {
+      if (session !== qrSessionRef.current) return;
       setQrState({
         phase: "error",
         reason: e instanceof Error ? e.message : String(e),
@@ -636,9 +659,11 @@ export function ChannelDrawer({
   // ── WeCom Flow ─────────────────────────────────────────────────────────
   const startWecomQr = async () => {
     stopPolling();
+    const session = qrSessionRef.current;
     setQrState({ phase: "loading" });
     try {
       const res = await channelApi.wecomQrcodeGenerate(agentId);
+      if (session !== qrSessionRef.current) return;
       setQrState({
         phase: "wecom_ready",
         authUrl: res.auth_url,
@@ -647,6 +672,7 @@ export function ChannelDrawer({
       const timer = setInterval(async () => {
         try {
           const poll = await channelApi.wecomQrcodePoll(agentId, res.scode);
+          if (session !== qrSessionRef.current) return;
           if (poll.status === "success" && poll.bot_id && poll.secret) {
             stopPolling();
             setQrState({
@@ -667,6 +693,7 @@ export function ChannelDrawer({
       }, 2000);
       pollTimerRef.current = timer;
     } catch (e: unknown) {
+      if (session !== qrSessionRef.current) return;
       setQrState({
         phase: "error",
         reason: e instanceof Error ? e.message : String(e),
@@ -677,9 +704,11 @@ export function ChannelDrawer({
   // ── WeChat Flow ─────────────────────────────────────────────────────────
   const startWeixinQr = async () => {
     stopPolling();
+    const session = qrSessionRef.current;
     setQrState({ phase: "loading" });
     try {
       const res = await channelApi.weixinQrcodeGenerate(agentId);
+      if (session !== qrSessionRef.current) return;
       setQrState({
         phase: "weixin_ready",
         qrcodeUrl: res.qrcode_url,
@@ -691,6 +720,7 @@ export function ChannelDrawer({
             agentId,
             res.qrcode_token,
           );
+          if (session !== qrSessionRef.current) return;
           if (poll.status === "success" && poll.token) {
             stopPolling();
             setQrState({
@@ -712,6 +742,7 @@ export function ChannelDrawer({
       }, 3000);
       pollTimerRef.current = timer;
     } catch (e: unknown) {
+      if (session !== qrSessionRef.current) return;
       setQrState({
         phase: "error",
         reason: e instanceof Error ? e.message : String(e),
@@ -722,9 +753,11 @@ export function ChannelDrawer({
   // ── DingTalk Flow ───────────────────────────────────────────────────────
   const startDingtalkQr = async () => {
     stopPolling();
+    const session = qrSessionRef.current;
     setQrState({ phase: "loading" });
     try {
       const res = await channelApi.dingtalkQrcodeGenerate(agentId);
+      if (session !== qrSessionRef.current) return;
       setQrState({
         phase: "dingtalk_ready",
         qrcodeUrl: res.qrcode_url,
@@ -740,6 +773,7 @@ export function ChannelDrawer({
               agentId,
               res.registration_id,
             );
+            if (session !== qrSessionRef.current) return;
             if (poll.status === "success" && poll.channel_id) {
               stopPolling();
               setQrState({
@@ -768,6 +802,7 @@ export function ChannelDrawer({
       );
       pollTimerRef.current = timer;
     } catch (e: unknown) {
+      if (session !== qrSessionRef.current) return;
       setQrState({
         phase: "error",
         reason: e instanceof Error ? e.message : String(e),
@@ -778,13 +813,16 @@ export function ChannelDrawer({
   // ── Feishu Flow ─────────────────────────────────────────────────────────
   const startFeishuCreator = async (platform: "feishu" | "lark" = "feishu") => {
     stopPolling();
+    const session = qrSessionRef.current;
     setQrState({
       phase: "feishu_creating",
       message: t("channels.feishuCreating"),
     });
     try {
       await channelApi.feishuBotCreatorStart(agentId, { platform });
+      if (session !== qrSessionRef.current) return;
     } catch (e: unknown) {
+      if (session !== qrSessionRef.current) return;
       setQrState({
         phase: "error",
         reason: e instanceof Error ? e.message : String(e),
@@ -794,6 +832,7 @@ export function ChannelDrawer({
     const timer = setInterval(async () => {
       try {
         const poll = await channelApi.feishuBotCreatorPoll(agentId);
+        if (session !== qrSessionRef.current) return;
         if (poll.qr_url) {
           setQrState((prev) =>
             prev.phase === "feishu_progress" || prev.phase === "feishu_done"
@@ -831,13 +870,75 @@ export function ChannelDrawer({
     pollTimerRef.current = timer;
   };
 
+  // ── YuanBao Flow ────────────────────────────────────────────────────────
+  const startYuanbaoCreator = async () => {
+    stopPolling();
+    const session = qrSessionRef.current;
+    setQrState({
+      phase: "yuanbao_creating",
+      message: t("channels.yuanbaoStarting"),
+    });
+    try {
+      await channelApi.yuanbaoBotCreatorStart(agentId, {});
+      if (session !== qrSessionRef.current) return;
+    } catch (e: unknown) {
+      if (session !== qrSessionRef.current) return;
+      setQrState({
+        phase: "error",
+        reason: e instanceof Error ? e.message : String(e),
+      });
+      return;
+    }
+    const timer = setInterval(async () => {
+      try {
+        const poll = await channelApi.yuanbaoBotCreatorPoll(agentId);
+        if (session !== qrSessionRef.current) return;
+        if (poll.scan_code) {
+          setQrState({
+            phase: "yuanbao_scan",
+            scanCode: poll.scan_code,
+            scanUrl: poll.scan_url,
+          });
+        }
+        const lastEvent = poll.events[poll.events.length - 1];
+        if (lastEvent?.action === "progress") {
+          setQrState((prev) =>
+            prev.phase === "yuanbao_scan"
+              ? prev
+              : { phase: "yuanbao_progress", message: lastEvent.message },
+          );
+        }
+        if (poll.status === "finished" && poll.app_key && poll.app_secret) {
+          stopPolling();
+          setQrState({
+            phase: "yuanbao_done",
+            appKey: poll.app_key,
+            appSecret: poll.app_secret,
+          });
+        } else if (poll.status === "failed") {
+          stopPolling();
+          const errEvent = poll.events.find(
+            (e) => e.action === "finish" && e.level === "error",
+          );
+          setQrState({
+            phase: "error",
+            reason: errEvent?.message ?? t("channels.yuanbaoBindFailed"),
+          });
+        }
+      } catch {
+        // keep polling
+      }
+    }, 2000);
+    pollTimerRef.current = timer;
+  };
+
   // Entering quick-config starts QR generation immediately (no extra click).
   useEffect(() => {
     if (!open || isEdit || loadingConfig) return;
     if (configMode !== "quick" && selectedKind !== "weixin") return;
     if (qrState.phase !== "idle") return;
-    // Wait until local kind matches the card that opened the drawer.
-    if (initialValues?.kind && selectedKind !== initialValues.kind) return;
+    // Wait for open-time kind sync, while allowing later manual switches.
+    if (selectedKind !== form.getFieldValue("kind")) return;
 
     switch (selectedKind) {
       case "qq":
@@ -855,6 +956,9 @@ export function ChannelDrawer({
       case "feishu":
         void startFeishuCreator("feishu");
         break;
+      case "yuanbao":
+        void startYuanbaoCreator();
+        break;
       default:
         break;
     }
@@ -868,6 +972,7 @@ export function ChannelDrawer({
     selectedKind,
     qrState.phase,
     initialValues?.kind,
+    form,
   ]);
 
   // ── Form ────────────────────────────────────────────────────────────────
@@ -935,7 +1040,7 @@ export function ChannelDrawer({
 
   // Auto-save when QR quick-config completes — channel is usable immediately.
   useEffect(() => {
-    if (isEdit || saving || autoSaveTriggeredRef.current) return;
+    if (!open || isEdit || saving || autoSaveTriggeredRef.current) return;
 
     const s = qrState;
     let payload: {
@@ -992,6 +1097,18 @@ export function ChannelDrawer({
           app_secret: s.appSecret,
         }),
       };
+    } else if (s.phase === "yuanbao_done") {
+      dedupeKey = `yuanbao:${s.appKey}:${s.appSecret}`;
+      payload = {
+        kind: "yuanbao",
+        name: "yuanbao",
+        config: mergeDisplayConfig({
+          app_key: s.appKey,
+          app_secret: s.appSecret,
+          api_domain: YUANBAO_DEFAULT_API_DOMAIN,
+          ws_url: YUANBAO_DEFAULT_WS_URL,
+        }),
+      };
     }
 
     if (!payload || !dedupeKey) return;
@@ -1014,6 +1131,7 @@ export function ChannelDrawer({
     );
   }, [
     qrState,
+    open,
     isEdit,
     saving,
     submitChannel,
@@ -1068,9 +1186,11 @@ export function ChannelDrawer({
   };
 
   const handleClose = () => {
-    stopPolling();
+    resetQr();
     if (selectedKind === "feishu")
       void channelApi.feishuBotCreatorStop(agentId).catch(() => {});
+    if (selectedKind === "yuanbao")
+      void channelApi.yuanbaoBotCreatorStop(agentId).catch(() => {});
     onClose();
   };
 
@@ -1553,6 +1673,90 @@ export function ChannelDrawer({
     );
   }
 
+  function renderYuanbaoPanel() {
+    const s = qrState;
+    if (
+      s.phase === "idle" ||
+      s.phase === "loading" ||
+      s.phase === "yuanbao_creating" ||
+      s.phase === "yuanbao_progress"
+    ) {
+      return renderQrLoading(
+        t("channels.yuanbaoQrStep1"),
+        t("channels.yuanbaoQrStep2"),
+        t("channels.yuanbaoQrStep3"),
+      );
+    }
+    if (s.phase === "yuanbao_scan") {
+      const qrValue = s.scanUrl ?? s.scanCode;
+      return (
+        <div className={styles.qrPanel}>
+          {renderQrSteps(
+            t("channels.yuanbaoQrStep1"),
+            t("channels.yuanbaoQrStep2"),
+            t("channels.yuanbaoQrStep3"),
+          )}
+          <div className={styles.qrCardWrap}>
+            <div className={styles.qrFrame}>
+              <QRCodeSVG value={qrValue} size={200} />
+            </div>
+          </div>
+          <p className={styles.qrScanHint}>{t("channels.yuanbaoQrScanHint")}</p>
+          <Button
+            size="small"
+            onClick={() => void startYuanbaoCreator()}
+            style={{ marginTop: 4 }}
+          >
+            {t("channels.qrRegenerate")}
+          </Button>
+        </div>
+      );
+    }
+    if (s.phase === "yuanbao_done") {
+      const retrySave = () =>
+        submitChannel(
+          "yuanbao",
+          "yuanbao",
+          mergeDisplayConfig({
+            app_key: s.appKey,
+            app_secret: s.appSecret,
+            api_domain: YUANBAO_DEFAULT_API_DOMAIN,
+            ws_url: YUANBAO_DEFAULT_WS_URL,
+          }),
+          true,
+        );
+      return (
+        <div className={styles.qrPanel}>
+          <Alert
+            type="success"
+            message={t("channels.yuanbaoCreateSuccess")}
+            style={{ width: "100%", marginBottom: 12 }}
+          />
+          {renderQrAutoSaveStatus(retrySave)}
+        </div>
+      );
+    }
+    if (s.phase === "error") {
+      return (
+        <div className={styles.qrPanel}>
+          <Alert
+            type="error"
+            message={s.reason}
+            style={{ width: "100%", marginBottom: 12 }}
+          />
+          <Button onClick={() => void startYuanbaoCreator()}>
+            {t("channels.qrRetryBtn")}
+          </Button>
+        </div>
+      );
+    }
+    return renderQrLoading(
+      t("channels.yuanbaoQrStep1"),
+      t("channels.yuanbaoQrStep2"),
+      t("channels.yuanbaoQrStep3"),
+    );
+  }
+
   // ── Render ──────────────────────────────────────────────────────────────
   return (
     <Drawer
@@ -1630,7 +1834,12 @@ export function ChannelDrawer({
           initialValues={initialValues}
           onFinish={handleFinish}
           onValuesChange={(changed, all) => {
-            if (changed.kind) setSelectedKind(changed.kind as ChannelKey);
+            if (changed.kind) {
+              resetQr();
+              setSelectedKind(changed.kind as ChannelKey);
+              // A kind switch must not overwrite the outgoing kind's draft.
+              return;
+            }
             if (!restoringDraftRef.current && draftScope) {
               saveFormDraft(
                 draftScope,
@@ -1644,7 +1853,10 @@ export function ChannelDrawer({
               className={styles.configModeSwitch}
               block
               value={configMode}
-              onChange={(v) => setConfigMode(v as "quick" | "manual")}
+              onChange={(v) => {
+                resetQr();
+                setConfigMode(v as "quick" | "manual");
+              }}
               options={[
                 { label: t("channels.quickConfig"), value: "quick" },
                 { label: t("channels.manualConfig"), value: "manual" },
@@ -1665,6 +1877,7 @@ export function ChannelDrawer({
                 {selectedKind === "weixin" && renderWeixinPanel()}
                 {selectedKind === "dingtalk" && renderDingtalkPanel()}
                 {selectedKind === "feishu" && renderFeishuPanel()}
+                {selectedKind === "yuanbao" && renderYuanbaoPanel()}
               </>
             )}
 

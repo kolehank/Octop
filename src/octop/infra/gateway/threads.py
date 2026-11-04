@@ -3,11 +3,57 @@
 from __future__ import annotations
 
 import asyncio
+import re
 from typing import Any
 
 from octop.infra.db.repos.sessions import SessionRepo, SessionRow
 from octop.infra.db.repos.threads import ThreadRepo, ThreadRow
 from octop.infra.utils.ulid import new_ulid
+
+#: Registered big-screen project prefixes (ADR 004 D2). New project-level
+#: prefixes must be added here before any client may use them.
+SCREEN_KEY_PREFIXES = ("demo/",)
+#: ``screen_key`` charset ``[A-Za-z0-9_/-]``. ``:`` is banned because session
+#: keys split on ``:``; ``%``/``_`` are banned because scope/q run through SQL
+#: LIKE; whitespace and CJK punctuation are not in the charset.
+_SCREEN_KEY_RE = re.compile(r"^[A-Za-z0-9_/-]+$")
+_SCREEN_KEY_MAX_LEN = 120
+_SCREEN_KEY_MAX_SEGMENTS = 3
+#: Page-navigation line injected by the big screen (ADR 003 D10). Servers strip
+#: this exact fixed format from generated titles and list summaries (ADR 004 D9).
+_S2_PAGE_PREFIX_RE = re.compile(r"^〔当前页：.*?（仅供参考，以用户问题为准）〕", re.DOTALL)
+
+
+def is_valid_screen_key(screen_key: str) -> bool:
+    """Validate a big-screen route template per ADR 004 D2.
+
+    Requires 1..120 chars of ``[A-Za-z0-9_/-]``, a registered project prefix
+    (``demo/`` this release) and at most 3 slash segments.
+    """
+    if not isinstance(screen_key, str):
+        return False
+    if not 1 <= len(screen_key) <= _SCREEN_KEY_MAX_LEN:
+        return False
+    if not _SCREEN_KEY_RE.match(screen_key):
+        return False
+    if not screen_key.startswith(SCREEN_KEY_PREFIXES):
+        return False
+    return screen_key.count("/") + 1 <= _SCREEN_KEY_MAX_SEGMENTS
+
+
+def screen_topic_prefix(screen_key: str) -> str:
+    """First two segments (``demo/<topic>``) of a screen key.
+
+    ``scope=topic`` lists every screen under one topic (ADR 004 D7), so
+    ``demo/investment/region`` and ``demo/investment`` both map to
+    ``demo/investment``.
+    """
+    return "/".join(screen_key.split("/")[:2])
+
+
+def strip_s2_page_prefix(text: str) -> str:
+    """Remove a leading ``〔当前页：…（仅供参考，以用户问题为准）〕`` line."""
+    return _S2_PAGE_PREFIX_RE.sub("", text).strip()
 
 
 class ThreadRegistry:
@@ -90,6 +136,23 @@ class ThreadRegistry:
             channel_type=ThreadRegistry.CHANNEL_DASHBOARD,
             channel_subject_id=str(user_id),
             channel_chat_type=ThreadRegistry.CHAT_TYPE_DM,
+        )
+
+    @staticmethod
+    def screen_key(*, agent_id: str, user_id: int, screen_key: str) -> str:
+        """Session key for one big-screen route template (ADR 004 D1/D3).
+
+        Reuses the ``dashboard`` channel type so ``is_virtual_channel()`` keeps
+        screen sessions out of IM outbound routing without a new channel type.
+        """
+        if not is_valid_screen_key(screen_key):
+            msg = f"invalid screen_key {screen_key!r}"
+            raise ValueError(msg)
+        return ThreadRegistry.make_key(
+            agent_id=agent_id,
+            channel_type=ThreadRegistry.CHANNEL_DASHBOARD,
+            channel_subject_id=str(user_id),
+            channel_chat_type=f"screen:{screen_key}",
         )
 
     @staticmethod
@@ -433,8 +496,55 @@ class ThreadRegistry:
     def get_thread(self, thread_id: str) -> ThreadRow | None:
         return self._threads.get(thread_id)
 
-    def list_threads(self, *, agent_id: str, user_id: int, limit: int = 50) -> list[ThreadRow]:
-        return self._threads.list_by_agent_user(agent_id=agent_id, user_id=user_id, limit=limit)
+    def list_threads(
+        self,
+        *,
+        agent_id: str,
+        user_id: int,
+        limit: int = 50,
+        offset: int = 0,
+        scope: str | None = None,
+        screen_key: str | None = None,
+        q: str | None = None,
+    ) -> list[ThreadRow]:
+        """List threads, optionally filtered for big-screen sessions (ADR 004 D7).
+
+        ``scope`` is one of ``screen`` (exact screen session), ``topic``
+        (``demo/<topic>`` prefix), ``all`` (screen sessions only), ``dashboard``
+        (exclude screen sessions) or None (legacy: every thread for the pair).
+        ``q`` LIKE-matches the title or the first user message later in SQL.
+        """
+        exact: str | None = None
+        prefix: str | None = None
+        screen_only = False
+        exclude_screen = False
+        valid_key = screen_key if screen_key is not None else ""
+        if scope == "screen":
+            exact = ThreadRegistry.screen_key(
+                agent_id=agent_id, user_id=user_id, screen_key=valid_key
+            )
+        elif scope == "topic":
+            prefix = ThreadRegistry.make_key(
+                agent_id=agent_id,
+                channel_type=ThreadRegistry.CHANNEL_DASHBOARD,
+                channel_subject_id=str(user_id),
+                channel_chat_type=f"screen:{screen_topic_prefix(valid_key)}",
+            )
+        elif scope == "all":
+            screen_only = True
+        elif scope == "dashboard":
+            exclude_screen = True
+        return self._threads.list_by_agent_user_filtered(
+            agent_id=agent_id,
+            user_id=user_id,
+            session_key=exact,
+            session_prefix=prefix,
+            screen_only=screen_only,
+            exclude_screen=exclude_screen,
+            q=q,
+            limit=limit,
+            offset=offset,
+        )
 
     def list_threads_for_session(self, *, session_key: str, limit: int = 50) -> list[ThreadRow]:
         return self._threads.list_by_session(session_key=session_key, limit=limit)

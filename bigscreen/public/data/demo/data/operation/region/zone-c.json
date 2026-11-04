@@ -1,0 +1,22 @@
+{
+  "items": [
+    {
+      "label": "运行服务",
+      "value": "30",
+      "unit": "个",
+      "note": "C 区"
+    },
+    {
+      "label": "当前告警",
+      "value": "1",
+      "unit": "起",
+      "note": "C 区"
+    },
+    {
+      "label": "平均水位",
+      "value": "49",
+      "unit": "%",
+      "note": "C 区"
+    }
+  ]
+}

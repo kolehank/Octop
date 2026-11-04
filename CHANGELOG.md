@@ -6,6 +6,28 @@
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-04
+
+### 新增
+- 公开大屏：`/screen/<screen>/` 静态挂载独立前端工程（ADR 003），演示「大屏 → 专家对话 → 专题子智能体路由」的完整接入方式；专题与内容全部配置化，坏数据报错不白屏
+- 大屏会话按屏隔离（ADR 004）：screenKey 用规范化路由模板（不含条目 id），同一屏共享会话、下钻页注入当前页上下文，并提供历史会话侧栏
+- 插件与专家改为从远程市场安装。市场目录 / 安装包源站、技能市场源站都可指向自建源：`OCTOP_PORTAL_ORIGIN`、`OCTOP_MARKET_REMOTE_ORIGIN`、`SKILL_MARKET_ORIGIN`、`SKILLSET_ORIGIN`，安装包路径不再限定 `/octop/market/`。说明见 `docs/private-market.md`、`docs/skill-market.md`
+- PostgreSQL 控制面下，技能包源和知识库原文进同一套库（`skill_package_files`、`knowledge_files`），知识库向量在 `knowledge_chunks`。表都在 `public`，前缀与 `skill_packages`、`knowledge_bases` 一致。SQLite 仍用本地目录。安装时选定驱动，不含 sqlite→PostgreSQL 迁移
+- 安装向导连接已有用户的 PostgreSQL 时，确认后保留这些账户并去登录。SQLite 仍要空库
+- 知识库预览可以在原文和已入库切片之间切换。文件名悬停后可重命名，扩展名保持不变
+- Docker 与飞牛增加精简版。默认 `:<version>` / `:latest` 仍是含桌面、OCR 和本地向量的完整镜像；精简版标签是 `:<version>-lite` 和 `:lite`
+
+### 修复
+- Dashboard 里 `ask_user_question` 未答完时，新建同专家会话再发消息不再被当成旧测验的答案；同会话内明文作答仍然有效
+- PostgreSQL 控制面下，知识库检索读 pgvector，不再查到空的本地 `index.sqlite`
+- Docker 镜像在无头构建时不再导入 pynput。飞牛 Docker 包缺失时，已打好的本地包仍会挂到 Release
+- 精简版只有 amd64 和 arm64 都发布成功才打通用标签。完整飞牛包不再等待缺失的精简镜像，Release 下载区只保留实际挂上的飞牛包
+- Docker 构建在安装依赖的同一层删除编译器，避免编译工具留在最终镜像里
+
+### 变更
+- 同步上游 v1.0.3b2：MFA / passkey 登录、LDAP 目录账号、cron 与通道多实例租约、chat/history 投影重构、远程市场目录、RAGFlow 连接器
+- 专家页的「内置专家模板」并入「专家市场」，本实例用户发布的模板仍留在市场里。安装包不再附带产品专家模板和内置插件；新建用户时从专家市场拉取模板，拉不到也照常建用户。从市场新建的专家会装上 Octop 助手技能。市场目录不可用时直接失败，不再改显示安装包自带内容，也不再改调本机 `skillhub` 命令行
+- 聊天侧栏可以隐藏任意专家，不再限于别人共享来的。正在对话的隐藏专家留在「已隐藏专家」里，不再被提到列表上方
 ## [1.0.13] - 2026-10-28
 
 ### 修复
@@ -67,12 +89,10 @@
 - **沙箱确认弹窗"受影响专家"为空**:user scope 容器的反查依赖了不存在的 registry 方法,且 named 引用反查漏掉内联默认后端。改为并集反查(named 引用 ∪ 内联 docker prefix 匹配),同时修复期望值计算与活跃会话检查在该场景下失效的问题;容器名 prefix 反推不再被带下划线的用户名破坏。
 - laya_runtime 测试的磁盘空间隐式依赖(注入 free_bytes 桩)。
 
-
 ## [1.0.7] - 2026-10-22
 
 ### 变更
 - antd 组件类名前缀 `octop-*` → `agentbuddy-*`(ConfigProvider `prefixCls`;浏览器 Elements 面板可见的品牌痕迹,78 处自定义样式覆盖同步)。技能工具协议的 `octop_ui` 包络键与技能 frontmatter `metadata.octop` 保持不变(工具格式契约)
-
 
 ## [1.0.6] - 2026-10-22
 
@@ -80,12 +100,10 @@
 - **全部页面无法滚动**(技能市场 / 模型 / 插件市场 / 聊天 / 侧边栏,浏览器与桌面壳一致):白标替换时布局高度规则把 `.octop-app` 误改为 `.agentbuddy-app`,而 antd `<App>` 实际渲染的类名仍是 `octop-app`(由 `prefixCls` 决定),导致最顶层 100% 高度丢失、整个 flex 高度链失效,内容被固定高度的 `#root` 裁掉且无滚动条。恢复该选择器。
 - 安装向导 PostgreSQL 默认库名 / 用户名 `octop` → `agentbuddy`(与 compose 默认一致);Docker 沙箱「容器名前缀」默认值 `octop_sandbox` → `agentbuddy_sandbox`(与后端一致);浏览器 localStorage 键前缀 `octop.` → `agentbuddy.`
 
-
 ## [1.0.5] - 2026-10-22
 
 ### 修复
 - Windows / macOS 便携包(zip)首次启动报 `ModuleNotFoundError: No module named 'octop_harness'`:便携包只装了主程序 wheel,而四个上游包(octop-harness / octop-gateway / octop-browser / octop-memory)没有随包分发。现在打包时构建并安装全部五个 wheel,并从依赖导出中剔除指向打包机源码路径的 editable 条目。Docker / wheel 安装不受影响。
-
 
 ## [1.0.4] - 2026-10-22
 
@@ -119,6 +137,45 @@
 
 ### 修复
 - 头像菜单/浏览器起始页等遗留外链清理；`SSO` 面板与 `TLS`/桥接设置的占位符改用中性示例域名；技能文档索引移除失效的迁移指引
+
+## [1.0.3b2] - 2026-11-01
+
+### 新增
+- 账号支持 TOTP 与 Passkey：二次验证、无密码登录和恢复码
+- 新增 ragflow 知识库连接器
+
+### 修复
+- 记住登录会自动续期，改密码会退出其他设备。缺 MFA 表的旧库会自动补齐
+- 极简模式里，专家会话超过 10 条可以继续展开。长代码在气泡里换行，已结束的一轮不会在历史加载后再出现一次
+- 停用的会话模型回到 Auto。钉钉和微信切换时，草稿与二维码不再串台，登录回调会保留转发端口
+- 更早回合生成的文件不会再次发出。对话轨迹记下模型实际收到的系统提示
+- PostgreSQL 控制面下，`ProactiveCareService` 写推送去重记录不再报 `'Connection' object has no attribute 'executemany'`：`_PgConnectionProxy` 补上 SQLite 风格的 `executemany`（经 psycopg 游标执行并转换 `?` 占位符），`care_push_records` 恢复为空 → 正常写入，30 天去重生效
+
+### 变更
+- 通行密钥登录默认关闭，要在应用设置里打开。修改密码放在「账户安全」里
+- 虚拟桌面和系统浏览器默认不启动。未选 MBTI 时显示「未设置」
+- 升级 octop-harness 1.0.6
+
+## [1.0.3b1] - 2026-10-25
+
+### 新增
+- 建用户时可以同时创建一个默认专家。权限按页面 Tab 拆开，也可以按组折叠
+- 用户组可以限制技能包、知识库、连接器、模型、存储和专家谁能看见
+- 技能包可以共享，并用文件树编辑。创建专家、团队等资源时可以选头像
+- 表单和对话可以让 AI 润色。搜索增加 DeepSeek 与元宝，模型支持 OpenAI Responses API
+
+### 修复
+- 云端协同共享后可以直接对话。回复进行中不会被刷新冲掉，也不能删掉这场会话
+- 手机截图写到专家自己的工作区。只改定时任务文案时，间隔任务不再重新计时
+- 浏览器工作台恢复中文输入。主动关怀等对话安静后再发
+- 向导密码随数据目录迁移。Linux 桌面无边框窗口可以拖边缘调整大小
+
+### 变更
+- 云端协同默认打码对端地址和账号。共享来的资源在头像上做标记
+- 支持子路径部署。飞牛原生包标记为 x86
+
+### 安全
+- 密钥改为加密保存，旧明文仍能读出。插件上传和解压限制了体积
 
 ## [1.0.2] - 2026-10-18
 
@@ -236,6 +293,8 @@
 - octop-harness 升到 1.0.1；飞牛安装改为建账号向导
 
 ### 修复
+- 修复远程 Embedding 服务返回乱序结果时向量与文本错位的问题
+- httpx 0.28 将 ``NO_PROXY`` 中的 CIDR（如 ``192.168.0.0/16``）当成精确 IP，内网地址误走代理；同时兼容 Windows 分号分隔、IPv6 CIDR，以及 macOS/Windows 系统代理下的 loopback 直连（Fixes #1347）。
 - 会话「放通所有 / 放通这些工具」后后续 execute 仍弹审批
 - 误报流式失败、提问卡不弹出、TLS 下内部 MCP、过长工具名
 - 远程存储卡住堵住启动；S3 / Postgres 浏览；桌面 beta 覆盖安装；飞牛 8089 残留
@@ -249,7 +308,6 @@
 - 内置助手可回答产品与使用问题
 - 可配置 Ollama 本地模型下载目录
 - 账号可自定义侧边栏；角色改为存模板 id（账号侧栏与权限快照，不是运行时角色同步）
-
 
 ### 修复
 - 媒体预览 CSP、Langfuse 环境变量、IM 附件元数据

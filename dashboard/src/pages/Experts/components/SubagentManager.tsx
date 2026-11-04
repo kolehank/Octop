@@ -41,6 +41,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import cx from "classnames";
 import TabLabel from "../../../components/TabLabel";
 import {
   installSubagent,
@@ -487,9 +488,10 @@ export default function SubagentManager({
                   </button>
                   <button
                     type="button"
-                    className={`${styles.catalogCardActionBtn} ${
-                      installed ? "" : styles.catalogCardActionBtnPrimary
-                    }`}
+                    className={cx(
+                      styles.catalogCardActionBtn,
+                      !installed && styles.catalogCardActionBtnPrimary,
+                    )}
                     disabled={!agentReady || installingSlug === item.slug}
                     onClick={() => void handleInstall(item)}
                   >
@@ -592,7 +594,11 @@ export default function SubagentManager({
                   </button>
                   <button
                     type="button"
-                    className={`${styles.catalogCardActionBtn} ${styles.catalogCardActionBtnIcon} ${styles.catalogCardActionBtnDanger}`}
+                    className={cx(
+                      styles.catalogCardActionBtn,
+                      styles.catalogCardActionBtnIcon,
+                      styles.catalogCardActionBtnDanger,
+                    )}
                     onClick={() => confirmDeleteSubagent(subagent)}
                     aria-label={t("common.delete")}
                     title={t("common.delete")}
@@ -611,9 +617,10 @@ export default function SubagentManager({
   return (
     <>
       <div
-        className={`${styles.catalogDrawer} ${
-          fillHeight ? styles.catalogDrawerMobile : ""
-        }`}
+        className={cx(
+          styles.catalogDrawer,
+          fillHeight && styles.catalogDrawerMobile,
+        )}
       >
         {!agentReady && activeTab !== INSTALLED_TAB && (
           <Alert

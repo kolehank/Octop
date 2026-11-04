@@ -12,7 +12,7 @@ def test_global_env_file_path(tmp_path: Path) -> None:
     paths = CliPaths(project_dir=tmp_path)
     # monkeypatch Path.home is done in other tests; here just check structure
     assert paths.global_env_file.name == ".env"
-    assert paths.global_env_file.parent.name == ".octop-harness"
+    assert paths.global_env_file.parent.name == "harness"
 
 
 def test_project_env_file_path(tmp_path: Path) -> None:
@@ -30,7 +30,7 @@ def test_load_dotenv_files_prefers_project(tmp_path: Path, monkeypatch: object) 
     project_env.write_text("PROJECT_VAR=from_project\n")
 
     # Create global .env dir + .env with GLOBAL_VAR
-    global_dir = tmp_path / "home" / ".octop-harness"
+    global_dir = tmp_path / "home" / ".agentbuddy" / "harness"
     global_dir.mkdir(parents=True)
     (global_dir / ".env").write_text("GLOBAL_VAR=from_global\n")
 
@@ -51,7 +51,7 @@ def test_load_dotenv_files_falls_back_to_global(tmp_path: Path, monkeypatch: obj
     """Falls back to global .env when no project .env exists."""
     from octop_harness.cli import load_dotenv_files
 
-    global_dir = tmp_path / "home" / ".octop-harness"
+    global_dir = tmp_path / "home" / ".agentbuddy" / "harness"
     global_dir.mkdir(parents=True)
     (global_dir / ".env").write_text("GLOBAL_ONLY=yes\n")
 

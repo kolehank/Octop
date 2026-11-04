@@ -1,0 +1,149 @@
+{
+  "id": "overview",
+  "title": "综合运行演示",
+  "subtitle": "DEMO · 多源数据可视化",
+  "layout": {
+    "left": [
+      {
+        "type": "metric-cards",
+        "title": "核心指标",
+        "source": "data/overview/metrics.json"
+      },
+      {
+        "type": "region-list",
+        "title": "分区",
+        "source": "data/operation/regions.json"
+      }
+    ],
+    "right": [
+      {
+        "type": "analysis-card",
+        "source": "data/overview/analysis.json"
+      },
+      {
+        "type": "system-links",
+        "title": "接入系统",
+        "source": "data/overview/systems.json"
+      }
+    ],
+    "bottom": [
+      {
+        "type": "ticker",
+        "source": "data/overview/ticker.json"
+      },
+      {
+        "type": "alert-cards",
+        "title": "告警",
+        "source": "data/overview/alerts.json"
+      }
+    ]
+  },
+  "chat": {
+    "agentId": "main",
+    "title": "演示助手",
+    "subtitle": "循证问答 · 报告生成",
+    "welcome": "您好！我是演示助手，可以围绕这套大屏的数据问答、生成报告。",
+    "quickGroups": [
+      {
+        "title": "数据问答",
+        "prompts": [
+          {
+            "label": "当前核心指标怎么样？",
+            "prompt": "当前核心指标怎么样？"
+          },
+          {
+            "label": "各分区运行情况如何？",
+            "prompt": "各分区运行情况如何？"
+          }
+        ]
+      },
+      {
+        "title": "报告",
+        "prompts": [
+          {
+            "label": "生成一版运行分析汇报提纲",
+            "prompt": "生成一版运行分析汇报提纲"
+          }
+        ]
+      }
+    ],
+    "chatOptions": {
+      "conversationMode": "craft"
+    },
+    "contextInjection": "nav"
+  },
+  "drilldown": [
+    {
+      "dimension": "region",
+      "route": "/demo/overview/region/:itemId",
+      "title": "分区详情",
+      "layout": {
+        "left": [
+          {
+            "type": "metric-cards",
+            "title": "分区指标",
+            "source": "data/operation/region/:itemId.json"
+          },
+          {
+            "type": "region-list",
+            "title": "分区",
+            "source": "data/operation/regions.json"
+          }
+        ],
+        "bottom": [
+          {
+            "type": "ticker",
+            "source": "data/overview/ticker.json"
+          }
+        ]
+      },
+      "chat": {
+        "agentId": "main",
+        "title": "演示助手",
+        "subtitle": "分区详情 · 循证问答",
+        "welcome": "您好！我是演示助手，可以围绕这个分区的运行数据问答。"
+      },
+      "floatChat": {
+        "enabled": true,
+        "title": "演示助手",
+        "subtitle": "循证问答 · 报告生成"
+      }
+    },
+    {
+      "dimension": "category",
+      "route": "/demo/overview/category/:itemId",
+      "title": "类别详情",
+      "layout": {
+        "left": [
+          {
+            "type": "metric-cards",
+            "title": "类别指标",
+            "source": "data/operation/category/:itemId.json"
+          },
+          {
+            "type": "region-list",
+            "title": "类别",
+            "source": "data/operation/regions.json"
+          }
+        ],
+        "bottom": [
+          {
+            "type": "ticker",
+            "source": "data/overview/ticker.json"
+          }
+        ]
+      },
+      "chat": {
+        "agentId": "main",
+        "title": "演示助手",
+        "subtitle": "类别详情 · 循证问答",
+        "welcome": "您好！我是演示助手，可以围绕这个类别的运行数据问答。"
+      },
+      "floatChat": {
+        "enabled": true,
+        "title": "演示助手",
+        "subtitle": "循证问答 · 报告生成"
+      }
+    }
+  ]
+}

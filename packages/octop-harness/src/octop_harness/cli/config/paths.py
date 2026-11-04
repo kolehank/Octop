@@ -86,7 +86,7 @@ class CliPaths:
     @property
     def project_dir(self) -> Path:
         """``<project>/.octop-harness/`` — optional project-level overrides."""
-        return self._project_root / _OCTOP_HARNESS_DIR_NAME
+        return self._project_root / _AGENTBUDDY_HARNESS_DIR_NAME
 
     @property
     def project_config_file(self) -> Path:

@@ -5,7 +5,11 @@ const { request, requestUpload } = vi.hoisted(() => ({
   requestUpload: vi.fn(),
 }));
 
-vi.mock("../request", () => ({ request, requestUpload, bridgeAgentHeaders: () => ({}) }));
+vi.mock("../request", () => ({
+  request,
+  requestUpload,
+  bridgeAgentHeaders: () => ({}),
+}));
 
 import { knowledgeBasesApi } from "./knowledgeBases";
 

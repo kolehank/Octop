@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -49,7 +50,7 @@ def list_agents() -> None:
 class _Progress:
     def __init__(self, locale: str) -> None:
         self.locale = locale
-        self.terminal = click.get_text_stream("stdout").isatty()
+        self.terminal = sys.stdout.isatty()
         self.phase = ""
         self.elapsed = -5
         self.scanned: object = None

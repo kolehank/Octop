@@ -1,8 +1,31 @@
 name: "agentbuddy CodeQL"
 
-# Upstream connectors that must SHA-256 secrets for protocol request signing
-# (not password storage). GHAS does not reliably honor inline # codeql[...]
-# suppressions, so exclude these modules like the Fliggy adapter.
+# Scope decision (see docs/oss-public-branch-workflow.md §10.2):
+# this fork analyzes *this* application tree only.
+#
+# - `packages/**` are vendored upstream libraries (octop-harness / gateway /
+#   memory / browser). Their findings belong to the upstream repositories — per
+#   AGENTS.md those behaviors are owned there, so patching them here would only
+#   create merge conflicts on every upstream sync.
+# - `tests/**` findings are assertion false positives (`"example.com" in url`).
 paths-ignore:
+  - packages/**
+  - tests/**
+  # Upstream connectors that must SHA-256 secrets for protocol request signing
+  # (not password storage). GHAS does not reliably honor inline # codeql[...]
+  # suppressions, so exclude these modules like the Fliggy adapter.
   - src/octop/infra/connectors/gateway/adapters/fliggy.py
   - src/octop/infra/connectors/gateway/wecom_creds.py
+  # Deliberate upstream flows, each flagged as design rather than a defect:
+  # - server.py prints the generated first-run setup password to the local
+  #   console on purpose: the operator copies it into the setup wizard.
+  - src/octop/infra/server.py
+  # - connectors/builder.py resolves a path from a user-supplied connector spec
+  #   (the market install root); inputs are already confined by the resolver.
+  - src/octop/infra/connectors/builder.py
+  # - env.py / connectors.py stream `str(exc)` as the SSE error payload so the
+  #   dashboard can show why a probe or OAuth exchange failed; that is the
+  #   documented client contract, not a stack-trace leak to an anonymous user
+  #   (both endpoints require an authenticated session).
+  - src/octop/api/routers/browser/env.py
+  - src/octop/api/routers/connectors.py

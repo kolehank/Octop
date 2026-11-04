@@ -17,6 +17,8 @@ SHELL := /bin/bash
 REPO_ROOT     := $(shell pwd)
 DASHBOARD_DIR := $(REPO_ROOT)/dashboard
 DASHBOARD_DEST := $(REPO_ROOT)/src/octop/dashboard
+BIGSCREEN_DIR := $(REPO_ROOT)/bigscreen
+BIGSCREEN_DEST := $(REPO_ROOT)/src/octop/bigscreen
 DIST_DIR      := $(REPO_ROOT)/dist
 
 # PyPI repository (override: make publish PYPI_REPO=testpypi)
@@ -40,16 +42,17 @@ help:
 	@echo "Usage: make <target>"
 	@echo ""
 	@echo "Build targets:"
-	@echo "  build            Build frontend + Python wheel (full package)"
+	@echo "  build            Build frontends + Python wheel (full package)"
 	@echo "  build-frontend   Build React dashboard only → $(DASHBOARD_DEST)"
-	@echo "  build-wheel      Build Python wheel only (assumes frontend built)"
+	@echo "  build-bigscreen  Build big screen only → $(BIGSCREEN_DEST)"
+	@echo "  build-wheel      Build Python wheel only (assumes frontends built)"
 	@echo ""
 	@echo "Publish targets:"
 	@echo "  publish          Build + upload to PyPI (PYPI_TOKEN or prompt)"
 	@echo "  publish-test     Build + upload to TestPyPI"
 	@echo ""
 	@echo "Development targets:"
-	@echo "  dev              Start frontend + backend dev servers"
+	@echo "  dev              Start dashboard + big screen + backend dev servers"
 	@echo "  dev-frontend     Start Vite dev server only"
 	@echo "  dev-backend      Start octop run only"
 	@echo ""
@@ -90,7 +93,7 @@ help:
 # ─── Build ───────────────────────────────────────────────────────────────────
 
 .PHONY: build
-build: build-frontend build-wheel
+build: build-frontend build-bigscreen build-wheel
 
 .PHONY: build-frontend
 build-frontend:
@@ -99,6 +102,16 @@ build-frontend:
 	@echo "[build-frontend] Building dashboard (output: $(DASHBOARD_DEST))..."
 	cd $(DASHBOARD_DIR) && NODE_ENV=production NODE_OPTIONS="--max-old-space-size=2048" npm run build
 	@echo "[build-frontend] Done."
+
+.PHONY: build-bigscreen
+build-bigscreen:
+	@if [ ! -d "$(BIGSCREEN_DIR)/node_modules" ]; then \
+		echo "[build-bigscreen] Installing npm dependencies..."; \
+		cd $(BIGSCREEN_DIR) && npm ci; \
+	fi
+	@echo "[build-bigscreen] Building big screen (output: $(BIGSCREEN_DEST))..."
+	cd $(BIGSCREEN_DIR) && NODE_ENV=production npm run build
+	@echo "[build-bigscreen] Done."
 
 .PHONY: build-wheel
 build-wheel:
@@ -157,15 +170,24 @@ publish-test:
 
 .PHONY: dev
 dev:
-	@echo "[dev] Starting frontend and backend dev servers (Ctrl-C to stop both)..."
+	@echo "[dev] Starting dashboard, big screen and backend dev servers (Ctrl-C to stop all)..."
 	@trap 'kill 0' SIGINT; \
 	(cd $(DASHBOARD_DIR) && npm run dev) & \
+	(cd $(BIGSCREEN_DIR) && { [ -d node_modules ] || npm ci; } && npm run dev) & \
 	($(RUN) octop run) & \
 	wait
 
 .PHONY: dev-frontend
 dev-frontend:
 	cd $(DASHBOARD_DIR) && npm run dev
+
+.PHONY: dev-bigscreen
+dev-bigscreen:
+	@if [ ! -d "$(BIGSCREEN_DIR)/node_modules" ]; then \
+		echo "[dev-bigscreen] Installing npm dependencies..."; \
+		cd $(BIGSCREEN_DIR) && npm ci; \
+	fi
+	cd $(BIGSCREEN_DIR) && npm run dev
 
 .PHONY: dev-backend
 dev-backend:
@@ -198,7 +220,7 @@ run-online:
 # ─── Quality (backend) ───────────────────────────────────────────────────────
 
 .PHONY: all
-all: format-all lint typecheck test
+all: format-all lint typecheck test typecheck-bigscreen lint-bigscreen build-bigscreen
 
 .PHONY: lint
 lint:
@@ -238,7 +260,7 @@ test-live:
 # pytest-testmon. The full suite still runs in CI (`make all`); this is local
 # feedback only, so a missed cross-module impact is caught there.
 .PHONY: precommit
-precommit: format-all lint typecheck test-affected
+precommit: format-all lint typecheck test-affected typecheck-bigscreen lint-bigscreen
 
 # NOTE: do NOT pass `-m` here — pytest-testmon deactivates its affected-test
 # selection whenever a marker expression is present, which would fall back to
@@ -275,13 +297,40 @@ typecheck-frontend:
 	@echo "[typecheck-frontend] tsc..."
 	cd $(DASHBOARD_DIR) && npx tsc -b
 
+.PHONY: typecheck-bigscreen
+typecheck-bigscreen:
+	@if [ ! -d "$(BIGSCREEN_DIR)/node_modules" ]; then \
+		echo "[typecheck-bigscreen] Installing npm dependencies..."; \
+		cd $(BIGSCREEN_DIR) && npm ci; \
+	fi
+	@echo "[typecheck-bigscreen] tsc..."
+	cd $(BIGSCREEN_DIR) && npm run typecheck
+
+.PHONY: lint-bigscreen
+lint-bigscreen:
+	@if [ ! -d "$(BIGSCREEN_DIR)/node_modules" ]; then \
+		echo "[lint-bigscreen] Installing npm dependencies..."; \
+		cd $(BIGSCREEN_DIR) && npm ci; \
+	fi
+	@echo "[lint-bigscreen] Prettier check..."
+	cd $(BIGSCREEN_DIR) && npm run format:check
+
+.PHONY: format-bigscreen
+format-bigscreen:
+	@if [ ! -d "$(BIGSCREEN_DIR)/node_modules" ]; then \
+		echo "[format-bigscreen] Installing npm dependencies..."; \
+		cd $(BIGSCREEN_DIR) && npm ci; \
+	fi
+	@echo "[format-bigscreen] Prettier..."
+	cd $(BIGSCREEN_DIR) && npm run format
+
 # ─── Quality (full stack) ────────────────────────────────────────────────────
 
 .PHONY: lint-all
-lint-all: lint lint-frontend
+lint-all: lint lint-frontend lint-bigscreen
 
 .PHONY: format-all
-format-all: format format-frontend
+format-all: format format-frontend format-bigscreen
 
 .PHONY: typecheck-all
 typecheck-all: typecheck typecheck-frontend

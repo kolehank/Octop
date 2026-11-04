@@ -221,6 +221,8 @@ git grep -n --fixed-strings "X.Y.Z"
 | `CHANGELOG.md` 已发布章节（`## [X.Y.Z]` 及正文） | **保留**，不要改历史 |
 | 测试夹具里拿旧号做比较（如 `1.0.2b4` vs `1.0.2b5`、解析示例） | **保留** |
 | workflow / 注释里的示例旧号（如 `0.9.28`） | **保留**（不是当前钉死） |
+| `fnos/README.md` 版本号映射里的示例 | **保留** |
+| `fnos/docker/manifest`、`fnos/native/manifest` 的 `version`，以及 `fnos/docker/app/docker/docker-compose.yaml` 的 `image` | **保留**占位 `0.0.0`。`scripts/build-fpk.sh` 从 `pyproject.toml` 写入商店版本和镜像标签 |
 
 提交前再扫必改清单，必须已经没有旧号：
 
@@ -353,6 +355,6 @@ git checkout {original_branch}
 - 发版后删除 `release/*`；`main → develop` 由 `sync-main-to-develop.yml` 自动同步（失败时再手动补）
 - 中止前展示完整错误输出
 - 插入新版本条目后保持 `[Unreleased]` 为空
-- 把旧版本号 `X.Y.Z` 换成 `A.B.C`：`pyproject.toml`、`__version__`、多语言 README 徽标、`uv.lock` 的 octop 包版本；提交前 `git grep` 必改清单确认无旧号
+- 把旧版本号 `X.Y.Z` 换成 `A.B.C`：`pyproject.toml`、`__version__`、多语言 README 徽标、`uv.lock` 的 octop 包版本；提交前 `git grep` 必改清单确认无旧号。`fnos/docker/manifest`、`fnos/native/manifest` 的 `version` 和 `fnos/docker/app/docker/docker-compose.yaml` 的 `image` 保持占位 `0.0.0`，不要改
 - 勿改 CHANGELOG 历史章节、测试夹具里的旧版本比较、workflow 示例号
 - 推送 tag 后提示用户关注 GitHub Actions 的发布结果

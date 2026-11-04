@@ -17,7 +17,7 @@ def test_load_config_global_only(tmp_path: Path, monkeypatch: object) -> None:
     home = tmp_path / "home"
     monkeypatch.setattr(Path, "home", staticmethod(lambda: home))  # type: ignore[arg-type]
 
-    global_dir = home / ".octop-harness"
+    global_dir = home / ".agentbuddy" / "harness"
     global_dir.mkdir(parents=True)
     global_config = {
         "providers": {
@@ -41,11 +41,11 @@ def test_load_config_project_overrides_global(tmp_path: Path, monkeypatch: objec
     home = tmp_path / "home"
     monkeypatch.setattr(Path, "home", staticmethod(lambda: home))  # type: ignore[arg-type]
 
-    global_dir = home / ".octop-harness"
+    global_dir = home / ".agentbuddy" / "harness"
     global_dir.mkdir(parents=True)
     (global_dir / "config.json").write_text(json.dumps({"cli": {"theme": "dark"}}))
 
-    project_dir = tmp_path / "project" / ".octop-harness"
+    project_dir = tmp_path / "project" / "harness"
     project_dir.mkdir(parents=True)
     (project_dir / "config.json").write_text(json.dumps({"cli": {"theme": "light"}}))
 
@@ -57,7 +57,7 @@ def test_load_config_credentials_injected(tmp_path: Path, monkeypatch: object) -
     home = tmp_path / "home"
     monkeypatch.setattr(Path, "home", staticmethod(lambda: home))  # type: ignore[arg-type]
 
-    global_dir = home / ".octop-harness"
+    global_dir = home / ".agentbuddy" / "harness"
     global_dir.mkdir(parents=True)
     (global_dir / "config.json").write_text(
         json.dumps(
@@ -85,7 +85,7 @@ def test_load_config_env_var_does_not_override_credentials(tmp_path: Path, monke
     monkeypatch.setattr(Path, "home", staticmethod(lambda: home))  # type: ignore[arg-type]
     monkeypatch.setenv("OPENAI_API_KEY", "sk-from-env-should-be-ignored")  # type: ignore[arg-type]
 
-    global_dir = home / ".octop-harness"
+    global_dir = home / ".agentbuddy" / "harness"
     global_dir.mkdir(parents=True)
     (global_dir / "config.json").write_text(
         json.dumps(

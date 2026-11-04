@@ -139,9 +139,6 @@ describe("sidebarNavLayout", () => {
     expect(shown).not.toContain("channels");
     expect(shown).toContain("chat");
     expect(shown).not.toContain("personalization");
-    // Upstream 30f9ba92 gated the bridge nav item behind the "bridge"
-    // permission without updating this spec; a permission-less user no
-    // longer keeps the settings group visible.
     expect(
       visibleEditorGroups(editor, sections).map((group) => group.id),
     ).toEqual(["c_aabbccdd"]);

@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+# Push gate: keep business (局办) content off the public GitHub remote.
+#
+# Rules (origin = public GitHub only):
+#   * Reject pushes of develop / feature/bigscreen-* / feature/* business branches.
+#   * Reject any commit in the pushed range that touches sensitive paths or
+#     keywords (fgw data, zhoushan, 舟山/发改/局办, local /Users/... paths).
+#   * Everything else (oss, main, release/*) is allowed.
+#
+# dstech (internal) pushes are unrestricted.
+# Bypass (emergency only): SKIP_PUSHCOVER=1 git push ...
+set -euo pipefail
+
+if [[ "${SKIP_PUSHCOVER:-}" == "1" ]]; then
+  echo "[pre-push] SKIP_PUSHCOVER=1 — skipping checks"
+  exit 0
+fi
+
+# Branch name of the push target, e.g. origin/foo → "origin", refs/heads/develop → develop
+REMOTE="$1"
+URL="$2"
+
+is_private_remote() {
+  case "$URL" in
+    *dstyun.com*) return 0 ;;   # internal git server
+    *) return 1 ;;
+  esac
+}
+
+if is_private_remote; then
+  exit 0
+fi
+
+SENSITIVE_PATHS=(
+  "bigscreen/public/data/fgw"
+  "src/octop/bigscreen/data/fgw"
+  "bigscreen/src/screens/fgw"
+  "docs/adr/003-bigscreen-integration.md"
+  "docs/adr/004-bigscreen-session-model.md"
+)
+SENSITIVE_KEYWORDS=("fgw" "zhoushan" "舟山" "发改" "智脑" "局办" "/Users/huangke")
+
+EXIT_CODE=0
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  # Branches that must never reach the public remote (business lines).
+  for blocked in "refs/heads/develop" "refs/heads/feature/" "refs/heads/bigscreen"; do
+    if [[ "$remote_ref" == "${blocked}"* ]]; then
+      echo "[pre-push] BLOCKED: pushing ${remote_ref} to public remote ${URL}"
+      echo "          ${remote_ref} is a business branch (局办/大屏). Only oss / main / release/* may go public."
+      EXIT_CODE=1
+    fi
+  done
+
+  [[ "$local_sha" == "0000000000000000000000000000000000000000" ]] && continue
+
+  # For new branches (remote side all-zero) scan up to 50 commits of new history.
+  RANGE="${local_sha}"
+  if [[ "$remote_sha" == "0000000000000000000000000000000000000000" ]]; then
+    RANGE="${local_sha}~50..${local_sha}" 2>/dev/null || RANGE="${local_sha}"
+  else
+    RANGE="${remote_sha}..${local_sha}"
+  fi
+
+  # 1) Sensitive paths in the pushed commits' trees.
+  changed_paths="$(git diff --name-only "${RANGE}" 2>/dev/null || git diff-tree --no-commit-id --name-only -r "${local_sha}" 2>/dev/null)"
+  if [[ -n "$changed_paths" ]]; then
+    for pat in "${SENSITIVE_PATHS[@]}" "${SENSITIVE_KEYWORDS[@]}"; do
+      if echo "$changed_paths" | grep -qE "$pat"; then
+        echo "[pre-push] BLOCKED: range ${RANGE} touches '${pat}' (public remote ${URL})"
+        EXIT_CODE=1
+      fi
+    done
+  fi
+
+  # 2) Sensitive keywords in the pushed commits' shas / messages.
+  commits="$(git log --format='%H %s' "${RANGE}" 2>/dev/null)"
+  if [[ -n "$commits" ]]; then
+    for kw in "${SENSITIVE_KEYWORDS[@]}"; do
+      if echo "$commits" | grep -qE "$kw"; then
+        echo "[pre-push] BLOCKED: range ${RANGE} contains commit message with '${kw}' (public remote ${URL})"
+        EXIT_CODE=1
+      fi
+    done
+  fi
+done
+
+if [[ "$EXIT_CODE" != 0 ]]; then
+  echo "[pre-push] Push aborted. Use a private remote (dstyun.com) for business content,"
+  echo "          or SKIP_PUSHCOVER=1 to bypass (only if you know what you are doing)."
+fi
+exit "$EXIT_CODE"

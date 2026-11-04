@@ -173,6 +173,17 @@ class PolishBody(BaseModel):
 
 class RebindSessionBody(BaseModel):
     thread_id: str
+    screen_key: str | None = Field(
+        default=None,
+        description="Big-screen screen key; rebinds that screen session instead of dashboard (ADR 004 D6).",
+    )
+
+
+class NewThreadBody(BaseModel):
+    screen_key: str | None = Field(
+        default=None,
+        description="Big-screen screen key; creates and binds a screen-session thread (ADR 004 D5).",
+    )
 
 
 class ForkThreadBody(BaseModel):

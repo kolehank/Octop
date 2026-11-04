@@ -4,6 +4,9 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
 
+import { monacoSameOrigin } from "./vite/monaco.ts";
+import { suppressViteDisconnectReload } from "./vite/suppress-disconnect-reload.ts";
+
 // serialize-javascript@7 (pulled in by vite-plugin-pwa → @rollup/plugin-terser)
 // expects Web Crypto globals during `vite build`. Node <19 does not define them.
 if (typeof globalThis.crypto === "undefined") {
@@ -11,45 +14,6 @@ if (typeof globalThis.crypto === "undefined") {
     value: webcrypto,
     configurable: true,
   });
-}
-
-/**
- * Vite's `@vite/client` always opens a WebSocket. When that socket drops it
- * does `waitForSuccessfulPing` → `location.reload()`. On Safari + listen
- * port 80 (empty `location.port`) / LAN / `hmr: false`, the socket fails
- * repeatedly and the whole SPA looks like it is "periodically refreshing".
- *
- * `server.hmr: false` does NOT disable this client (Vite still uses the WS
- * for overlays / full-reload). Patch the disconnect path instead.
- */
-function suppressViteDisconnectReload(): Plugin {
-  return {
-    name: "octop-suppress-vite-disconnect-reload",
-    apply: "serve",
-    enforce: "pre",
-    transform(code, id) {
-      const isViteClient =
-        id.includes("vite/dist/client/client.mjs") ||
-        id.includes("vite/dist/client/client.js") ||
-        /(?:^|\/)@vite\/client(?:\?|$)/.test(id);
-      if (!isViteClient) return;
-      if (!code.includes("server connection lost")) return;
-
-      let next = code.replace(
-        /await waitForSuccessfulPing\(([^)]*)\);\s*location\.reload\(\);/g,
-        "await waitForSuccessfulPing($1); console.warn('[vite] WS restored; reload suppressed');",
-      );
-      // Fallback if formatting differs across Vite versions.
-      if (next === code && code.includes("location.reload()")) {
-        next = code.replace(
-          /console\.log\(`\[vite\] server connection lost\. Polling for restart\.\.\.`\);[\s\S]*?location\.reload\(\);/,
-          'console.warn("[vite] server connection lost (reload suppressed)"); return;',
-        );
-      }
-      if (next === code) return;
-      return { code: next, map: null };
-    },
-  };
 }
 
 function normalizeViteBase(raw: string | undefined): string {
@@ -70,6 +34,11 @@ export default defineConfig(({ mode }) => {
   );
   // Allow overriding the backend port via VITE_API_PORT env variable (default: 8088)
   const apiPort = process.env.VITE_API_PORT ?? env.VITE_API_PORT ?? "8088";
+  // Big-screen dev server (see bigscreen/vite.config.ts). Proxying /screen
+  // through this origin keeps dashboard and big screen same-origin in dev, so
+  // they share localStorage["auth_token"] (same behavior as production, where
+  // FastAPI serves both under one origin).
+  const bigscreenPort = process.env.VITE_BIGSCREEN_PORT ?? "5174";
 
   const isProd = mode === "production";
   const analyze = env.ANALYZE === "true";
@@ -182,6 +151,7 @@ export default defineConfig(({ mode }) => {
       MOBILE: false,
     },
     plugins: [
+      monacoSameOrigin(__dirname),
       suppressViteDisconnectReload(),
       react(),
       VitePWA({
@@ -326,6 +296,14 @@ export default defineConfig(({ mode }) => {
         usePolling: false,
       },
       proxy: {
+        // Big-screen SPA lives in a separate Vite project (bigscreen/, :5174);
+        // serve it under this dev origin so /screen/* works next to the dashboard.
+        "/screen": {
+          target: `http://127.0.0.1:${bigscreenPort}`,
+          changeOrigin: true,
+          // Forward the big-screen dev server's HMR websocket.
+          ws: true,
+        },
         "/api": {
           target: `http://127.0.0.1:${apiPort}`,
           changeOrigin: true,

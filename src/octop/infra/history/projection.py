@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 from langchain_core.messages import AIMessage, convert_to_messages, message_to_dict
@@ -21,6 +21,44 @@ from octop.infra.gateway.process.message_keys import (
 
 _USER_ROLES = frozenset({"human", "user"})
 _ASSISTANT_ROLES = frozenset({"ai", "assistant"})
+_TURN_DURATION_KEY = "turn_duration_ms"
+
+
+def _stamp_duration(items: list[ThreadMessageInput], duration_ms: int) -> list[ThreadMessageInput]:
+    """Put the turn wall time on the last assistant reply in this projection."""
+    fallback: int | None = None
+    for index in range(len(items) - 1, -1, -1):
+        item = items[index]
+        if item.role not in _ASSISTANT_ROLES:
+            continue
+        try:
+            wire = json.loads(item.message_json)
+        except json.JSONDecodeError:
+            return items
+        data = wire.get("data") if isinstance(wire, dict) else None
+        if not isinstance(data, dict):
+            return items
+        if data.get("tool_calls"):
+            if fallback is None:
+                fallback = index
+            continue
+        fallback = index
+        break
+    if fallback is None:
+        return items
+    item = items[fallback]
+    wire = json.loads(item.message_json)
+    data = wire["data"]
+    extra = data.get("additional_kwargs")
+    if not isinstance(extra, dict):
+        extra = {}
+        data["additional_kwargs"] = extra
+    extra[_TURN_DURATION_KEY] = duration_ms
+    items[fallback] = replace(
+        item,
+        message_json=json.dumps(wire, ensure_ascii=False, default=str),
+    )
+    return items
 
 
 def _role(message: Any) -> str:
@@ -151,6 +189,11 @@ def _wire_text(item: ThreadMessageInput) -> str:
     return ""
 
 
+def squash_ws(text: str) -> str:
+    """Whitespace-insensitive form for stream-vs-state coverage checks."""
+    return "".join(text.split())
+
+
 @dataclass
 class TurnHistoryTracker:
     """Keep only the current user turn from replay-prone state chunks."""
@@ -161,6 +204,12 @@ class TurnHistoryTracker:
     _reasoning_text: str = field(default="", init=False)
     _error_message: str = field(default="", init=False)
     _error_code: str | None = field(default=None, init=False)
+    _turn_duration_ms: int | None = field(default=None, init=False)
+
+    def note_turn_duration(self, duration_ms: int) -> None:
+        if duration_ms < 0:
+            return
+        self._turn_duration_ms = int(duration_ms)
 
     @classmethod
     def from_request(cls, request: dict[str, Any]) -> TurnHistoryTracker:
@@ -215,10 +264,17 @@ class TurnHistoryTracker:
     def _inputs_cover_stream(self, items: list[ThreadMessageInput]) -> bool:
         if not self._stream_text:
             return False
-        return any(
-            item.role in _ASSISTANT_ROLES and self._stream_text in _wire_text(item)
-            for item in items
+        # A turn can stream several fragments (one per model call); each state
+        # message carries one of them. Coverage must use their ordered
+        # concatenation — checking messages one by one made every multi-step
+        # turn append a synthetic aggregate of the whole turn.
+        stream = squash_ws(self._stream_text)
+        if not stream:
+            return False
+        joined = squash_ws(
+            "".join(_wire_text(item) for item in items if item.role in _ASSISTANT_ROLES)
         )
+        return stream in joined
 
     @property
     def inputs(self) -> list[ThreadMessageInput]:
@@ -237,4 +293,6 @@ class TurnHistoryTracker:
         error = self._error_input()
         if error is not None:
             items.append(error)
+        if isinstance(self._turn_duration_ms, int):
+            items = _stamp_duration(items, self._turn_duration_ms)
         return items

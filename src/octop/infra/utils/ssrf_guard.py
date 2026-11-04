@@ -136,8 +136,15 @@ async def _resolve_validated_ip(url: str) -> str:
     if not infos:
         raise UnsafeOutboundUrl(f"cannot resolve hostname {host!r}")
     for info in infos:
-        _check_resolved_ip(info[4][0])
-    return infos[0][4][0]
+        _check_resolved_ip(_sockaddr_host(info[4]))
+    return _sockaddr_host(infos[0][4])
+
+
+def _sockaddr_host(sockaddr: tuple[object, ...]) -> str:
+    host = sockaddr[0]
+    if isinstance(host, bytes):
+        return host.decode("ascii")
+    return str(host)
 
 
 class _PinnedNetworkBackend(AutoBackend):

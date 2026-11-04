@@ -33,6 +33,14 @@ Notes
   Do not set PYTHONPATH=packages. Always start via start.sh / start.bat /
   launch.py so .pth files (pywin32) are processed.
 
+  Linux: "Permission denied" on ./start.sh usually means the extract step
+  (or a Windows detour of the zip) dropped the executable bit — restore it:
+
+    chmod +x start.sh launch.py && chmod -R u+x runtime/bin/
+
+  If the bits are already set (rwxr-xr-x) but it still fails, the target
+  filesystem is mounted noexec — extract somewhere else (e.g. your home dir).
+
   macOS: if Gatekeeper quarantines the unzipped folder:
 
     xattr -dr com.apple.quarantine .

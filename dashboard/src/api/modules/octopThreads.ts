@@ -163,7 +163,9 @@ export const CHAT_HISTORY_PAGE_SIZE = 25;
 export const octopThreadsApi = {
   list: (agentId: string, limit = 50) =>
     request<OctopThread[]>(
-      `/agents/${encodeURIComponent(agentId)}/threads?limit=${limit}`,
+      `/agents/${encodeURIComponent(
+        agentId,
+      )}/threads?limit=${limit}&scope=dashboard`,
     ),
 
   create: (agentId: string) =>

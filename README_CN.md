@@ -8,8 +8,9 @@
 
 <p align="center">
   <a href="https://www.python.org/downloads/"><img alt="Python 3.12+" src="https://img.shields.io/badge/python-3.12%2B-blue?logo=python&logoColor=white" /></a>
-  <a href="about:blank"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green" /></a>
-  <a href="about:blank"><img alt="Version" src="https://img.shields.io/badge/version-1.0.2b9-orange" /></a>
+  <a href="https://github.com/TencentCloud/Octop/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green" /></a>
+  <a href="https://github.com/TencentCloud/Octop/releases"><img alt="Version" src="https://img.shields.io/badge/version-1.0.3b2-orange" /></a>
+  <a href="https://pypi.org/project/octop/"><img src="https://img.shields.io/pypi/v/octop" alt="PyPI" /></a>
   <a href="https://github.com/astral-sh/ruff"><img alt="Code Style: Ruff" src="https://img.shields.io/badge/code%20style-ruff-000000?logo=ruff&logoColor=white" /></a>
   <a href="about:blank"><img alt="Discord" src="https://img.shields.io/badge/Discord-%E5%8A%A0%E5%85%A5-5865F2?logo=discord&logoColor=white" /></a>
 </p>
@@ -467,7 +468,7 @@ OpenAI 兼容 API、DashScope（千问）、Ollama 等预设 — 在控制台或
 
 控制面也可改用 PostgreSQL（`config.json` → `database`，或 `AGENTBUDDY_DATABASE_*` / 首次设置向导）。控制面为 PostgreSQL 时，Agent 记忆**默认复用同一 DSN**（per-agent schema）；若需继续用文件记忆，在 agent 配置里设 `"memory": { "backend": { "type": "sqlite" } }`。详见 [docs/configuration.md](docs/configuration.md) 与 [docs/adr/002-database-backends.md](docs/adr/002-database-backends.md)。
 
-环境变量与 `config.json` 详见 [docs/configuration.md](docs/configuration.md)。
+环境变量与 `config.json` 详见 [docs/configuration.md](docs/configuration.md)。访问不了公网时，可按 [docs/private-market.md](docs/private-market.md) 在内网自建插件市场和专家市场，按 [docs/skill-market.md](docs/skill-market.md) 自建技能市场（`SKILL_MARKET_ORIGIN`）。
 
 ## 🏗️ 架构
 

@@ -3,7 +3,7 @@
 #
 # Prerequisites:
 #   bash desktop/portable/bootstrap-runtime.sh <plat>
-#   make build-frontend   # recommended (dashboard inside wheel)
+#   make build-frontend build-bigscreen   # recommended (both SPAs inside wheel)
 #
 # Usage:
 #   bash desktop/portable/package.sh                # host platform (online install)
@@ -39,6 +39,10 @@ build_workspace_wheels() {
   if [[ ! -f "${REPO_ROOT}/src/octop/dashboard/index.html" ]]; then
     echo "[package] WARNING: dashboard not built (src/octop/dashboard/index.html missing)." >&2
     echo "  Run: make build-frontend" >&2
+  fi
+  if [[ ! -f "${REPO_ROOT}/src/octop/bigscreen/index.html" ]]; then
+    echo "[package] WARNING: bigscreen not built (src/octop/bigscreen/index.html missing)." >&2
+    echo "  Run: make build-bigscreen" >&2
   fi
   echo "[package] building workspace wheels → ${wheel_dir}" >&2
   uv build --wheel --all-packages --out-dir "$wheel_dir" >&2

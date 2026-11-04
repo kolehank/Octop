@@ -106,7 +106,8 @@ async def test_main_agent_seeds_general_assistant_workspace(patched_app_client: 
     ws = home / "agents" / "main"
     assert (ws / "SOUL.md").is_file()
     # New agents use system_files_path=.agentbuddy — BackendWorkspace remaps skills/.
-    assert (ws / ".agentbuddy" / "skills" / "agentbuddy-assistant" / "SKILL.md").is_file()
+    assert (ws / ".agentbuddy" / "skills" / "stock-info" / "SKILL.md").is_file()
+    assert (ws / ".agentbuddy" / "skills" / "octop-assistant" / "SKILL.md").is_file()
 
 
 async def test_main_agent_uses_fs_root_backend(patched_app_client: Any) -> None:

@@ -43,7 +43,9 @@ jobs:
         with:
           node-version: "20"
           cache: npm
-          cache-dependency-path: dashboard/package-lock.json
+          cache-dependency-path: |
+            dashboard/package-lock.json
+            bigscreen/package-lock.json
 
       - name: Install dependencies
         run: make install

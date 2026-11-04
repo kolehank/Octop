@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Sequence
 from dataclasses import dataclass
 
@@ -52,6 +53,33 @@ class ThreadProjectionSummary:
     @property
     def remaining(self) -> int:
         return self.pending + self.queued + self.running + self.failed
+
+
+_USER_ROLES = ("user", "human")
+
+
+def _user_text_from_message_json(raw: str) -> str | None:
+    """Extract plain text from a projected LangChain message wire dict."""
+    try:
+        wire = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    data = wire.get("data") if isinstance(wire, dict) else None
+    if not isinstance(data, dict):
+        return None
+    content = data.get("content")
+    if isinstance(content, str):
+        return content.strip() or None
+    if isinstance(content, list):
+        parts = []
+        for block in content:
+            if not isinstance(block, dict) or block.get("type") != "text":
+                continue
+            text = str(block.get("text") or "").strip()
+            if text:
+                parts.append(text)
+        return "\n".join(parts) or None
+    return None
 
 
 class ThreadMessageRepo:
@@ -227,6 +255,22 @@ class ThreadMessageRepo:
         page = [ThreadMessageRow.from_row(row) for row in rows[:limit]]
         page.reverse()
         return page, has_more
+
+    def first_user_text(self, thread_id: str) -> str | None:
+        """First user-message text (projected history), or None when absent.
+
+        One small query per thread; callers only run it for a bounded page.
+        """
+        with self._db.connect() as conn:
+            row = conn.execute(
+                "SELECT message_json FROM thread_messages "
+                "WHERE thread_id = ? AND role IN ('user', 'human') "
+                "ORDER BY seq LIMIT 1",
+                (thread_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return _user_text_from_message_json(str(row["message_json"]))
 
     def append_if_ready(
         self,

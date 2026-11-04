@@ -10,7 +10,10 @@ filename table. Do not scrape the assets list.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
+from collections.abc import Iterable
+from pathlib import Path
 
 GITHUB_REPO = "kolehank/Octop"
 DOWNLOAD_BASE = f"https://github.com/{GITHUB_REPO}/releases/download"
@@ -39,6 +42,17 @@ def desktop_name(os_name: str, arch: str, version: str, ext: str) -> str:
 
 def portable_name(os_name: str, arch: str, version: str) -> str:
     return f"agentbuddy-portable-{os_name}-{arch}-{version}.zip"
+
+
+def docker_image_section(version: str, *, lite: bool) -> str:
+    lines = [
+        "### Docker image",
+        "",
+        f"- Full: `ghcr.io/kolehank/octop:{version}` (`:latest`)",
+    ]
+    if lite:
+        lines.append(f"- Lite: `ghcr.io/kolehank/octop:{version}-lite` (`:lite`)")
+    return "\n".join(lines)
 
 
 def render_download_section(raw_version: str) -> str:
@@ -84,8 +98,55 @@ def render_download_section(raw_version: str) -> str:
             "#### Portable",
             f"- {linux64_zip} | {linux_arm_zip}",
             "",
+            docker_image_section(version, lite=True),
+            "",
         ]
     )
+
+
+def _replace_section(body: str, heading: str, replacement: str) -> str:
+    """Replace one ``###`` block. An empty replacement removes that block."""
+    marker = f"### {heading}\n"
+    start = body.find(marker)
+    if start < 0:
+        if not replacement.strip():
+            return body
+        return body.rstrip() + "\n\n" + replacement.strip() + "\n"
+    rest_at = start + len(marker)
+    consumed = 0
+    for line in body[rest_at:].splitlines(keepends=True):
+        if line.startswith("## ") or line.startswith("### "):
+            break
+        consumed += len(line)
+    end = rest_at + consumed
+    prefix = body[:start].rstrip()
+    suffix = body[end:].lstrip("\n")
+    parts = [part for part in (prefix, replacement.strip(), suffix) if part]
+    return "\n\n".join(parts) + "\n"
+
+
+def patch_release_body(body: str, raw_version: str, present: Iterable[str]) -> str:
+    """Keep desktop links, and refresh the Docker section from the uploaded assets."""
+    _tag, version = split_tag(raw_version)
+    return _replace_section(
+        body, "Docker image", docker_image_section(version, lite=True)
+    )
+
+
+def _asset_names(payload: dict[str, object]) -> list[str]:
+    assets = payload.get("assets")
+    if not isinstance(assets, list):
+        raise ValueError("release JSON has no assets list")
+    names: list[str] = []
+    for asset in assets:
+        if isinstance(asset, str):
+            names.append(asset)
+            continue
+        if isinstance(asset, dict) and isinstance(asset.get("name"), str):
+            names.append(asset["name"])
+            continue
+        raise ValueError("release asset is missing a name")
+    return names
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -93,8 +154,20 @@ def main(argv: list[str] | None = None) -> int:
         description="Print agentbuddy GitHub Release download markdown."
     )
     parser.add_argument("version", help="Package version, with or without a leading v")
+    parser.add_argument(
+        "--sync-notes",
+        type=Path,
+        help="Rewrite Docker/fnOS sections from a `gh release view --json body,assets` file.",
+    )
     args = parser.parse_args(argv)
-    sys.stdout.write(render_download_section(args.version))
+    if args.sync_notes is None:
+        sys.stdout.write(render_download_section(args.version))
+        return 0
+    payload = json.loads(args.sync_notes.read_text(encoding="utf-8"))
+    body = payload.get("body")
+    if not isinstance(body, str):
+        raise ValueError("release JSON has no body")
+    sys.stdout.write(patch_release_body(body, args.version, _asset_names(payload)))
     return 0
 
 

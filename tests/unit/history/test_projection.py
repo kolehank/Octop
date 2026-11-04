@@ -20,6 +20,16 @@ from octop.infra.history.projection import (
 )
 
 
+def test_note_turn_duration_stamps_the_assistant_reply() -> None:
+    tracker = TurnHistoryTracker.from_request({"messages": []})
+    tracker.observe({"type": "token", "content": "你好"})
+    tracker.note_turn_duration(3200)
+    items = tracker.inputs
+    assert items
+    wire = json.loads(items[-1].message_json)
+    assert wire["data"]["additional_kwargs"]["turn_duration_ms"] == 3200
+
+
 def test_message_input_preserves_existing_checkpoint_ts() -> None:
     item = message_input(
         HumanMessage(
@@ -140,6 +150,64 @@ def test_turn_tracker_does_not_duplicate_state_assistant() -> None:
     texts = [_wire_text(item) for item in tracker.inputs]
     assert texts.count("hello") == 0
     assert any(text == "hello world" for text in texts)
+
+
+def test_turn_tracker_does_not_duplicate_multistep_stream() -> None:
+    """Multiple streamed fragments are covered by the concatenated state."""
+    tracker = TurnHistoryTracker.from_request(
+        {"messages": [{"role": "user", "content": "查数据", "id": "u1"}]}
+    )
+    tracker.observe({"type": "token", "content": "正在搜索。\n\n"})
+    tracker.observe(
+        {
+            "type": "state_snapshot",
+            "data": {
+                "messages": [
+                    {"role": "user", "content": "查数据", "id": "u1"},
+                    {"role": "assistant", "content": "正在搜索。\n\n", "id": "a1"},
+                ]
+            },
+        }
+    )
+    tracker.observe({"type": "token", "content": "结论是 42。"})
+    tracker.observe(
+        {
+            "type": "state_update",
+            "data": {
+                "messages": [
+                    {"role": "user", "content": "查数据", "id": "u1"},
+                    {"role": "assistant", "content": "正在搜索。\n\n", "id": "a1"},
+                    {"role": "assistant", "content": "结论是 42。", "id": "a2"},
+                ]
+            },
+        }
+    )
+
+    # No synthetic id-less aggregate of the whole turn.
+    assert [item.message_id for item in tracker.inputs] == ["u1", "a1", "a2"]
+
+
+def test_turn_tracker_keeps_stream_tail_missing_from_state() -> None:
+    """Stopped turns still persist tokens that never reached a checkpoint."""
+    tracker = TurnHistoryTracker.from_request(
+        {"messages": [{"role": "user", "content": "hi", "id": "u1"}]}
+    )
+    tracker.observe({"type": "token", "content": "covered "})
+    tracker.observe(
+        {
+            "type": "state_snapshot",
+            "data": {
+                "messages": [
+                    {"role": "user", "content": "hi", "id": "u1"},
+                    {"role": "assistant", "content": "covered ", "id": "a1"},
+                ]
+            },
+        }
+    )
+    tracker.observe({"type": "token", "content": "only in stream"})
+
+    texts = [_wire_text(item) for item in tracker.inputs]
+    assert any("only in stream" in text for text in texts)
 
 
 @pytest.mark.asyncio
