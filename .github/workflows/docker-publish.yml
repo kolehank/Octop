@@ -124,7 +124,6 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ${{ env.DOCKERHUB_USER != '' && format('{0}/octop', env.DOCKERHUB_USER) || '' }}
             ${{ needs.prepare.outputs.ghcr }}
           # 单架构中间 tag。full → :{version}-{arch}；lite → :{version}-lite-{arch}。
           tags: |
@@ -303,7 +302,7 @@ jobs:
           publish_variant() {
             local mid="$1" tag_a="$2" tag_b="$3" required="$4"
             local reg arch ref
-            for reg in "$GHCR" "$HUB"; do
+            for reg in "$GHCR"; do
               [ -n "$reg" ] || continue
               local -a sources=()
               for arch in amd64 arm64; do
