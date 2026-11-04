@@ -6,6 +6,12 @@
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-04
+
+### 修复
+- Linux 便携包（desktop zip）在 glibc 2.17 机器上不可用：passkey 登录引入的 `webauthn>=3.0.1` 硬性要求 `cbor2>=6.1.2`，而 cbor2 6.x 只发 manylinux_2_28 轮，`cbor2/_cbor2*.so` 需要 GLIBC 2.18+，被便携包 glibc 闸门拦下。便携包替换表补上与离线包同源的 `cbor2==5.9.0` + `webauthn==2.7.0`（API 相同，5.9.0 有 2014/2_17 双架构轮）
+- Docker 镜像发布失败：boot-test 的临时 venv 只装了 `pytest`/`pytest-asyncio`，而 `tests/integration/conftest.py` 在模块级 import 了整个应用（`httpx` + `octop.*`），抛 `ModuleNotFoundError: No module named 'httpx'`。boot-test 改用 `--noconftest`（该用例只需 docker 与自带 fixture），amd64/arm64 的完整版与精简版镜像恢复发布
+
 ## [1.1.0] - 2026-11-04
 
 ### 新增
