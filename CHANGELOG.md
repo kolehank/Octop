@@ -6,6 +6,12 @@
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-11-04
+
+### 修复
+- Docker 镜像一个都发布不出来（1.1.1 暴露）：boot-test 的临时 venv 在同一步骤里要建两次，新版 `uv venv` 对已存在目录直接报错退出 → 改用 `uv venv --clear`；那个第二个 boot-test 还一直指着不存在的 `octop:ci` 镜像（实际静默跳过），现改为对应矩阵镜像
+- 精简版镜像构建失败：`apt-get purge build-essential` 在 lite 分支里既没装过该包、也没有刷新包索引（`apt-get update` 只在 full 分支），`apt` 报 `E: Unable to locate package build-essential` 直接中断；改为先 `dpkg -s` 判断再清理（两处 purge 都改）
+
 ## [1.1.1] - 2026-11-04
 
 ### 修复
