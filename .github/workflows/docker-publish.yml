@@ -124,7 +124,6 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ${{ env.DOCKERHUB_USER != '' && format('{0}/octop', env.DOCKERHUB_USER) || '' }}
             ${{ needs.prepare.outputs.ghcr }}
           # 单架构中间 tag。full → :{version}-{arch}；lite → :{version}-lite-{arch}。
           tags: |
@@ -273,6 +272,13 @@ jobs:
           file: ./docker/Dockerfile.sandbox
           push: true
           platforms: ${{ matrix.platform }}
+          # GitHub runner 在公网：显式回官方源，避免默认国内源（清华/阿里/npmmirror）跨网拖慢构建。
+          # 本地/内网构建直接 docker build 时不传这些参数，仍走 Dockerfile 的国内源默认值。
+          build-args: |
+            APT_MIRROR=deb.debian.org
+            PIP_INDEX_URL=https://pypi.org/simple
+            PIP_TRUSTED_HOST=
+            NPM_REGISTRY=https://registry.npmjs.org
           tags: |
             ${{ steps.image.outputs.ghcr }}:${{ needs.prepare.outputs.version }}
             ${{ steps.image.outputs.ghcr }}:latest
@@ -303,7 +309,7 @@ jobs:
           publish_variant() {
             local mid="$1" tag_a="$2" tag_b="$3" required="$4"
             local reg arch ref
-            for reg in "$GHCR" "$HUB"; do
+            for reg in "$GHCR"; do
               [ -n "$reg" ] || continue
               local -a sources=()
               for arch in amd64 arm64; do
