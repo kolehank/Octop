@@ -712,14 +712,8 @@
         "tavily": {
           "desc": "AI 驱动的网络搜索，提供智能摘要答案"
         },
-        "brave": {
-          "desc": "注重隐私的独立搜索引擎"
-        },
         "deepseek": {
           "desc": "DeepSeek AI 原生搜索，返回排序结果、摘要和来源链接"
-        },
-        "google": {
-          "desc": "基于 Google 自定义搜索引擎的网络搜索"
         },
         "kimi": {
           "desc": "Moonshot（Kimi）AI 内置联网搜索能力"
@@ -1871,11 +1865,9 @@
     "memory_get": "读取记忆",
     "memory_save": "保存记忆",
     "tavily_search": "Tavily 联网搜索",
-    "brave_search": "Brave 联网搜索",
     "deepseek_search": "DeepSeek 网页搜索",
     "doubao_search": "豆包网页搜索",
     "exa_search": "Exa 网页搜索",
-    "google_search": "Google 联网搜索",
     "kimi_search": "Kimi 联网搜索",
     "yuanbao_search": "元宝联网搜索",
     "searchfree_search": "AI 联网搜索",

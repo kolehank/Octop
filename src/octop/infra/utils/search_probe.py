@@ -26,15 +26,13 @@ ErrorType = Literal[
 _TIMEOUT_S = 30.0
 _TEST_QUERY = "octop connectivity probe"
 _KNOWN: frozenset[str] = frozenset(
-    {"tavily", "brave", "doubao", "deepseek", "exa", "google", "kimi", "yuanbao"}
+    {"tavily", "doubao", "deepseek", "exa", "kimi", "yuanbao"}
 )
 _REQUIRED: dict[str, tuple[str, ...]] = {
     "tavily": ("TAVILY_API_KEY",),
-    "brave": ("BRAVE_API_KEY",),
     "doubao": ("DOUBAO_SEARCH_API_KEY",),
     "deepseek": ("DEEPSEEK_API_KEY",),
     "exa": ("EXA_API_KEY",),
-    "google": ("GOOGLE_API_KEY", "GOOGLE_CSE_ID"),
     "kimi": ("MOONSHOT_API_KEY",),
     "yuanbao": ("TENCENTCLOUD_WSA_APIKEY",),
 }
@@ -90,16 +88,12 @@ async def _probe(provider_id: str, env_vars: Mapping[str, str]) -> dict[str, Any
     async with httpx.AsyncClient(timeout=_TIMEOUT_S) as client:
         if provider_id == "tavily":
             return await _tavily(client, creds["TAVILY_API_KEY"])
-        if provider_id == "brave":
-            return await _brave(client, creds["BRAVE_API_KEY"])
         if provider_id == "doubao":
             return await _doubao(client, creds["DOUBAO_SEARCH_API_KEY"])
         if provider_id == "exa":
             return await _exa(client, creds["EXA_API_KEY"])
         if provider_id == "deepseek":
             return await _deepseek(client, creds["DEEPSEEK_API_KEY"])
-        if provider_id == "google":
-            return await _google(client, creds["GOOGLE_API_KEY"], creds["GOOGLE_CSE_ID"])
         if provider_id == "kimi":
             return await _kimi(client, creds["MOONSHOT_API_KEY"])
         return await _yuanbao(client, creds["TENCENTCLOUD_WSA_APIKEY"])
@@ -131,18 +125,6 @@ async def _doubao(client: httpx.AsyncClient, api_key: str) -> dict[str, Any]:
     return _from_doubao(response)
 
 
-async def _brave(client: httpx.AsyncClient, api_key: str) -> dict[str, Any]:
-    response = await client.get(
-        "https://api.search.brave.com/res/v1/web/search",
-        headers={
-            "Accept": "application/json",
-            "X-Subscription-Token": api_key,
-        },
-        params={"q": _TEST_QUERY, "count": 1},
-    )
-    return _from_brave(response)
-
-
 async def _deepseek(client: httpx.AsyncClient, api_key: str) -> dict[str, Any]:
     response = await client.post(
         "https://api.deepseek.com/v1/tools/search",
@@ -151,14 +133,6 @@ async def _deepseek(client: httpx.AsyncClient, api_key: str) -> dict[str, Any]:
             "Content-Type": "application/json",
         },
         json={"query": _TEST_QUERY, "count": 1, "need_content": False},
-    )
-    return _from_response(response, provider="DeepSeek", results_key="results")
-
-
-async def _google(client: httpx.AsyncClient, api_key: str, cse_id: str) -> dict[str, Any]:
-    response = await client.get(
-        "https://www.googleapis.com/customsearch/v1",
-        params={"key": api_key, "cx": cse_id, "q": _TEST_QUERY, "num": 1},
     )
     return _from_response(response, provider="DeepSeek", results_key="results")
 
@@ -210,24 +184,6 @@ def _from_response(
         "success": True,
         "result_count": count,
         "message": f"{provider} search test successful",
-    }
-
-
-def _from_brave(response: httpx.Response) -> dict[str, Any]:
-    fail = _http_failure(response)
-    if fail is not None:
-        return fail
-    try:
-        payload = response.json()
-    except ValueError:
-        return {"success": False, "error": "invalid JSON response", "error_type": "unknown"}
-    web = payload.get("web") if isinstance(payload, dict) else None
-    results = web.get("results") if isinstance(web, dict) else None
-    count = len(results) if isinstance(results, list) else 1
-    return {
-        "success": True,
-        "result_count": count,
-        "message": "Brave search test successful",
     }
 
 

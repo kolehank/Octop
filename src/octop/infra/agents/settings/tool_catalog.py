@@ -22,11 +22,9 @@ CRITICAL_TOOLS: frozenset[str] = frozenset(
 _WEB_SEARCH_TOOLS: frozenset[str] = frozenset(
     {
         "tavily_search",
-        "brave_search",
         "deepseek_search",
         "doubao_search",
         "exa_search",
-        "google_search",
         "kimi_search",
         "yuanbao_search",
         "searchfree_search",
@@ -74,11 +72,9 @@ BUILTIN_TOOL_CATALOG: tuple[BuiltinToolEntry, ...] = (
     BuiltinToolEntry("write_env_file", "misc"),
     BuiltinToolEntry("ask_user_question", "interaction"),
     BuiltinToolEntry("tavily_search", "web"),
-    BuiltinToolEntry("brave_search", "web"),
     BuiltinToolEntry("deepseek_search", "web"),
     BuiltinToolEntry("doubao_search", "web"),
     BuiltinToolEntry("exa_search", "web"),
-    BuiltinToolEntry("google_search", "web"),
     BuiltinToolEntry("kimi_search", "web"),
     BuiltinToolEntry("yuanbao_search", "web"),
     BuiltinToolEntry("searchfree_search", "web"),

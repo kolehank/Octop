@@ -712,14 +712,8 @@
         "tavily": {
           "desc": "AI-powered web search with intelligent answers"
         },
-        "brave": {
-          "desc": "Privacy-focused search engine with independent index"
-        },
         "deepseek": {
           "desc": "AI-native search with ranked results, summaries, and source links"
-        },
-        "google": {
-          "desc": "Google Custom Search with your own search engine"
         },
         "kimi": {
           "desc": "Moonshot AI with built-in web search capability"
@@ -1871,11 +1865,9 @@
     "memory_get": "Read memory",
     "memory_save": "Save memory",
     "tavily_search": "Tavily web search",
-    "brave_search": "Brave web search",
     "deepseek_search": "DeepSeek web search",
     "doubao_search": "Doubao web search",
     "exa_search": "Exa web search",
-    "google_search": "Google web search",
     "kimi_search": "Kimi web search",
     "yuanbao_search": "Yuanbao web search",
     "searchfree_search": "AI web search",

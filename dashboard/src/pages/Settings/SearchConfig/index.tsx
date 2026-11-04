@@ -62,14 +62,6 @@ const SEARCH_PROVIDERS: SearchProvider[] = [
     configured: false,
   },
   {
-    id: "google",
-    name: "Google Search",
-    descriptionKey: "setupWizard.search.providers.google.desc",
-    docs_url: "https://programmablesearchengine.google.com/",
-    required_keys: ["GOOGLE_API_KEY", "GOOGLE_CSE_ID"],
-    configured: false,
-  },
-  {
     id: "kimi",
     name: "Kimi (Moonshot)",
     descriptionKey: "setupWizard.search.providers.kimi.desc",
