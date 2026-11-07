@@ -1,7 +1,7 @@
 """Reset Octop application state without deleting the install runtime.
 
-``scripts/install.sh`` puts the virtualenv at ``~/.octop/venv`` and the
-launcher at ``~/.octop/bin``. ``init --force`` and ``clean --all`` used to
+``scripts/install.sh`` puts the virtualenv at ``~/.agentbuddy/venv`` and the
+launcher at ``~/.agentbuddy/bin``. ``init --force`` and ``clean --all`` used to
 ``rmtree`` the whole home and, with it, the interpreter that was running
 the command.
 """

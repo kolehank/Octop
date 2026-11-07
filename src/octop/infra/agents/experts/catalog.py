@@ -890,8 +890,6 @@ FEATURED_EXPERT_TEMPLATE_IDS = frozenset(
         "business-operations",
         "clinical-learning-subscription",
         "cowork-plugin-management",
-        "cvm-ai-doctor",
-        "cvm-cluster-doctor",
         "design",
         "engineering",
         "general-assistant",
@@ -905,7 +903,6 @@ FEATURED_EXPERT_TEMPLATE_IDS = frozenset(
         "productivity",
         "stock-assistant",
         "superpowers-methodology",
-        "tencentcloud-api",
         "wechat-ops",
     }
 )

@@ -205,7 +205,7 @@ def persisted_workspace_within_root(config: Mapping[str, Any], allowed_root: str
     """True when the on-disk workspace already sits inside *allowed_root*.
 
     Rewriting a local root is safe only in that case. A host workspace such as
-    ``~/.octop/agents/<id>`` stays put; snapping its backend root would hide
+    ``~/.agentbuddy/agents/<id>`` stays put; snapping its backend root would hide
     the agent's files.
     """
     if not allowed_root:

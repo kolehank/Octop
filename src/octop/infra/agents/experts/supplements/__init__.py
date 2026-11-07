@@ -40,7 +40,7 @@ def _skill_files(skill_md: Path) -> list[tuple[str, bytes]]:
 async def install_supplements(workspace: Any) -> None:
     """Copy each packaged skill into ``skills/<slug>/`` once.
 
-    BackendWorkspace remaps that path under ``.octop/skills/`` for new agents.
+    BackendWorkspace remaps that path under ``.agentbuddy/skills/`` for new agents.
     An existing ``SKILL.md`` is left unchanged.
     """
     pairs: list[tuple[str, bytes]] = []

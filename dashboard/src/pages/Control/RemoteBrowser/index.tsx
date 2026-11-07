@@ -127,7 +127,7 @@ const LEGACY_SESSION_STORAGE_KEY = "agentbuddy:remote-browser:session-id";
 /** Whether the user left the remote-browser stream open last time. */
 const STREAM_ACTIVE_KEY = "agentbuddy:remote-browser:stream-active";
 const DEFAULT_REFRESH_INTERVAL = 500;
-const DEFAULT_START_URL = "https://cloud.tencent.com";
+const DEFAULT_START_URL = "about:blank";
 const BROWSER_AI_PANEL_KEY = "agentbuddy:remote-browser:ai-panel-open";
 const BROWSER_AI_PLACEMENT_KEY = "agentbuddy:remote-browser:ai-placement";
 

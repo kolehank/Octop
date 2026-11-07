@@ -1,4 +1,4 @@
-"""Self-update API — mirrors finnie/octop dashboard update flow."""
+"""Self-update API for the dashboard update flow."""
 
 from __future__ import annotations
 

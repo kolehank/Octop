@@ -3824,7 +3824,6 @@ dependencies = [
     { name = "rich" },
     { name = "scalar-fastapi" },
     { name = "segno" },
-    { name = "tencentcloud-sdk-python" },
     { name = "uvicorn", extra = ["standard"] },
     { name = "webauthn" },
     { name = "websockets" },
@@ -3931,7 +3930,6 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.4" },
     { name = "scalar-fastapi", specifier = ">=1.0" },
     { name = "segno", specifier = ">=1.6" },
-    { name = "tencentcloud-sdk-python", specifier = ">=3.1.166" },
     { name = "tos", marker = "extra == 'tos'", specifier = ">=2.9,<3" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.27" },
     { name = "webauthn", specifier = ">=3.0.1" },
@@ -6850,18 +6848,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/47/c6/ee486fd809e357697ee8a44d3d69222b344920433d3b6666ccd9b374630c/tenacity-9.1.4.tar.gz", hash = "sha256:adb31d4c263f2bd041081ab33b498309a57c77f9acf2db65aadf0898179cf93a", size = 49413, upload-time = "2026-02-07T10:45:33.841Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d7/c1/eb8f9debc45d3b7918a32ab756658a0904732f75e555402972246b0b8e71/tenacity-9.1.4-py3-none-any.whl", hash = "sha256:6095a360c919085f28c6527de529e76a06ad89b23659fa881ae0649b867a9d55", size = 28926, upload-time = "2026-02-07T10:45:32.24Z" },
-]
-
-[[package]]
-name = "tencentcloud-sdk-python"
-version = "3.1.204"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "requests" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/4f/b7/49b7dfbd038387d5c2ce787b429277cdf3387c72f10f5e797d562e7a5ad4/tencentcloud_sdk_python-3.1.204.tar.gz", hash = "sha256:68873e9ba1509d3a1e6c86fca3e2d9112165bcc323b64decd93877aca3fa337d", size = 18079009, upload-time = "2026-11-06T15:44:56.238Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/f5/90/37487e20709d9ca4cab88c25efe0d131887d2f565093097ca2cb572ccd27/tencentcloud_sdk_python-3.1.204-py2.py3-none-any.whl", hash = "sha256:945f09e617e9b5fc38a20dcf2f5593dba77f13f41cfd3bb7f3d8d68b7ee0556c", size = 19016997, upload-time = "2026-11-06T15:44:50.977Z" },
 ]
 
 [[package]]

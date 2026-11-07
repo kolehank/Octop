@@ -144,22 +144,22 @@ class PathLayout:
 
     @property
     def group_avatars_dir(self) -> Path:
-        """Uploaded user-group portraits: ``~/.octop/avatars/groups/``."""
+        """Uploaded user-group portraits: ``~/.agentbuddy/avatars/groups/``."""
         return self.root / "avatars" / "groups"
 
     @property
     def skill_package_avatars_dir(self) -> Path:
-        """Uploaded skill-package portraits: ``~/.octop/avatars/skill_packages/``."""
+        """Uploaded skill-package portraits: ``~/.agentbuddy/avatars/skill_packages/``."""
         return self.root / "avatars" / "skill_packages"
 
     @property
     def knowledge_base_avatars_dir(self) -> Path:
-        """Uploaded knowledge-base portraits: ``~/.octop/avatars/knowledge_bases/``."""
+        """Uploaded knowledge-base portraits: ``~/.agentbuddy/avatars/knowledge_bases/``."""
         return self.root / "avatars" / "knowledge_bases"
 
     @property
     def bridge_avatars_dir(self) -> Path:
-        """Uploaded Bridge connection portraits: ``~/.octop/avatars/bridge/``."""
+        """Uploaded Bridge connection portraits: ``~/.agentbuddy/avatars/bridge/``."""
         return self.root / "avatars" / "bridge"
 
     @property

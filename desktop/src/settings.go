@@ -15,7 +15,7 @@ const (
 	LocaleEN Locale = "en"
 )
 
-// Settings is persisted at ~/.octop/desktop-settings.json
+// Settings is persisted at ~/.agentbuddy/desktop-settings.json
 type Settings struct {
 	Locale         Locale `json:"locale"`
 	Autostart      bool   `json:"autostart"`

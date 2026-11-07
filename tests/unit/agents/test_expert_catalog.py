@@ -394,7 +394,7 @@ def test_featured_expert_template_ids_are_the_pre_market_library() -> None:
 
     ids = featured_expert_template_ids()
 
-    assert len(ids) == 22
+    assert len(ids) == 19
     assert "general-assistant" in ids
     assert "ops-engineer" in ids
     assert "wechat-ops" in ids

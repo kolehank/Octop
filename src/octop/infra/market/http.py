@@ -27,21 +27,30 @@ _LOCAL_NETWORK_ERRNOS = frozenset(
 )
 
 
+def _env_first(*names: str) -> str | None:
+    """First set environment value among *names*, or None when none are set."""
+    for name in names:
+        if name in os.environ:
+            return os.environ.get(name, "").strip()
+    return None
+
+
 def portal_base() -> str:
-    """Site origin. An empty ``OCTOP_PORTAL_ORIGIN`` disables the remote catalog."""
-    if "OCTOP_PORTAL_ORIGIN" in os.environ:
-        return os.environ.get("OCTOP_PORTAL_ORIGIN", "").strip().rstrip("/")
+    """Site origin. An empty ``AGENTBUDDY_PORTAL_ORIGIN`` disables the remote catalog."""
+    forced = _env_first("AGENTBUDDY_PORTAL_ORIGIN", "OCTOP_PORTAL_ORIGIN")
+    if forced is not None:
+        return forced.rstrip("/")
     return DEFAULT_PORTAL_BASE
 
 
 def remote_base() -> str:
     """Object origin for plugin and expert packages.
 
-    ``OCTOP_MARKET_REMOTE_ORIGIN`` overrides the public origin. A bare host is
-    treated as ``https://``. An empty or unusable value keeps the default.
+    ``AGENTBUDDY_MARKET_REMOTE_ORIGIN`` overrides the public origin. A bare host
+    is treated as ``https://``. An empty or unusable value keeps the default.
     Only the origin is kept, so a pasted path does not change object keys.
     """
-    raw = os.environ.get("OCTOP_MARKET_REMOTE_ORIGIN", "").strip()
+    raw = _env_first("AGENTBUDDY_MARKET_REMOTE_ORIGIN", "OCTOP_MARKET_REMOTE_ORIGIN") or ""
     if not raw:
         return DEFAULT_REMOTE_BASE
     if "://" not in raw:
