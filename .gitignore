@@ -117,3 +117,9 @@ scripts/lh_image_install_octop_tencentos.sh
 .tmp-mfa-e2e/
 
 bigscreen/tsconfig.tsbuildinfo
+
+# Cindy/OpenDesign generated prototype drafts for business reference (never committed)
+opendesign-projects/
+
+# Vendored-library lockfiles are not part of the Octop resolution (never committed)
+packages/octop-memory/uv.lock
