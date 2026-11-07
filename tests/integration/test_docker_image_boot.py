@@ -151,9 +151,9 @@ def docker_boot() -> Iterator[Any]:
                 hint = ""
                 if exit_code == "132" or "Illegal instruction" in (logs.stdout + logs.stderr):
                     hint = (
-                        " ExitCode 132 is SIGILL. On ARM (including FnOS in a VM) "
-                        "this usually means a native wheel uses instructions this CPU "
-                        "does not support. See issues #2190 and #2301."
+                        " ExitCode 132 is SIGILL. On ARM this usually means a native "
+                        "wheel uses instructions this CPU does not support. "
+                        "See issues #2190 and #2301."
                     )
                 raise AssertionError(
                     f"container stopped: {state_text} {logs.stdout}\n{logs.stderr}{hint}"
@@ -283,7 +283,7 @@ def test_docker_unset_password_starts_setup_wizard(docker_boot: Any) -> None:
 def test_docker_image_runs_on_this_cpu_and_stays_disabled(docker_boot: Any) -> None:
     """Boot the image on this machine and check it is the matching CPU build.
 
-    Run on the machine that fails, for example an ARM FnOS host::
+    Run on the machine that fails, for example an ARM host::
 
         AGENTBUDDY_TEST_IMAGE=ghcr.io/kolehank/octop:1.0.2 \\
             uv run pytest tests/integration/test_docker_image_boot.py -m live -q
