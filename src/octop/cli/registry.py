@@ -35,4 +35,5 @@ COMMANDS: dict[str, tuple[str, str, str]] = {
     "sandbox": (".commands.sandbox", "sandbox", "Manage sandbox containers."),
     "acp": (".commands.acp", "acp_cmd", "Run agentbuddy agent as ACP server (stdio)."),
     "plugin": (".commands.plugin", "plugin", "Install and manage plugins."),
+    "cloud": (".commands.cloud", "cloud", "Tencent Cloud credential bridge (tccli import)."),
 }

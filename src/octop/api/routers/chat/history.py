@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 from pathlib import Path
 from typing import Any, Literal
@@ -10,7 +11,7 @@ from typing import Any, Literal
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import JSONResponse, Response
 
-from octop.api.common.agent import require_agent_row
+from octop.api.common.agent import agent_is_shared, require_agent_row
 from octop.api.common.agent_workspace import resolve_agent_workspace_dir
 from octop.api.deps import current_user, get_server
 from octop.api.routers.chat.models import (
@@ -38,6 +39,7 @@ from octop.infra.gateway.threads import (
     is_valid_screen_key,
     strip_s2_page_prefix,
     thread_row_has_messages,
+    thread_visible_to,
 )
 from octop.infra.history.service import HistoryArchive
 from octop.infra.history.trajectory.service import TrajectoryService
@@ -89,6 +91,67 @@ def _hitl_policy_payload(row: Any) -> dict[str, Any]:
     return parse_hitl_session_policy(getattr(row, "hitl_policy", None)).to_dict()
 
 
+def _message_author_profile(server: Any, user_id: int) -> dict[str, Any] | None:
+    """Name and portrait for one sender. Skips mocks and missing accounts."""
+    repo = getattr(getattr(server, "services", None), "user_repo", None)
+    get = getattr(repo, "get", None)
+    if not callable(get):
+        return None
+    row = get(user_id)
+    username = getattr(row, "username", None)
+    if not isinstance(username, str) or not username:
+        return None
+    from octop.infra.users.profile_avatar import profile_avatar_url  # noqa: PLC0415
+
+    avatars = getattr(getattr(server, "services", None), "avatars", None)
+    avatar_url = None
+    if callable(avatars):
+        avatar_url = profile_avatar_url(
+            avatars("user"),
+            str(user_id),
+            f"/api/users/{user_id}/avatar",
+        )
+    display_name = getattr(row, "display_name", None)
+    icon = getattr(row, "avatar_icon", None)
+    return {
+        "user_id": user_id,
+        "display_name": display_name if isinstance(display_name, str) else "",
+        "username": username,
+        "avatar_icon": icon if isinstance(icon, str) and icon else None,
+        "avatar_url": avatar_url,
+    }
+
+
+def _attach_message_authors(
+    server: Any, messages: list[dict[str, Any]], *, owner_user_id: int
+) -> None:
+    """Fill each user turn with who asked it.
+
+    Turns written before this stamp belong to the thread owner. Later turns
+    keep the person who actually sent them, so a shared conversation can show
+    a different head for each person.
+    """
+    if not isinstance(owner_user_id, int) or owner_user_id <= 0:
+        return
+    needed: set[int] = set()
+    for item in messages:
+        if item.get("role") != "user":
+            continue
+        author_id = item.get("author_user_id")
+        if not isinstance(author_id, int) or author_id <= 0:
+            author_id = owner_user_id
+            item["author_user_id"] = author_id
+        needed.add(author_id)
+    profiles = {user_id: _message_author_profile(server, user_id) for user_id in needed}
+    for item in messages:
+        if item.get("role") != "user":
+            continue
+        raw_author = item.get("author_user_id")
+        profile = profiles.get(raw_author) if isinstance(raw_author, int) else None
+        if profile is not None:
+            item["author"] = profile
+
+
 def _history_migration_payload(server: Any, *, agent_id: str, user_id: int) -> dict[str, Any]:
     repo = server.services.thread_message_repo
     summary = repo.migration_summary(
@@ -129,14 +192,28 @@ def _agent_facing_workspace_dir(server: Any, agent_id: str) -> Path:
 
 
 def _require_thread(
-    server: Any, agent_id: str, thread_id: str, user: Any, as_user: int | None
+    server: Any,
+    agent_id: str,
+    thread_id: str,
+    user: Any,
+    as_user: int | None,
+    *,
+    write: bool = False,
 ) -> Any:
+    """Load a thread the caller may open.
+
+    ``write`` is the owner's management actions (rename, delete, fork, contribute).
+    A contributed thread stays readable and continuable by anyone who can open the expert.
+    """
     require_agent_row(agent_id, user=user, as_user=as_user, server=server)
     row = server.app_runtime.gateway.thread_registry.get_thread(thread_id)
     if row is None or row.agent_id != agent_id:
         raise OctopError(ErrorCode.AGENT_NOT_FOUND, f"thread {thread_id!r} not found")
     effective_uid = as_user if as_user is not None else user.id
-    if row.user_id != effective_uid:
+    if write:
+        if row.user_id != effective_uid:
+            raise OctopError(ErrorCode.FORBIDDEN, "thread not owned by user")
+    elif not thread_visible_to(row, effective_uid):
         raise OctopError(ErrorCode.FORBIDDEN, "thread not owned by user")
     return row
 
@@ -178,26 +255,11 @@ async def list_threads(
     require_agent_row(agent_id, user=user, as_user=as_user, server=server)
     thread_registry = server.app_runtime.gateway.thread_registry
     effective_uid = as_user if as_user is not None else user.id
-    if isinstance(screen_key, str):
-        _require_valid_screen_key(screen_key)
-    if scope in ("screen", "topic") and screen_key is None:
-        raise OctopError(
-            ErrorCode.SLASH_BAD_ARGS,
-            "screen_key is required when scope is screen or topic",
-        )
-    clean_q = q.strip() if isinstance(q, str) else None
-    if clean_q == "":
-        clean_q = None
-    page_limit = max(1, min(limit, THREADS_MAX_LIMIT))
-    page_offset = max(0, offset)
-    rows = thread_registry.list_threads(
-        agent_id=agent_id,
-        user_id=effective_uid,
-        limit=page_limit,
-        offset=page_offset,
-        scope=scope,
-        screen_key=screen_key,
-        q=clean_q,
+    rows = thread_registry.list_visible_threads(
+        agent_id=agent_id, user_id=effective_uid, limit=limit
+    )
+    bound = thread_registry.get_bound_thread_id(
+        ThreadRegistry.dashboard_key(agent_id=agent_id, user_id=effective_uid)
     )
     if scope == "screen":
         assert screen_key is not None
@@ -213,9 +275,25 @@ async def list_threads(
     message_repo = server.services.thread_message_repo
     workspace_dir = _agent_facing_workspace_dir(server, agent_id)
     hub = server.app_runtime.gateway.ws_hub
-    awaiting_ids = server.app_runtime.gateway.processor.hitl_coordinator.store.pending_thread_ids(
-        agent_id=agent_id, user_id=effective_uid
+    hitl_store = server.app_runtime.gateway.processor.hitl_coordinator.store
+    awaiting_ids = hitl_store.pending_thread_ids(agent_id=agent_id, user_id=effective_uid)
+    shared_awaiting_ids = hitl_store.pending_thread_ids(
+        agent_id=agent_id, user_id=effective_uid, any_user=True
     )
+    # title / last_active 只能说明「建过会话」，不能说明「有内容」：
+    # 有些 thread 有标题但从未落过消息，点开就是空白。这里补一次真实计数。
+    message_repo = server.services.thread_message_repo
+    ids_with_messages = message_repo.threads_with_messages([r.thread_id for r in rows])
+    unread = thread_registry.unread_counts_for_threads([r.thread_id for r in rows])
+
+    def _has_messages(row: Any) -> bool:
+        if not thread_row_has_messages(row):
+            return False
+        if row.thread_id in ids_with_messages:
+            return True
+        # 投影还没 ready 时消息可能仍在 checkpoint，不能断言为空
+        return bool(message_repo.projection_status(row.thread_id) != "ready")
+
     return [
         {
             "thread_id": r.thread_id,
@@ -224,9 +302,12 @@ async def list_threads(
             "session_key": r.session_key,
             "last_active": r.last_active,
             "created_at": r.created_at,
-            "is_active": _thread_is_active(thread_registry, bound, scope, r),
-            "has_messages": thread_row_has_messages(r),
+            "is_active": r.thread_id == bound,
+            "has_messages": _has_messages(r),
             "pinned": r.pinned,
+            "unread_count": int(unread.get(r.thread_id, 0)),
+            "contributed": bool(r.contributed),
+            "owned": r.user_id == effective_uid,
             "model_ref": r.model_ref,
             "reasoning_mode": r.reasoning_mode,
             "reasoning_effort": r.reasoning_effort,
@@ -234,8 +315,8 @@ async def list_threads(
             "pending_plan_path": r.pending_plan_path,
             "hitl_policy": _hitl_policy_payload(r),
             "turn_active": hub.is_turn_active(r.thread_id),
-            "awaiting_user": r.thread_id in awaiting_ids,
-            "summary": _thread_summary(message_repo, r.thread_id),
+            "awaiting_user": r.thread_id
+            in (shared_awaiting_ids if r.contributed else awaiting_ids),
             **thread_artifacts_payload(
                 r.artifacts,
                 workspace_dir,
@@ -347,13 +428,14 @@ async def create_thread(
     agent_id: str,
     body: NewThreadBody | None = None,
     as_user: int | None = None,
+    rebind: bool = True,
     user: Any = Depends(current_user),
     server: Any = Depends(get_server),
 ) -> dict[str, Any]:
     """Start a new conversation (/new equivalent for dashboard).
 
-    ``screen_key`` starts a new thread bound to that big-screen session
-    (ADR 004 D5); without it the dashboard session is reset as before.
+    ``rebind=false`` inserts a thread without moving the agent's current
+    dashboard session, so an embedded panel can keep its own conversation.
     """
     require_agent_row(agent_id, user=user, as_user=as_user, server=server)
     effective_uid = as_user if as_user is not None else user.id
@@ -372,12 +454,21 @@ async def create_thread(
         )
         return {"thread_id": tid, "session_key": sk}
     sk = ThreadRegistry.dashboard_key(agent_id=agent_id, user_id=effective_uid)
-    tid = await registry.reset(
-        agent_id=agent_id,
-        user_id=effective_uid,
-        channel_type=ThreadRegistry.CHANNEL_DASHBOARD,
-        channel_subject_id=str(effective_uid),
-    )
+    registry = server.app_runtime.gateway.thread_registry
+    if rebind:
+        tid = await registry.reset(
+            agent_id=agent_id,
+            user_id=effective_uid,
+            channel_type=ThreadRegistry.CHANNEL_DASHBOARD,
+            channel_subject_id=str(effective_uid),
+        )
+    else:
+        tid = registry.create_thread(
+            agent_id=agent_id,
+            user_id=effective_uid,
+            channel_type=ThreadRegistry.CHANNEL_DASHBOARD,
+            session_key=sk,
+        )
     return {"thread_id": tid, "session_key": sk}
 
 
@@ -520,11 +611,12 @@ async def get_thread_history(
                 user=user,
             )
     effective_uid = as_user if as_user is not None else user.id
+    _attach_message_authors(server, messages, owner_user_id=row.user_id)
     hitl_pending = pending_hitl_payload(
         server.app_runtime.gateway.processor.hitl_coordinator.store,
         thread_id=thread_id,
         agent_id=agent_id,
-        user_id=effective_uid,
+        user_id=None if row.contributed else effective_uid,
     )
     workspace_dir = _agent_facing_workspace_dir(server, agent_id)
     return {
@@ -564,7 +656,40 @@ async def mark_thread_read(
 ) -> None:
     """Clear unread message count for a thread (e.g. when the user opens it in the dashboard)."""
     _require_thread(server, agent_id, thread_id, user, as_user)
-    server.app_runtime.gateway.thread_registry.mark_thread_read(thread_id)
+    effective_uid = as_user if as_user is not None else user.id
+    server.app_runtime.gateway.thread_registry.mark_thread_read_for_user(thread_id, effective_uid)
+
+
+@router.post(
+    "/agents/{agent_id}/threads/{thread_id}/cancel",
+    summary="Cancel the running turn",
+)
+async def cancel_thread_turn(
+    agent_id: str,
+    thread_id: str,
+    as_user: int | None = None,
+    user: Any = Depends(current_user),
+    server: Any = Depends(get_server),
+) -> dict[str, Any]:
+    """Stop whatever turn is in flight for this thread.
+
+    The WS ``cancel`` frame only lands while the browser that started the turn
+    still owns a subscribed socket. After a reload, an approval park, or from a
+    second surface, that frame is a no-op and the UI looks frozen — so Stop is
+    also routed over HTTP, which always reaches the server.
+    """
+    _require_thread(server, agent_id, thread_id, user, as_user)
+    gateway = server.app_runtime.gateway
+    steer = getattr(gateway, "steer", None)
+    if steer is not None:
+        # Clearing the parked queue also drops a stale ``hitl_paused`` phase, so
+        # the next message starts a fresh turn instead of queueing forever.
+        with contextlib.suppress(Exception):
+            steer.mark_cancelling(thread_id)
+        with contextlib.suppress(Exception):
+            steer.discard(thread_id, reason="turn_cancelled")
+    server.app_runtime.agent_registry.cancel_stream(agent_id, thread_id)
+    return {"thread_id": thread_id, "cancelled": True}
 
 
 @router.post(
@@ -591,7 +716,7 @@ async def fork_thread(
             ErrorCode.SLASH_BAD_ARGS,
             "message_id or assistant_turns_from_end is required",
         )
-    row = _require_thread(server, agent_id, thread_id, user, as_user)
+    row = _require_thread(server, agent_id, thread_id, user, as_user, write=True)
     effective_uid = as_user if as_user is not None else user.id
     harness = server.app_runtime.agent_registry.get_agent(agent_id)
     return await fork_dashboard_thread(
@@ -629,7 +754,10 @@ async def rebind_session(
     else:
         sk = ThreadRegistry.dashboard_key(agent_id=agent_id, user_id=user.id)
     await server.app_runtime.gateway.thread_registry.rebind(
-        session_key=sk, thread_id=body.thread_id, agent_id=agent_id
+        session_key=sk,
+        thread_id=body.thread_id,
+        agent_id=agent_id,
+        acting_user_id=user.id,
     )
     return {"session_key": sk, "thread_id": body.thread_id}
 
@@ -680,6 +808,7 @@ async def patch_thread(
 ) -> dict[str, Any]:
     """Update sidebar metadata or sticky composer settings for a thread."""
     row = _require_thread(server, agent_id, thread_id, user, as_user)
+    effective_uid = as_user if as_user is not None else user.id
     composer_fields = {
         "model_ref",
         "reasoning_mode",
@@ -687,15 +816,21 @@ async def patch_thread(
         "conversation_mode",
         "hitl_policy",
     }
+    managing = bool(body.model_fields_set)
+    if managing and row.user_id != effective_uid:
+        raise OctopError(ErrorCode.FORBIDDEN, "thread not owned by user")
     if (
         body.title is None
         and body.pinned is None
+        and "contributed" not in body.model_fields_set
         and not body.model_fields_set.intersection(composer_fields)
     ):
         return {
             "thread_id": thread_id,
             "title": row.title,
             "pinned": row.pinned,
+            "contributed": bool(row.contributed),
+            "owned": row.user_id == effective_uid,
             "model_ref": row.model_ref,
             "reasoning_mode": row.reasoning_mode,
             "reasoning_effort": row.reasoning_effort,
@@ -704,6 +839,15 @@ async def patch_thread(
             "hitl_policy": _hitl_policy_payload(row),
         }
     registry = server.app_runtime.gateway.thread_registry
+    if "contributed" in body.model_fields_set:
+        if body.contributed:
+            agent_row = require_agent_row(agent_id, user=user, as_user=as_user, server=server)
+            if not agent_is_shared(agent_row):
+                raise OctopError(
+                    ErrorCode.THREAD_CONTRIBUTE_REQUIRES_SHARE,
+                    "only a shared expert can accept a contributed conversation",
+                )
+        registry.set_contributed(thread_id, bool(body.contributed))
     if body.title is not None:
         registry.update_title(thread_id, body.title)
     if body.pinned is not None:
@@ -759,6 +903,8 @@ async def patch_thread(
         "thread_id": thread_id,
         "title": updated.title,
         "pinned": updated.pinned,
+        "contributed": bool(updated.contributed),
+        "owned": updated.user_id == effective_uid,
         "model_ref": updated.model_ref,
         "reasoning_mode": updated.reasoning_mode,
         "reasoning_effort": updated.reasoning_effort,
@@ -789,7 +935,7 @@ async def delete_thread(
     maintenance reclaims the free space later, once the freelist is large
     enough. Omitting ``compact`` keeps the previous empty 204.
     """
-    _require_thread(server, agent_id, thread_id, user, as_user)
+    _require_thread(server, agent_id, thread_id, user, as_user, write=True)
     if server.app_runtime.gateway.ws_hub.is_turn_active(thread_id):
         raise OctopError(
             ErrorCode.THREAD_TURN_ACTIVE,

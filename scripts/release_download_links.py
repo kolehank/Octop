@@ -44,14 +44,14 @@ def portable_name(os_name: str, arch: str, version: str) -> str:
     return f"agentbuddy-portable-{os_name}-{arch}-{version}.zip"
 
 
-def docker_image_section(version: str, *, lite: bool) -> str:
-    lines = [
-        "### Docker image",
-        "",
-        f"- Full: `ghcr.io/kolehank/octop:{version}` (`:latest`)",
-    ]
+def docker_image_section(version: str, *, lite: bool, full: bool) -> str:
+    lines = ["### Docker image", ""]
     if lite:
-        lines.append(f"- Lite: `ghcr.io/kolehank/octop:{version}-lite` (`:lite`)")
+        lines.append(f"- Lite: `ghcr.io/kolehank/octop:{version}` (`:latest`)")
+    if full:
+        lines.append(f"- Full: `ghcr.io/kolehank/octop:{version}-full` (`:full`)")
+    if len(lines) == 2:
+        return ""
     return "\n".join(lines)
 
 
@@ -98,7 +98,7 @@ def render_download_section(raw_version: str) -> str:
             "#### Portable",
             f"- {linux64_zip} | {linux_arm_zip}",
             "",
-            docker_image_section(version, lite=True),
+            docker_image_section(version, lite=True, full=True),
             "",
         ]
     )
@@ -126,11 +126,14 @@ def _replace_section(body: str, heading: str, replacement: str) -> str:
 
 
 def patch_release_body(body: str, raw_version: str, present: Iterable[str]) -> str:
-    """Keep desktop links, and refresh the Docker section from the uploaded assets."""
+    """Keep desktop links, and refresh the Docker section.
+
+    Unlike upstream, the Octop images carry no release asset that announces
+    which variants exist: ``:latest`` (lite) is always published and ``:full``
+    is published when both CPU architectures exist. Both lines stay rendered.
+    """
     _tag, version = split_tag(raw_version)
-    return _replace_section(
-        body, "Docker image", docker_image_section(version, lite=True)
-    )
+    return _replace_section(body, "Docker image", docker_image_section(version, lite=True, full=True))
 
 
 def _asset_names(payload: dict[str, object]) -> list[str]:
@@ -150,14 +153,12 @@ def _asset_names(payload: dict[str, object]) -> list[str]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(
-        description="Print agentbuddy GitHub Release download markdown."
-    )
+    parser = argparse.ArgumentParser(description="Print Octop GitHub Release download markdown.")
     parser.add_argument("version", help="Package version, with or without a leading v")
     parser.add_argument(
         "--sync-notes",
         type=Path,
-        help="Rewrite Docker/fnOS sections from a `gh release view --json body,assets` file.",
+        help="Rewrite Docker section from a `gh release view --json body,assets` file.",
     )
     args = parser.parse_args(argv)
     if args.sync_notes is None:

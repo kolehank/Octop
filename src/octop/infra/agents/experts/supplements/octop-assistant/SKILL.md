@@ -125,13 +125,13 @@ metadata:
 当前支持的安装方式：**Docker**（服务器推荐）、**离线 wheel 包**（政务内网， `agentbuddy-offline-<平台>.tar.gz` + `install-offline.sh`）、**桌面客户端**（发布页下载）。详细步骤以文档为准：/guide/quickstart 。一键安装脚本的下载地址由发布方填入；在填入正式地址之前，**不要向用户输出任何 `curl … | bash` / `irm … | iex` 命令**。占位形式如下：
 
 ```bash
-# macOS / Linux —— 把 <INSTALL_SCRIPT_BASE> 换成发布方自己的下载地址
-curl -fsSL <INSTALL_SCRIPT_BASE>/install.sh | bash
+# macOS / Linux
+curl -fsSL https://download.octop.cloud/octop/scripts/install.sh | bash
 ```
 
 ```powershell
-# Windows PowerShell —— 同上
-irm <INSTALL_SCRIPT_BASE>/install.ps1 | iex
+# Windows PowerShell
+irm https://download.octop.cloud/octop/scripts/install.ps1 | iex
 ```
 
 装好后新开终端，再：

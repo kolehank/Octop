@@ -71,19 +71,19 @@
 **macOS / Linux**
 
 ```bash
-curl -fsSL <YOUR_RELEASE_BASE>/install.sh | bash
+curl -fsSL https://download.octop.cloud/octop/scripts/install.sh | bash
 ```
 
 **Windows（PowerShell）**
 
 ```powershell
-irm <YOUR_RELEASE_BASE>/install.ps1 | iex
+irm https://download.octop.cloud/octop/scripts/install.ps1 | iex
 ```
 
 **Windows（cmd）** —— 先下载再运行：
 
 ```bat
-curl -fsSL <YOUR_RELEASE_BASE>/install.bat -o install.bat
+curl -fsSL https://download.octop.cloud/octop/scripts/install.bat -o install.bat
 install.bat
 ```
 

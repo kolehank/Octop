@@ -9,7 +9,7 @@
 <p align="center">
   <a href="https://www.python.org/downloads/"><img alt="Python 3.12+" src="https://img.shields.io/badge/python-3.12%2B-blue?logo=python&logoColor=white" /></a>
   <a href="https://github.com/TencentCloud/Octop/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green" /></a>
-  <a href="https://github.com/TencentCloud/Octop/releases"><img alt="Version" src="https://img.shields.io/badge/version-1.0.3b2-orange" /></a>
+  <a href="https://github.com/TencentCloud/Octop/releases"><img alt="Version" src="https://img.shields.io/badge/version-1.0.3b4-orange" /></a>
   <a href="https://pypi.org/project/octop/"><img src="https://img.shields.io/pypi/v/octop" alt="PyPI" /></a>
   <a href="https://github.com/astral-sh/ruff"><img alt="Code Style: Ruff" src="https://img.shields.io/badge/code%20style-ruff-000000?logo=ruff&logoColor=white" /></a>
   <a href="about:blank"><img alt="Discord" src="https://img.shields.io/badge/Discord-%E5%8A%A0%E5%85%A5-5865F2?logo=discord&logoColor=white" /></a>
@@ -183,19 +183,19 @@
 **macOS / Linux** — 一键安装（推荐）：
 
 ```bash
-curl -fsSL <YOUR_RELEASE_BASE>/install.sh | bash
+curl -fsSL https://download.octop.cloud/octop/scripts/install.sh | bash
 ```
 
 **Windows（PowerShell）**：
 
 ```powershell
-irm <YOUR_RELEASE_BASE>/install.ps1 | iex
+irm https://download.octop.cloud/octop/scripts/install.ps1 | iex
 ```
 
 **Windows（cmd）** — 下载后运行，或从已克隆的仓库执行：
 
 ```bat
-curl -fsSL <YOUR_RELEASE_BASE>/install.bat -o install.bat
+curl -fsSL https://download.octop.cloud/octop/scripts/install.bat -o install.bat
 install.bat
 ```
 
@@ -211,7 +211,7 @@ source ~/.bashrc  # Bash
 
 ```bash
 # 下载 Playwright Chromium 用于浏览器自动化（若系统已有 Chrome / Chromium 则会跳过）
-curl -fsSL <YOUR_RELEASE_BASE>/install.sh | bash -s -- --extras browser
+curl -fsSL https://download.octop.cloud/octop/scripts/install.sh | bash -s -- --extras browser
 ```
 
 完整安装选项见 [scripts/README.md](scripts/README.md)（`--version`、`--from-source`、`--mirror` 及 Windows 参数）。
@@ -327,7 +327,7 @@ docker run -d \
   - [参与贡献](#-参与贡献)
   - [更新日志](#-更新日志)
   - [相关项目](#-相关项目)
-  - [客户企业微信群](#-客户企业微信群)
+  - [社区](#-社区)
   - [许可证](#-许可证)
 
 ## 📦 安装方式
@@ -560,7 +560,17 @@ cd dashboard && npx tsc -b
 | [Octop Memory](about:blank) | 层级召回与全文搜索 |
 | [Octop Browser](about:blank) | CDP 浏览器自动化，支持 profile 持久登录 |
 
-## 💬 客户支持群
+## 💬 社区
+
+### 微信
+
+微信搜一搜「腾讯Octop」，或扫码：
+
+<p align="center">
+  <img src="docs/assets/wechat-octop.png" alt="微信搜一搜腾讯Octop" width="480" />
+</p>
+
+### 客户企业微信群
 
 > 支持渠道待补充（请替换为你自己的群 / 工单 / 邮箱入口）。
 

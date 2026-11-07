@@ -21,134 +21,53 @@
 ## [1.1.0] - 2026-11-04
 
 ### 新增
-- 公开大屏：`/screen/<screen>/` 静态挂载独立前端工程（ADR 003），演示「大屏 → 专家对话 → 专题子智能体路由」的完整接入方式；专题与内容全部配置化，坏数据报错不白屏
-- 大屏会话按屏隔离（ADR 004）：screenKey 用规范化路由模板（不含条目 id），同一屏共享会话、下钻页注入当前页上下文，并提供历史会话侧栏
-- 插件与专家改为从远程市场安装。市场目录 / 安装包源站、技能市场源站都可指向自建源：`OCTOP_PORTAL_ORIGIN`、`OCTOP_MARKET_REMOTE_ORIGIN`、`SKILL_MARKET_ORIGIN`、`SKILLSET_ORIGIN`，安装包路径不再限定 `/octop/market/`。说明见 `docs/private-market.md`、`docs/skill-market.md`
-- PostgreSQL 控制面下，技能包源和知识库原文进同一套库（`skill_package_files`、`knowledge_files`），知识库向量在 `knowledge_chunks`。表都在 `public`，前缀与 `skill_packages`、`knowledge_bases` 一致。SQLite 仍用本地目录。安装时选定驱动，不含 sqlite→PostgreSQL 迁移
-- 安装向导连接已有用户的 PostgreSQL 时，确认后保留这些账户并去登录。SQLite 仍要空库
-- 知识库预览可以在原文和已入库切片之间切换。文件名悬停后可重命名，扩展名保持不变
-- Docker 与飞牛增加精简版。默认 `:<version>` / `:latest` 仍是含桌面、OCR 和本地向量的完整镜像；精简版标签是 `:<version>-lite` 和 `:lite`
+- 专家市场默认打开「精选」，用书签标出接入市场前随安装包提供的 22 个专家模板
 
 ### 修复
-- Dashboard 里 `ask_user_question` 未答完时，新建同专家会话再发消息不再被当成旧测验的答案；同会话内明文作答仍然有效
-- PostgreSQL 控制面下，知识库检索读 pgvector，不再查到空的本地 `index.sqlite`
-- Docker 镜像在无头构建时不再导入 pynput。飞牛 Docker 包缺失时，已打好的本地包仍会挂到 Release
-- 精简版只有 amd64 和 arm64 都发布成功才打通用标签。完整飞牛包不再等待缺失的精简镜像，Release 下载区只保留实际挂上的飞牛包
-- Docker 构建在安装依赖的同一层删除编译器，避免编译工具留在最终镜像里
+- 关机时会等正在进行的数据库查询结束再关闭连接，避免 Windows 上测试进程被访问冲突打断
+- 模型池里的优先模型可以取消，并且不再显示为聊天框里的选中模型。聊天框只显示专家默认模型或这场对话的手选模型
+- 添加云端协同时，权限不足、连接被占用、连到本机或达到条数上限会立刻显示可读错误，不再重试原始关闭帧
+- 同一专家的不同会话不再互相取消正在等待的提问。侧栏展开时可以拖右缘改宽度
+- 重名的模型供应商返回冲突，不再报服务器错误。知识库引用只包含实际写进上下文的文档
+- 备份落到另一块磁盘时不再丢文件。两个账号在同一浏览器里不再共用主题
+- 未读数字可以打开对应会话。自定义 ACP 显示自己的名称，HTML 预览里的页内链接留在预览框内
 
-### 变更
-- 同步上游 v1.0.3b2：MFA / passkey 登录、LDAP 目录账号、cron 与通道多实例租约、chat/history 投影重构、远程市场目录、RAGFlow 连接器
-- 专家页的「内置专家模板」并入「专家市场」，本实例用户发布的模板仍留在市场里。安装包不再附带产品专家模板和内置插件；新建用户时从专家市场拉取模板，拉不到也照常建用户。从市场新建的专家会装上 Octop 助手技能。市场目录不可用时直接失败，不再改显示安装包自带内容，也不再改调本机 `skillhub` 命令行
-- 聊天侧栏可以隐藏任意专家，不再限于别人共享来的。正在对话的隐藏专家留在「已隐藏专家」里，不再被提到列表上方
-## [1.0.13] - 2026-10-28
-
-### 修复
-- **便携包(portable zip)Linux 版在老 glibc 机器上不可用**:`uv --python-platform` 用 `unknown-linux-gnu` 档导致 uv 按 glibc 2.28 选 wheel,FT-2000/4 + 麒麟 glibc 2.23 真机 `import cryptography` 即报 `GLIBC_2.28 not found`。linux 两档切显式 `manylinux2014`(glibc 2.17 基线),配套降级表(numpy 2.2.6/pillow 12.2.0/greenlet 3.2.5/tiktoken 0.11.0/argon2 21.2.0+23.1.0/lxml 6.1.3/psycopg 3.2.13 三件套,与 offline legacy bundle 的 `LEGACY_PINNED` 同源)并剔除依赖死锁的 deepagents-backends/langchain-aws。
-- **便携包 glibc 闸门**:新增 `scripts/check_portable_glibc.py`,CI 冒烟时 `objdump -T` 扫描包内全部 ELF 扩展引用的 `GLIBC_*` 符号,> 2.17 即构建失败——打包 runner(glibc 2.39)上的 import 冒烟通过不再代表老机可用。
-- 已知限制:桌面键鼠控制依赖 evdev 全系无预编译 wheel,runner 编译产物仍引用高版本符号(延迟 import,服务端不受影响)。
-
-## [1.0.12] - 2026-10-27
-
-### 修复
-- **用户可见路径文案统一到 agentbuddy**：环境变量页说明此前仍写 `~/.octop/env`（后端实际写入 `~/.agentbuddy/env`），现全仓用户可见面统一——设置向导密码提示改为 `~/.agentbuddy/agentbuddy-login.txt`、插件目录/专家目录/升级指引（`AGENTBUDDY_HOME`）、忘记密码命令（Unix 与 Windows PowerShell/Cmd）、Docker 数据卷示例、README/README_CN/compose 注释、`install-offline.sh` 口令路径、SECURITY.md 的 tool_guard 规则目录一并修正。有意保留：`octop` CLI 命令名、技能 frontmatter `metadata.octop` 契约键、OctopBot 平台品牌名与 `octop-gateway` 包名
-
-## [1.0.11] - 2026-10-26
+## [1.0.3b4] - 2026-11-06
 
 ### 新增
-- **同步上游 1.0.3b1**：用户组与资源可见性（技能包/知识库/连接器/模型/存储/专家可按用户组控制谁能看见，专家支持按组共享，共享资源带头像标记与筛选）；技能包支持共享与左侧文件树编辑；创建用户可同时创建默认专家；表单与对话支持 AI 文本润色；定时任务支持只跑一次（跑完自动停用留档）；个性化里的技能/子智能体/工具/插件/性格/记忆可分别授权；模型支持显式选择 OpenAI Chat Completions 或 Responses API；创建/编辑抽屉统一可选头像
-- **密钥静态加密**：存储/模型/语音凭证与决策、Langfuse 密钥改为 Fernet 加密保存，旧明文仍可读；插件上传/下载与 ZIP 解压增加体积限额（防炸包）
-- **infra/control 重构并新增手机控制**：browser/desktop/mobile 归并进 infra/control，页面归入 Control 分组；新增 RemoteAndroid 安卓控制（redroid 容器 + ADB，一键安装 Docker 的脚本配套）
-- 新连接器：钉钉 CLI（dws 设备码登录，查通讯录/日程/文档）；bridge 云端协同连接卡片默认打码对端地址与账号；支持反向代理子路径部署（VITE_BASE_PATH）
-- **octop-harness 升级到上游 v1.0.5**：持久 MCP 会话（ManagedMCPClient）、中文 Windows 下 shell UTF-8 输出修复、MCP 工具失败保留参数 schema 回给模型、HITL 恢复保留身份/工具选择/语言、记忆文档只读/可编辑开关（manual_document_policy）；fork 独有的豆包/Exa 搜索 provider 已重新接入上游注册表
+- 工作台增加云主机页：授权后查看腾讯云 CVM，并由常驻运维专家巡检和变更
+- 后台标签页的定时提醒改为系统通知
+- 启动时同步新的预置模型，腾讯云通道支持 HY4
 
 ### 修复
-- 中文 Windows 下 grep 与 shell 命令输出按宿主代码页解码失败导致整轮判败（配套上游 shell_output 解码）
-- **向导密码文件跟随数据目录**：AGENTBUDDY_HOME 迁移后密码文件写入数据目录内，旧位置自动继承，不再生成冲突密码
-- 便携包把 packages 路径传给 Python 子进程（修复子进程找不到模块）；浏览器工作台恢复中文输入与编辑键
-- 回复进行中禁止删除会话；删除会话跳过 vacuum；刷新不再冲掉正在生成的回复；steer 准入前先订阅 WS 会话
-- JWT 中间件认证错误按 Accept-Language 本地化；主动关怀等对话安静且处于关心时段再发；Edge TTS 语速改为取整不截断
-- 远程专家/提及/cron/MCP schema 报错修正（@ 提及不再全工作区 glob，用提及索引）；Linux 无边框窗口可拖边缘调整大小；手机截图写入专家真实工作区
-- 测试资产同步修正：sidebarNavLayout（bridge 权限门）、ModelListEditor（apiMode）、publishedExperts（refresh body）、localStorage 键前缀 agentbuddy:
+- 共享专家能用查看者的自定义 MCP 名称
+- 编辑团队会保存示例头像
+- Docker 精简镜像在编译器已移除后仍能发布
 
 ### 变更
-- 内置专家模板与市场/编辑器对齐（白标已删除的腾讯系专家目录继续保持删除）
-- 上游自带的三处红测试按实际行为适配并在提交信息中注明
+- 多实例部署时，腾讯云授权改存在控制面；单机仍用本地文件
+- 云服务器页移到工作台末尾，并注明目前只支持腾讯云 CVM
+- 默认 Docker 标签改为精简版，完整版使用 `:<version>-full` 和 `:full`
+- 连接器可按类别筛选，大额 token 用量会缩写
+- 升级 octop-harness 至 1.0.8
 
-## [1.0.10] - 2026-10-26
-
-### 修复
-- **搜索框中文输入法（IME）兼容**:搜索类输入框在拼音组合输入期间不再把每个中间态（"z"、"zhong"…）当作搜索词触发请求/过滤——专家市场、技能市场（SkillHub）、插件市场、用户管理、专家列表、会话导航、聊天五个选择弹层（技能/专家/子智能体/知识库/连接器）、EmojiPicker、模型列表编辑、轨迹搜索共 14 处全部修复。实现:新增 `useImeSearchInput` hook,受控 value 始终跟随输入（不打断输入法）,搜索消费方读独立的 `committed` 值（组合期间冻结,候选确认时落地最终文本;antd Input 底层 rc-input 在 compositionEnd 时内部去重不补发 onChange,故必须在 onCompositionEnd 内读取）。`useFilteredList`(聊天 picker 共用)重建于该 hook 之上;`TrajectoryToolbar` 经可选 `searchInputProps` prop 从 owner 接收。
-
-## [1.0.9] - 2026-10-23
+## [1.0.3b3] - 2026-11-04
 
 ### 新增
-- **信创老机离线兼容包(legacy offline bundle)**:Offline Wheel Bundle 流水线每架构(amd64/arm64)新增 `agentbuddy-offline-legacy-*` 变体,仅收 manylinux2014(glibc 2.17 基线)档 wheel + 兼容替换表,适配银河麒麟 glibc 2.23 等 2014 基线政务机;`uv.lock` 不动,替换/剔除表落在 `scripts/offline_bundle.sh`(`LEGACY_PINNED`/`LEGACY_EXCLUDE`)。legacy 包附带 manylinux2014 容器预编译的 `libsqlite3.so.0`,目标机系统 SQLite < 3.35(缺窗口函数/RETURNING)时 `install-offline.sh` 自动启用并把 venv `octop` 入口包成 `LD_LIBRARY_PATH` wrapper(前台与 systemd 统一生效,不动系统文件)。安装脚本新增 glibc 预检:本机 glibc 低于包内 wheel 基线即硬失败并指路 legacy 包。选型/安装文档:`docs/kylin-legacy-deploy.md`。
-- **CI 出包闸门与冒烟**:`scripts/check_offline_bundle.py` 在构建后校验 legacy 每 wheel 的 glibc 标签基线、清单 vs 实际 wheel 版本一致性(防 mcp 2.x 那类"包与清单不一致"事故复发)、主包与 bundled 插件树齐全;并新增安装冒烟(实装 + 核心模块 import + `octop --version` + `octop init` 建库)。Release 资产附带 `SHA256SUMS-*` 与 wheel glibc 基线清单。
+- PostgreSQL 可存放技能包和知识库。多实例共用定时任务、频道、头像、插件和已发布专家
+- Docker 与飞牛增加精简版。存储后端增加火山引擎 TOS
+- 可预建 LDAP 账号，聊天列表可隐藏任意专家
 
 ### 修复
-- **离线打包管线存量坑**:`pip download --only-binary` 对单个解析失败包(如 sdist-only 的 crcmod)会中止整批下载 → 改为剔除失败包重试循环(含传递依赖 `(from HOST)` 形态);第二轮 `pip wheel` 不带版本会装**最新版**(即当年 bundle 混入 mcp 2.3.0/anthropic 2.1.0 的根源)→ 逐包 `pkg==ver` 钉定;下载/编译统一用 Python 3.12 解释器(旧解释器按错误 marker 分支选依赖);被剔除包经 `.dropped.txt` 以 `--no-deps` 补装回 bundle;legacy 变体的 sdist 预编译在 manylinux2014 容器内执行(产物 glibc 2.17 ABI)。
-- **install-offline.sh 改为 `--no-deps` 全量安装**:此前 `pip install octop` 带依赖解析,与"extras 被剔除的 legacy 包"不兼容;wheel 集合源自同一锁定树,全量直装更稳(kylin-fix 实战同款模式)。
-
-## [1.0.8] - 2026-10-23
-
-### 新增
-- **沙箱容器管理(Admin)**:容器台账 + 漂移检测 + 一键重建。台账按 Docker label 实时列出本机沙箱容器(scope/专家/实际镜像/实际网络模式);漂移检测比对实际镜像与配置期望镜像(`DRIFT`)、实际网络模式与配置期望 `allow_network`(`NETWORK-DRIFT`,分"配置未生效"与"应关网仍联网"两个方向);一键重建 = 备份容器工作区到宿主(`{AGENTBUDDY_HOME}/sandbox-backups/`,每容器保留 3 份)→ 校验期望镜像存在 → 删容器,下次对话按新配置自动重建;关联专家有进行中对话时 409 拒绝。入口:管理 → 存储 → 沙箱容器 tab、`/api/admin/sandboxes`、`octop sandbox list/recreate/images/backups`。
-- **沙箱联网可见性**:`allow_network` 配置(agent `config.backend` 经 API、或存储后端高级配置 JSON)的状态与漂移在台账一屏可见;重建即联网开关的生效动作。
-- **沙箱镜像白名单扩充**(Dockerfile.sandbox):pip += pymupdf4llm/Pillow/markitdown[pptx]/pyfiglet/numpy;npm 白名单首建 += pptxgenjs/mcporter;apt += cowsay。分层镜像变体 `--target variant-jupyter`(jupyter 全家桶)/ `variant-manim`(manim + texlive-full)按需构建、backend `image` 字段按需选择,基础镜像保持默认构建输出。
-
-### 修复
-- **专家编辑抽屉静默冲掉 backend**:每次保存都按表单重建整个 `config.backend`,内联 docker 后端的 `image`/`allow_network` 等未知键被静默替换为默认值。保存改为原样保留加载的 spec;内联 docker 后端开放受控的"镜像 tag"编辑。
-- **沙箱确认弹窗"受影响专家"为空**:user scope 容器的反查依赖了不存在的 registry 方法,且 named 引用反查漏掉内联默认后端。改为并集反查(named 引用 ∪ 内联 docker prefix 匹配),同时修复期望值计算与活跃会话检查在该场景下失效的问题;容器名 prefix 反推不再被带下划线的用户名破坏。
-- laya_runtime 测试的磁盘空间隐式依赖(注入 free_bytes 桩)。
-
-## [1.0.7] - 2026-10-22
+- 专家工作区落到允许的存储根下。共享连接器只有创建者能改
+- 聊天历史不再错序，未答完的提问不会被别的会话接走
+- 超长图片先缩小再发送。失效的默认模型会自动换掉
+- 升级记忆库：长会话分批提炼，重启后不重跑
+- 安装清理不再删掉运行环境。PostgreSQL 上的知识库检索和关怀去重恢复正常
 
 ### 变更
-- antd 组件类名前缀 `octop-*` → `agentbuddy-*`(ConfigProvider `prefixCls`;浏览器 Elements 面板可见的品牌痕迹,78 处自定义样式覆盖同步)。技能工具协议的 `octop_ui` 包络键与技能 frontmatter `metadata.octop` 保持不变(工具格式契约)
-
-## [1.0.6] - 2026-10-22
-
-### 修复
-- **全部页面无法滚动**(技能市场 / 模型 / 插件市场 / 聊天 / 侧边栏,浏览器与桌面壳一致):白标替换时布局高度规则把 `.octop-app` 误改为 `.agentbuddy-app`,而 antd `<App>` 实际渲染的类名仍是 `octop-app`(由 `prefixCls` 决定),导致最顶层 100% 高度丢失、整个 flex 高度链失效,内容被固定高度的 `#root` 裁掉且无滚动条。恢复该选择器。
-- 安装向导 PostgreSQL 默认库名 / 用户名 `octop` → `agentbuddy`(与 compose 默认一致);Docker 沙箱「容器名前缀」默认值 `octop_sandbox` → `agentbuddy_sandbox`(与后端一致);浏览器 localStorage 键前缀 `octop.` → `agentbuddy.`
-
-## [1.0.5] - 2026-10-22
-
-### 修复
-- Windows / macOS 便携包(zip)首次启动报 `ModuleNotFoundError: No module named 'octop_harness'`:便携包只装了主程序 wheel,而四个上游包(octop-harness / octop-gateway / octop-browser / octop-memory)没有随包分发。现在打包时构建并安装全部五个 wheel,并从依赖导出中剔除指向打包机源码路径的 editable 条目。Docker / wheel 安装不受影响。
-
-## [1.0.4] - 2026-10-22
-
-### 新增
-- 内置搜索引擎扩展：新增豆包搜索（火山引擎 Global 版）、DeepSeek 网页搜索、Exa 语义搜索三个引擎，在「设置 → 高级 → 搜索」中填入对应 API Key 即可使用；连通性测试同步支持三个新引擎
-- octop-harness、octop-gateway、octop-memory、octop-browser 四个上游包源码收进本仓库 `packages/` 目录，以 uv workspace 管理，锁文件完全自包含，离线环境可从本仓库直接构建全部 wheel
-
-### 变更
-- **品牌标识全面切换（文件系统与环境变量层）**：
-  - 安装数据目录 `~/.octop` → `~/.agentbuddy`（控制面数据库 `agentbuddy.db`、日志 `agentbuddy.log`、向导口令 `agentbuddy-login.txt`）；环境变量 `OCTOP_HOME` → `AGENTBUDDY_HOME`（旧名保留兼容读取）
-  - 环境变量前缀 `OCTOP_*` → `AGENTBUDDY_*`（数据库、端口、备份、技能等约 80 个）；agent 执行环境与 Docker 沙箱镜像同步
-  - 浏览器 F12 可见面：请求/响应头 `X-Octop-*` → `X-Agentbuddy-*`、SSO Cookie、`window.__OCTOP_*` 全局、备份导出文件名
-  - agent 工作区内部系统目录 `.octop/` → `.agentbuddy/`（存量工作区按各自配置继续使用 `.octop`，无需迁移）
-  - 上游包家目录收编：`~/.octop-memory` / `~/.octop-browser` / `~/.octop-harness` → `~/.agentbuddy/{memory,browser,harness}`（旧目录存在时自动沿用）
-  - 内置技能 `octop-assistant` → `agentbuddy-assistant`，正文同步更新安装方式与数据目录说明
-  - Docker 沙箱容器前缀 `octop_sandbox` → `agentbuddy_sandbox`（配置键已存在，老配置不受影响）
-  - **不迁移、全新安装即生效**；从旧版本原地升级的实例需手动 `mv ~/.octop ~/.agentbuddy`（或设置 `AGENTBUDDY_HOME` 指向旧目录）
-
-### 移除
-- 下线 Brave Search 与 Google CSE 两个内置搜索引擎（国内/政务网络环境无法访问其 API）。设置页不再出现这两张卡片，环境变量白名单移除 `BRAVE_API_KEY`、`GOOGLE_API_KEY`、`GOOGLE_CSE_ID`。已写入 `~/.octop/env` 的旧 Key 保留但不再被读取，可手动删除；`web_search_tools` 显式列出 `brave`/`google` 的 agent 配置需改为可用引擎名或恢复默认 `auto`
-
-## [1.0.3] - 2026-10-21
-
-### 新增
-- Agent 沙箱镜像进入 CI 发布流程：推 `v*` tag 时与主镜像一起构建 `agentbuddy-sandbox`（amd64 + arm64 双原生构建），产物进 GHCR，政务内网可 `docker pull` 或离线导入；沙箱 Dockerfile 自检层成为 CI 回归保护
-- 全新的品牌视觉：新 logo/图标全套（favicon/PWA/横标/竖标），吉祥物文件统一为 `agentbuddy-mascot-*`，桌面壳图标（appicon/tray）从新素材重新生成
-
-### 变更
-- 英文品牌名 `wkbuddy` → `agentbuddy`（全小写连体；显示字样允许 "Agent Buddy" 带空格）。桌面 bundle id `com.daoshengtech.agentbuddy`、镜像名、下载产物名、OpenAPI 标题同步；浏览器存储 key 前缀 `octop:` → `agentbuddy:`（旧前缀的存量报错数据兼容读取）。内部标识（Python 包名、`OCTOP_*` 环境变量、`~/.octop`、技能 frontmatter 元数据键）保持不变
-- 修复头像菜单的「项目地址」外链问题后按决策移除了该菜单项；升级链路维持本机服务控制（不访问任何包索引）
-
-### 修复
-- 头像菜单/浏览器起始页等遗留外链清理；`SSO` 面板与 `TLS`/桥接设置的占位符改用中性示例域名；技能文档索引移除失效的迁移指引
+- 升级 octop-harness 至 1.0.7
+- 内置专家并入专家市场，安装包不再自带市场目录
 
 ## [1.0.3b2] - 2026-11-01
 
@@ -177,6 +96,7 @@
 - 表单和对话可以让 AI 润色。搜索增加 DeepSeek 与元宝，模型支持 OpenAI Responses API
 
 ### 修复
+- 记忆配置 API 支持独立开关自动记录对话与自动注入召回结果，显式关闭时正确传递到运行时，避免配置被静默忽略（#2282）。
 - 云端协同共享后可以直接对话。回复进行中不会被刷新冲掉，也不能删掉这场会话
 - 手机截图写到专家自己的工作区。只改定时任务文案时，间隔任务不再重新计时
 - 浏览器工作台恢复中文输入。主动关怀等对话安静后再发

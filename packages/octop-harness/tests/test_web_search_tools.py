@@ -18,8 +18,6 @@ from octop_harness.builtin.tools.web_search._registry import (
 )
 from octop_harness.builtin.tools.web_search.brave import brave_search
 from octop_harness.builtin.tools.web_search.deepseek import deepseek_search
-from octop_harness.builtin.tools.web_search.doubao import doubao_search
-from octop_harness.builtin.tools.web_search.exa import exa_search
 from octop_harness.builtin.tools.web_search.google import google_search
 from octop_harness.builtin.tools.web_search.kimi import kimi_search
 from octop_harness.builtin.tools.web_search.searchfree import searchfree_search
@@ -36,9 +34,7 @@ class TestRegistry:
         assert set(WEB_SEARCH_PROVIDERS) == {
             "tavily",
             "brave",
-            "doubao",
             "deepseek",
-            "exa",
             "google",
             "kimi",
             "yuanbao",
@@ -69,9 +65,7 @@ class TestLoadWebSearchTools:
         for var in (
             "TAVILY_API_KEY",
             "BRAVE_API_KEY",
-            "DOUBAO_SEARCH_API_KEY",
             "DEEPSEEK_API_KEY",
-            "EXA_API_KEY",
             "GOOGLE_API_KEY",
             "GOOGLE_CSE_ID",
             "MOONSHOT_API_KEY",
@@ -111,9 +105,7 @@ class TestLoadWebSearchTools:
         assert names == {
             "tavily_search",
             "brave_search",
-            "doubao_search",
             "deepseek_search",
-            "exa_search",
             "google_search",
             "kimi_search",
             "yuanbao_search",
@@ -918,242 +910,3 @@ class TestYouSearch:
         with patch.object(mod.httpx, "AsyncClient", _you_client(_YouResp(body={"results": {"web": []}}), [])):
             result = await mod.you_search.ainvoke({"query": "hi"})
         assert result == "No results found."
-
-# ---------------------------------------------------------------------------
-# doubao_search
-# ---------------------------------------------------------------------------
-
-
-def _fake_http_client(
-    resp_status: int,
-    resp_json: Any,
-    *,
-    captured: dict[str, Any] | None = None,
-    raise_exc: Exception | None = None,
-) -> type:
-    """Build a fake ``httpx.AsyncClient`` class (same patch style as searchfree tests)."""
-
-    class _Resp:
-        status_code = resp_status
-        text = "raw body"
-
-        def json(self) -> Any:
-            if isinstance(resp_json, Exception):
-                raise resp_json
-            return resp_json
-
-    class _FakeClient:
-        def __init__(self, *args: Any, **kwargs: Any) -> None:
-            pass
-
-        async def __aenter__(self) -> _FakeClient:
-            return self
-
-        async def __aexit__(self, *args: object) -> None:
-            """No-op."""
-
-        async def post(self, url: str, **kwargs: Any) -> _Resp:
-            if captured is not None:
-                captured["url"] = url
-                captured.update(kwargs)
-            if raise_exc is not None:
-                raise raise_exc
-            return _Resp()
-
-    return _FakeClient
-
-
-class TestDoubaoSearch:
-    @pytest.fixture(autouse=True)
-    def _clean(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("DOUBAO_SEARCH_API_KEY", raising=False)
-
-    @pytest.mark.asyncio
-    async def test_missing_api_key_returns_error(self) -> None:
-        result = await doubao_search.ainvoke({"query": "x"})
-        assert "DOUBAO_SEARCH_API_KEY" in result
-
-    @pytest.mark.asyncio
-    async def test_success_returns_trimmed_results(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("DOUBAO_SEARCH_API_KEY", "secret")
-        payload = {
-            "ResponseMetadata": {"RequestId": "r1"},
-            "Result": {
-                "TotalDocCount": 2,
-                "ErrorCode": 0,
-                "ErrorMsg": "",
-                "Documents": [
-                    {
-                        "Rank": 0,
-                        "Title": "天安门",
-                        "Url": "https://example.com/a",
-                        "Snippet": [
-                            {"Type": "text", "Text": "第一段摘要"},
-                            {"Type": "image", "Image": {"ImageUrl": "x.jpg"}},
-                            {"Type": "text", "Text": "第二段摘要"},
-                        ],
-                        "DocumentInfo": {"PublishTime": "2026-08-22T09:16:00+08:00"},
-                        "HostInfo": {
-                            "Hostname": "抖音百科",
-                            "AuthorityLevel": "very_high",
-                        },
-                    },
-                    {"Rank": 1, "Title": "另一条", "Url": "https://example.com/b"},
-                ],
-            },
-        }
-        captured: dict[str, Any] = {}
-        fake = _fake_http_client(200, payload, captured=captured)
-        from octop_harness.builtin.tools.web_search import doubao as mod
-
-        with patch.object(mod.httpx, "AsyncClient", fake):
-            result = await doubao_search.ainvoke({"query": "北京游玩", "max_results": 5})
-        parsed = json.loads(result)
-        assert parsed["total"] == 2
-        assert parsed["results"][0] == {
-            "title": "天安门",
-            "url": "https://example.com/a",
-            "snippet": "第一段摘要\n第二段摘要",
-            "publish_time": "2026-08-22T09:16:00+08:00",
-            "site": "抖音百科",
-            "authority": "very_high",
-        }
-        assert parsed["results"][1]["snippet"] == ""
-        assert parsed["results"][1]["site"] == ""
-        # PascalCase request contract.
-        assert captured["url"] == "https://open.feedcoopapi.com/search_api/global_search"
-        assert captured["json"]["SearchType"] == "web"
-        assert captured["json"]["Query"] == "北京游玩"
-        assert captured["json"]["DocCount"] == 5
-        assert captured["json"]["MaxSnippetLength"] == 1000
-        assert captured["headers"]["Authorization"] == "Bearer secret"
-
-    @pytest.mark.asyncio
-    async def test_query_truncated_to_100_chars(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("DOUBAO_SEARCH_API_KEY", "secret")
-        payload = {"Result": {"ErrorCode": 0, "Documents": []}}
-        captured: dict[str, Any] = {}
-        fake = _fake_http_client(200, payload, captured=captured)
-        from octop_harness.builtin.tools.web_search import doubao as mod
-
-        with patch.object(mod.httpx, "AsyncClient", fake):
-            await doubao_search.ainvoke({"query": "q" * 300})
-        assert len(captured["json"]["Query"]) == 100
-
-    @pytest.mark.asyncio
-    async def test_http_error_surfaces_api_error_code(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("DOUBAO_SEARCH_API_KEY", "secret")
-        payload = {
-            "ResponseMetadata": {
-                "Error": {"Code": "700901", "Message": "APIKey 无效"},
-            },
-            "Result": None,
-        }
-        fake = _fake_http_client(401, payload)
-        from octop_harness.builtin.tools.web_search import doubao as mod
-
-        with patch.object(mod.httpx, "AsyncClient", fake):
-            result = await doubao_search.ainvoke({"query": "x"})
-        assert "700901" in result
-        assert "APIKey" in result
-
-    @pytest.mark.asyncio
-    async def test_business_error_code_surfaces(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("DOUBAO_SEARCH_API_KEY", "secret")
-        payload = {"Result": {"ErrorCode": 10406, "ErrorMsg": "免费搜索额度用尽"}}
-        fake = _fake_http_client(200, payload)
-        from octop_harness.builtin.tools.web_search import doubao as mod
-
-        with patch.object(mod.httpx, "AsyncClient", fake):
-            result = await doubao_search.ainvoke({"query": "x"})
-        assert "10406" in result
-        assert "额度" in result
-
-    @pytest.mark.asyncio
-    async def test_invalid_json_returns_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("DOUBAO_SEARCH_API_KEY", "secret")
-        fake = _fake_http_client(200, ValueError("bad json"))
-        from octop_harness.builtin.tools.web_search import doubao as mod
-
-        with patch.object(mod.httpx, "AsyncClient", fake):
-            result = await doubao_search.ainvoke({"query": "x"})
-        assert "invalid JSON" in result
-
-    @pytest.mark.asyncio
-    async def test_network_failure_returns_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("DOUBAO_SEARCH_API_KEY", "secret")
-        from octop_harness.builtin.tools.web_search import doubao as mod
-
-        fake = _fake_http_client(200, {}, raise_exc=mod.httpx.ConnectError("refused"))
-        with patch.object(mod.httpx, "AsyncClient", fake):
-            result = await doubao_search.ainvoke({"query": "x"})
-        assert "doubao_search request failed" in result
-
-
-
-# ---------------------------------------------------------------------------
-# exa_search
-# ---------------------------------------------------------------------------
-
-
-class TestExaSearch:
-    @pytest.fixture(autouse=True)
-    def _clean(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("EXA_API_KEY", raising=False)
-
-    @pytest.mark.asyncio
-    async def test_missing_api_key_returns_error(self) -> None:
-        result = await exa_search.ainvoke({"query": "x"})
-        assert "EXA_API_KEY" in result
-
-    @pytest.mark.asyncio
-    async def test_success_joins_highlights(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("EXA_API_KEY", "secret")
-        payload = {
-            "results": [
-                {
-                    "title": "Exa result",
-                    "url": "https://example.com/exa",
-                    "highlights": ["highlight one", "highlight two"],
-                    "publishedDate": "2026-08-22T00:00:00Z",
-                    "author": "Alice",
-                },
-                {"title": "Bare", "url": "https://example.com/b", "text": "fallback text"},
-            ],
-        }
-        captured: dict[str, Any] = {}
-        fake = _fake_http_client(200, payload, captured=captured)
-        from octop_harness.builtin.tools.web_search import exa as mod
-
-        with patch.object(mod.httpx, "AsyncClient", fake):
-            result = await exa_search.ainvoke({"query": "hello", "max_results": 2})
-        parsed = json.loads(result)
-        assert parsed["results"][0]["snippet"] == "highlight one highlight two"
-        assert parsed["results"][0]["author"] == "Alice"
-        assert parsed["results"][1]["snippet"] == "fallback text"
-        assert captured["url"] == "https://api.exa.ai/search"
-        assert captured["json"]["numResults"] == 2
-        assert captured["json"]["contents"] == {"highlights": True}
-        assert captured["headers"]["x-api-key"] == "secret"
-
-    @pytest.mark.asyncio
-    async def test_http_error_returns_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("EXA_API_KEY", "secret")
-        fake = _fake_http_client(403, {"message": "forbidden"})
-        from octop_harness.builtin.tools.web_search import exa as mod
-
-        with patch.object(mod.httpx, "AsyncClient", fake):
-            result = await exa_search.ainvoke({"query": "x"})
-        assert "HTTP 403" in result
-
-    @pytest.mark.asyncio
-    async def test_network_failure_returns_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("EXA_API_KEY", "secret")
-        from octop_harness.builtin.tools.web_search import exa as mod
-
-        fake = _fake_http_client(200, {}, raise_exc=mod.httpx.ConnectError("refused"))
-        with patch.object(mod.httpx, "AsyncClient", fake):
-            result = await exa_search.ainvoke({"query": "x"})
-        assert "exa_search request failed" in result
-
-
