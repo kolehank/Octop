@@ -184,7 +184,7 @@ export default function AiPanel({
   } = useAgentThreadChat(agent?.agent_id ?? null, {
     // v2 was saved while this panel still followed the sidebar expert, so it
     // reopened that expert's conversation. This pin belongs only to ops-engineer.
-    pinKey: "octop:terminal-ai-thread:ops-engineer:v1",
+    pinKey: "agentbuddy:terminal-ai-thread:ops-engineer:v1",
   });
   const modelBlocked = needsModel || isAgentModelConfigError(bootError);
 
@@ -315,11 +315,11 @@ export default function AiPanel({
     <AssistantFrame
       placement={placement}
       onPlacementChange={onPlacementChange}
-      placementKey="octop:terminal-ai-layout-v2"
-      storageKey="octop:terminal-ai"
+      placementKey="agentbuddy:terminal-ai-layout-v2"
+      storageKey="agentbuddy:terminal-ai"
       legacySize={{
-        widthKey: "octop:terminal-ai-width",
-        heightKey: "octop:terminal-ai-height",
+        widthKey: "agentbuddy:terminal-ai-width",
+        heightKey: "agentbuddy:terminal-ai-height",
       }}
       dock="inline"
       defaultDockWidth={400}

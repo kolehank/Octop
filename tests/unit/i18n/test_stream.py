@@ -39,7 +39,7 @@ def test_classify_stream_stall_prefers_inner_timeout() -> None:
 def test_classify_rate_limit() -> None:
     assert (
         classify_stream_error_message("Error code: 429 - {'error': {'type': 'rate_limit_error'}}")
-        == "octop:stream_errors.rate_limit"
+        == "agentbuddy:stream_errors.rate_limit"
     )
 
 
@@ -48,21 +48,21 @@ def test_classify_insufficient_balance() -> None:
         "Error code: 402 - {'error': {'message': 'Insufficient Balance', "
         "'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}}"
     )
-    assert classify_stream_error_message(msg) == "octop:stream_errors.insufficient_balance"
+    assert classify_stream_error_message(msg) == "agentbuddy:stream_errors.insufficient_balance"
     assert (
         classify_stream_error_message("HTTP 402 POST https://api.example.com/v1/embeddings: quota")
-        == "octop:stream_errors.insufficient_balance"
+        == "agentbuddy:stream_errors.insufficient_balance"
     )
     assert (
         classify_stream_error_message("You exceeded your current quota, please check billing")
-        == "octop:stream_errors.insufficient_balance"
+        == "agentbuddy:stream_errors.insufficient_balance"
     )
 
 
 def test_classify_auth() -> None:
     assert (
         classify_stream_error_message("Error code: 401 - Incorrect API key provided")
-        == "octop:stream_errors.auth"
+        == "agentbuddy:stream_errors.auth"
     )
 
 
@@ -76,7 +76,7 @@ def test_typed_auth_error_gets_guidance_without_error_keywords(wrapped: bool) ->
         outer.__cause__ = error
         error = outer
     assert format_stream_error(error, "zh") == stream_error_message(
-        "octop:stream_errors.auth", "zh"
+        "agentbuddy:stream_errors.auth", "zh"
     )
 
 
@@ -94,11 +94,11 @@ def test_classify_invalid_request_mindie_422() -> None:
 def test_classify_provider_unavailable_http_status() -> None:
     assert (
         classify_stream_error_message("HTTP 503 POST https://api.example.com/v1/embeddings")
-        == "octop:stream_errors.provider_unavailable"
+        == "agentbuddy:stream_errors.provider_unavailable"
     )
     assert (
         classify_stream_error_message("Error code: 502 - Bad Gateway")
-        == "octop:stream_errors.provider_unavailable"
+        == "agentbuddy:stream_errors.provider_unavailable"
     )
 
 
@@ -107,7 +107,7 @@ def test_classify_context_length() -> None:
         classify_stream_error_message(
             "Error code: 400 - This model's maximum context length is 128000 tokens"
         )
-        == "octop:stream_errors.context_length"
+        == "agentbuddy:stream_errors.context_length"
     )
 
 
@@ -270,3 +270,11 @@ def test_format_stream_error_empty_exception_still_localized() -> None:
     assert text
     assert "模型调用失败" in text
     assert "TimeoutError" in text
+
+
+def test_stream_error_message_accepts_legacy_octop_prefix() -> None:
+    """Persisted rows from a pre-rename build keep the ``octop:`` prefix."""
+    legacy = stream_error_message("octop:stream_errors.rate_limit", "en")
+    current = stream_error_message("agentbuddy:stream_errors.rate_limit", "en")
+    assert legacy == current
+    assert "stream_errors" not in legacy

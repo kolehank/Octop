@@ -31,7 +31,7 @@ export interface BrowserAiTabContext {
   active: boolean;
 }
 
-const BROWSER_AI_AGENT_KEY = "octop:remote-browser:ai-agent";
+const BROWSER_AI_AGENT_KEY = "agentbuddy:remote-browser:ai-agent";
 
 function readBrowserAgentId(): string | null {
   try {
@@ -183,7 +183,9 @@ export default function BrowserAiPanel({
     isStreaming,
     send,
     cancelStream,
-  } = useAgentThreadChat(agentId, { pinKey: "octop:remote-browser:ai-thread" });
+  } = useAgentThreadChat(agentId, {
+    pinKey: "agentbuddy:remote-browser:ai-thread",
+  });
 
   // When browserRecording transitions, sync phase
   useEffect(() => {
@@ -615,11 +617,11 @@ export default function BrowserAiPanel({
     <AssistantFrame
       placement={placement}
       onPlacementChange={onPlacementChange}
-      placementKey="octop:remote-browser:ai-placement"
-      storageKey="octop:remote-browser:ai"
+      placementKey="agentbuddy:remote-browser:ai-placement"
+      storageKey="agentbuddy:remote-browser:ai"
       legacySize={{
-        widthKey: "octop:remote-browser:ai-panel-width",
-        heightKey: "octop:remote-browser:ai-panel-height",
+        widthKey: "agentbuddy:remote-browser:ai-panel-width",
+        heightKey: "agentbuddy:remote-browser:ai-panel-height",
       }}
       dock="inline"
       defaultDockWidth={400}

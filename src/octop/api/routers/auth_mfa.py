@@ -213,9 +213,9 @@ async def totp_begin(
     body: ReauthTokenBody,
     user: Any = Depends(current_user),
     server: Any = Depends(get_server),
-    x_octop_reauth: str | None = Header(None, alias="X-Octop-Reauth"),
+    x_agentbuddy_reauth: str | None = Header(None, alias="X-Agentbuddy-Reauth"),
 ) -> dict[str, Any]:
-    token = _reauth_token(header=x_octop_reauth, body_token=body.reauth_token)
+    token = _reauth_token(header=x_agentbuddy_reauth, body_token=body.reauth_token)
     return _mfa(server).totp_begin(user, reauth_token=token)
 
 
@@ -224,9 +224,9 @@ async def totp_confirm(
     body: TotpConfirmBody,
     user: Any = Depends(current_user),
     server: Any = Depends(get_server),
-    x_octop_reauth: str | None = Header(None, alias="X-Octop-Reauth"),
+    x_agentbuddy_reauth: str | None = Header(None, alias="X-Agentbuddy-Reauth"),
 ) -> dict[str, Any]:
-    token = _reauth_token(header=x_octop_reauth, body_token=body.reauth_token)
+    token = _reauth_token(header=x_agentbuddy_reauth, body_token=body.reauth_token)
     result = _mfa(server).totp_confirm(user, reauth_token=token, code=body.code)
     result["user"] = me_payload(user, server)
     return result
@@ -237,10 +237,10 @@ async def totp_disable(
     body: ReauthTokenBody | None = None,
     user: Any = Depends(current_user),
     server: Any = Depends(get_server),
-    x_octop_reauth: str | None = Header(None, alias="X-Octop-Reauth"),
+    x_agentbuddy_reauth: str | None = Header(None, alias="X-Agentbuddy-Reauth"),
 ) -> dict[str, Any]:
     body = body or ReauthTokenBody()
-    token = _reauth_token(header=x_octop_reauth, body_token=body.reauth_token)
+    token = _reauth_token(header=x_agentbuddy_reauth, body_token=body.reauth_token)
     result = _mfa(server).totp_disable(user, reauth_token=token)
     result["user"] = me_payload(user, server)
     return result
@@ -252,9 +252,9 @@ async def passkey_register_options(
     request: Request,
     user: Any = Depends(current_user),
     server: Any = Depends(get_server),
-    x_octop_reauth: str | None = Header(None, alias="X-Octop-Reauth"),
+    x_agentbuddy_reauth: str | None = Header(None, alias="X-Agentbuddy-Reauth"),
 ) -> dict[str, Any]:
-    token = _reauth_token(header=x_octop_reauth, body_token=body.reauth_token)
+    token = _reauth_token(header=x_agentbuddy_reauth, body_token=body.reauth_token)
     return _mfa(server).passkey_register_options(user, reauth_token=token, origin=_origin(request))
 
 
@@ -264,9 +264,9 @@ async def passkey_register_verify(
     request: Request,
     user: Any = Depends(current_user),
     server: Any = Depends(get_server),
-    x_octop_reauth: str | None = Header(None, alias="X-Octop-Reauth"),
+    x_agentbuddy_reauth: str | None = Header(None, alias="X-Agentbuddy-Reauth"),
 ) -> dict[str, Any]:
-    token = _reauth_token(header=x_octop_reauth, body_token=body.reauth_token)
+    token = _reauth_token(header=x_agentbuddy_reauth, body_token=body.reauth_token)
     result = _mfa(server).passkey_register_verify(
         user,
         reauth_token=token,
@@ -287,10 +287,10 @@ async def passkey_delete(
     body: ReauthTokenBody | None = None,
     user: Any = Depends(current_user),
     server: Any = Depends(get_server),
-    x_octop_reauth: str | None = Header(None, alias="X-Octop-Reauth"),
+    x_agentbuddy_reauth: str | None = Header(None, alias="X-Agentbuddy-Reauth"),
 ) -> dict[str, Any]:
     body = body or ReauthTokenBody()
-    token = _reauth_token(header=x_octop_reauth, body_token=body.reauth_token)
+    token = _reauth_token(header=x_agentbuddy_reauth, body_token=body.reauth_token)
     result = _mfa(server).passkey_delete(user, reauth_token=token, credential_id=credential_id)
     result["user"] = me_payload(user, server)
     return result
@@ -301,9 +301,9 @@ async def recovery_regenerate(
     body: ReauthTokenBody,
     user: Any = Depends(current_user),
     server: Any = Depends(get_server),
-    x_octop_reauth: str | None = Header(None, alias="X-Octop-Reauth"),
+    x_agentbuddy_reauth: str | None = Header(None, alias="X-Agentbuddy-Reauth"),
 ) -> dict[str, Any]:
-    token = _reauth_token(header=x_octop_reauth, body_token=body.reauth_token)
+    token = _reauth_token(header=x_agentbuddy_reauth, body_token=body.reauth_token)
     result = _mfa(server).recovery_regenerate(user, reauth_token=token)
     result["user"] = me_payload(user, server)
     return result

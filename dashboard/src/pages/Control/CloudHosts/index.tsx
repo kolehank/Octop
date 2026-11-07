@@ -758,27 +758,27 @@ export default function CloudHostsPage({
 
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     if (typeof window === "undefined") return true;
-    return window.localStorage.getItem("octop:cloud:sidebar") !== "0";
+    return window.localStorage.getItem("agentbuddy:cloud:sidebar") !== "0";
   });
 
   const toggleSidebar = useCallback(() => {
     setSidebarOpen((prev) => {
       const next = !prev;
-      window.localStorage.setItem("octop:cloud:sidebar", next ? "1" : "0");
+      window.localStorage.setItem("agentbuddy:cloud:sidebar", next ? "1" : "0");
       return next;
     });
   }, []);
 
   const [nodeView, setNodeView] = useState<"card" | "table">(() => {
     if (typeof window === "undefined") return "card";
-    return window.localStorage.getItem("octop:cloud:node-view") === "table"
+    return window.localStorage.getItem("agentbuddy:cloud:node-view") === "table"
       ? "table"
       : "card";
   });
 
   const switchNodeView = useCallback((next: "card" | "table") => {
     setNodeView(next);
-    window.localStorage.setItem("octop:cloud:node-view", next);
+    window.localStorage.setItem("agentbuddy:cloud:node-view", next);
   }, []);
 
   const [boardMetric, setBoardMetric] = useState<"health" | "cpu" | "mem">(

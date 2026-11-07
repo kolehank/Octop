@@ -39,7 +39,7 @@ import {
 } from "../../../components/AssistantFrame/AssistantFrame";
 import styles from "./index.module.less";
 
-const AI_PANEL_LAYOUT_KEY = "octop:terminal-ai-layout-v2";
+const AI_PANEL_LAYOUT_KEY = "agentbuddy:terminal-ai-layout-v2";
 const TERMINAL_PLACEMENTS = ["bottom", "right", "float"] as const;
 
 function ConnBadge({ state }: { state: TerminalConnState }) {

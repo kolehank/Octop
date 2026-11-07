@@ -1242,7 +1242,7 @@ export default function DesktopPanel({
                               t("remoteDesktop.permJoin", "、"),
                             ),
                             defaultValue:
-                              "在「{{permissions}}」里勾选正在运行 Octop 的终端或应用。",
+                              "在「{{permissions}}」里勾选正在运行政务伙伴的终端或应用。",
                           }),
                         },
                         {
@@ -1252,7 +1252,7 @@ export default function DesktopPanel({
                           ),
                           detail: t(
                             "remoteDesktop.macPermStep3Detail",
-                            "重启 Octop（octop run），回到本页点击「重新检测」。",
+                            "重启政务伙伴（octop run），回到本页点击「重新检测」。",
                           ),
                         },
                       ]

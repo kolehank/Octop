@@ -437,7 +437,7 @@
     "STORAGE_BACKEND_DEPS_FAILED": "Could not install optional components for this storage backend. Check network access and retry.",
     "STORAGE_BROWSE_FAILED": "Could not browse this storage backend.",
     "SANDBOX_CONTAINER_NOT_FOUND": "Sandbox container not found.",
-    "SANDBOX_LABEL_MISMATCH": "Target container is not an Octop sandbox container.",
+    "SANDBOX_LABEL_MISMATCH": "Target container is not an agentbuddy sandbox container.",
     "SANDBOX_IMAGE_MISSING": "Expected sandbox image is missing locally and could not be pulled. The old container is kept.",
     "SANDBOX_IN_USE": "This sandbox has an active conversation. End it before recreating.",
     "SANDBOX_BACKUP_FAILED": "Failed to back up the sandbox workspace. The old container is kept.",
@@ -467,7 +467,7 @@
     "BRIDGE_SELF_CONNECT": "Cannot add this agentbuddy instance as a peer of itself.",
     "BRIDGE_INBOUND_PASSIVE": "This link was opened by the peer. This side cannot change the address or dial out. After disconnect, the peer must reopen it.",
     "BRIDGE_PEER_FORBIDDEN": "The account you signed in with on the peer does not have Cloud collab permission. This is not limited to admins — grant that account Cloud collab on the peer, or sign in with an account that already has it.",
-    "BRIDGE_PEER_CONNECTION_OWNED": "The peer already registered this cloud collab link to another user, so this account cannot take it over. Ask that user to delete it, or sign in with the same peer account. If the address actually points at this Octop, use the peer's real address instead.",
+    "BRIDGE_PEER_CONNECTION_OWNED": "The peer already registered this cloud collab link to another user, so this account cannot take it over. Ask that user to delete it, or sign in with the same peer account. If the address actually points at this agentbuddy, use the peer's real address instead.",
     "CRON_TRIGGER_INVALID": "Invalid cron trigger.",
     "CRON_ALREADY_RUNNING": "This task is already running on another instance.",
     "SLASH_UNKNOWN": "Unknown slash command.",
@@ -556,7 +556,7 @@
     "MFA_REAUTH_REQUIRED": "Re-enter your password to continue.",
     "MFA_LAST_FACTOR": "Cannot remove the last MFA factor.",
     "WEBAUTHN_CONFIG_INVALID": "Passkeys are not available on this address yet. An administrator needs to enter this site’s domain and full URL under App settings → Passkeys. If that is already saved, open the exact URL that was registered. localhost does not need this setup.",
-    "WEBAUTHN_INVALID_DOMAIN": "Passkeys need a hostname. Open Octop via http://localhost (not an IP address such as 127.0.0.1).",
+    "WEBAUTHN_INVALID_DOMAIN": "Passkeys need a hostname. Open agentbuddy via http://localhost (not an IP address such as 127.0.0.1).",
     "WEBAUTHN_LOGIN_DISABLED": "Passkey sign-in on the login page is turned off. An administrator can enable it under App settings → Passkeys."
   },
   "desktop": {

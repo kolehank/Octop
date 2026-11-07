@@ -158,7 +158,7 @@ export interface MfaMutationResponse {
   user?: OctopUser;
 }
 
-const REAUTH_HEADER = "X-Octop-Reauth";
+const REAUTH_HEADER = "X-Agentbuddy-Reauth";
 
 /** Replace the stored session JWT when a mutating MFA call returns one. */
 export function adoptAccessToken(accessToken: string | undefined | null): void {

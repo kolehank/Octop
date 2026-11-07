@@ -1,7 +1,7 @@
 import type { ChatMessage } from "../hooks/sseHelpers";
 import { inFlightTail } from "./mergeHistoryTail";
 
-const STORAGE_PREFIX = "octop:inflight-transcript:";
+const STORAGE_PREFIX = "agentbuddy:inflight-transcript:";
 const MAX_TEXT = 80_000;
 const MAX_CACHE_CHARS = 1_500_000;
 const WRITE_DELAY_MS = 200;

@@ -781,8 +781,13 @@ function AutoReconnectControl({
 }
 
 function formatBridgeLastError(error: string, t: TFunction): string {
-  const prefix = "octop:";
-  if (error.startsWith(prefix)) {
+  // New peers stamp ``agentbuddy:apiErrors.``; older ones used ``octop:``.
+  const prefix = error.startsWith("agentbuddy:")
+    ? "agentbuddy:"
+    : error.startsWith("agentbuddy:")
+    ? "agentbuddy:"
+    : null;
+  if (prefix) {
     const body = error.slice(prefix.length);
     const queryAt = body.indexOf("?");
     const key = queryAt === -1 ? body : body.slice(0, queryAt);

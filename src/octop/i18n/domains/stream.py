@@ -13,7 +13,18 @@ from octop.infra.utils.locale import Locale
 # Defined locally so agentbuddy still imports on older harness wheels.
 MODEL_RETRY_FAILURE_MARK = "[model_call_failed]"
 
-_PREFIX = "octop:"
+_PREFIX = "agentbuddy:"
+# Persisted stream errors (and peer notes) may carry the pre-rename prefix.
+_LEGACY_PREFIX = "octop:"
+
+
+def _strip_error_prefix(text: str) -> str | None:
+    """Return the i18n key when *text* uses the current or legacy marker prefix."""
+    for prefix in (_PREFIX, _LEGACY_PREFIX):
+        if text.startswith(prefix):
+            return text.removeprefix(prefix)
+    return None
+
 
 STREAM_STALL = f"{_PREFIX}stream_errors.stream_stall"
 RATE_LIMIT = f"{_PREFIX}stream_errors.rate_limit"
@@ -235,10 +246,9 @@ def stream_error_message(error: str | None, locale: str | Locale = "en") -> str:
     """Localized stream / model error for user-facing chat and IM output."""
     if not error:
         return ""
-    if error.startswith(_PREFIX):
-        key = error.removeprefix(_PREFIX)
-        if lookup(key, locale) is not None:
-            return tr(key, locale)
+    key = _strip_error_prefix(error)
+    if key is not None and lookup(key, locale) is not None:
+        return tr(key, locale)
     classified = classify_stream_error_message(error)
     if classified is not None:
         return tr(classified.removeprefix(_PREFIX), locale)

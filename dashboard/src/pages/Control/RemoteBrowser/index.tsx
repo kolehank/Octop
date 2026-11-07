@@ -128,8 +128,8 @@ const LEGACY_SESSION_STORAGE_KEY = "agentbuddy:remote-browser:session-id";
 const STREAM_ACTIVE_KEY = "agentbuddy:remote-browser:stream-active";
 const DEFAULT_REFRESH_INTERVAL = 500;
 const DEFAULT_START_URL = "https://cloud.tencent.com";
-const BROWSER_AI_PANEL_KEY = "octop:remote-browser:ai-panel-open";
-const BROWSER_AI_PLACEMENT_KEY = "octop:remote-browser:ai-placement";
+const BROWSER_AI_PANEL_KEY = "agentbuddy:remote-browser:ai-panel-open";
+const BROWSER_AI_PLACEMENT_KEY = "agentbuddy:remote-browser:ai-placement";
 
 function profileStorageKey(userId?: number): string {
   return userId == null
@@ -1045,7 +1045,7 @@ export default function RemoteBrowserPage({
             ? t("remoteBrowser.enableHint")
             : t(
                 "remoteBrowser.notInstalledHint",
-                "Octop 需要浏览器才能帮你自动打开网页、填写表单和截图。点击下方按钮即可自动安装，无需手动配置。",
+                "agentbuddy 需要浏览器才能帮你自动打开网页、填写表单和截图。点击下方按钮即可自动安装，无需手动配置。",
               )
         }
         style={{ padding: "8px 0" }}

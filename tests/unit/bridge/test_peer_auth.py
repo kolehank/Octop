@@ -87,7 +87,7 @@ def test_dial_close_owned_by_another_user_is_readable() -> None:
     err = bridge_failure_from_dial(exc)
     assert err.code == ErrorCode.BRIDGE_PEER_CONNECTION_OWNED
     assert "4003" not in dial_error_note(exc)
-    assert dial_error_note(exc) == "octop:apiErrors.BRIDGE_PEER_CONNECTION_OWNED"
+    assert dial_error_note(exc) == "agentbuddy:apiErrors.BRIDGE_PEER_CONNECTION_OWNED"
 
 
 def test_dial_close_permission_required_is_not_admin_only() -> None:
@@ -157,7 +157,7 @@ async def test_permanent_dial_stops_without_reconnect_backoff() -> None:
     repo.update_status.assert_any_call(
         "cid1",
         status="error",
-        last_error="octop:apiErrors.BRIDGE_PEER_FORBIDDEN",
+        last_error="agentbuddy:apiErrors.BRIDGE_PEER_FORBIDDEN",
     )
 
 
@@ -165,3 +165,13 @@ def test_is_self_peer_url_matches_loopback_aliases() -> None:
     assert is_self_peer_url("http://localhost:8787", "http://127.0.0.1:8787")
     assert not is_self_peer_url("https://peer.example", "http://127.0.0.1:8787")
     assert not is_self_peer_url("http://127.0.0.1:8787", "")
+
+
+def test_error_from_dial_note_accepts_legacy_octop_prefix() -> None:
+    """Persisted notes from a pre-rename peer keep the ``octop:`` prefix."""
+    err = error_from_dial_note("octop:apiErrors.BRIDGE_PEER_FORBIDDEN")
+    assert err is not None
+    assert err.code == ErrorCode.BRIDGE_PEER_FORBIDDEN
+    current = error_from_dial_note("agentbuddy:apiErrors.BRIDGE_PEER_FORBIDDEN")
+    assert current is not None
+    assert current.code == err.code

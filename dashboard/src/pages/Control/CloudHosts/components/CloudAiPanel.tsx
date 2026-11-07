@@ -347,7 +347,7 @@ function ToolStepGroup({
   );
 }
 
-const CLOUD_ASSISTANT_PLACEMENT = "octop:cloud-ai-placement-v2";
+const CLOUD_ASSISTANT_PLACEMENT = "agentbuddy:cloud-ai-placement-v2";
 
 export default function CloudAiPanel({
   instance,
@@ -388,7 +388,7 @@ export default function CloudAiPanel({
     resolveHitl,
   } = useAgentThreadChat(agentId, {
     hitlMode: "ask",
-    pinKey: "octop:cloud-ai-thread",
+    pinKey: "agentbuddy:cloud-ai-thread",
   });
 
   // 页面级专家创建是异步的，就绪后同步进面板
@@ -495,7 +495,7 @@ export default function CloudAiPanel({
       placement={placement}
       onPlacementChange={setPlacement}
       placementKey={CLOUD_ASSISTANT_PLACEMENT}
-      storageKey="octop:cloud-ai"
+      storageKey="agentbuddy:cloud-ai"
       dock="inline"
       defaultDockWidth={400}
       hidden={hidden}

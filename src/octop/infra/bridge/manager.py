@@ -80,7 +80,9 @@ def _close_reason(exc: BaseException) -> str:
     return str(reason or "").strip()
 
 
-_DIAL_ERROR_PREFIX = "octop:apiErrors."
+_DIAL_ERROR_PREFIX = "agentbuddy:apiErrors."
+# Notes persisted by a pre-rename peer keep the legacy prefix; keep parsing them.
+_LEGACY_DIAL_ERROR_PREFIX = "octop:apiErrors."
 # The peer will reject these the same way on every retry. Fail the dial at once
 # and keep the readable error; do not spend the auto-reconnect budget on them.
 _PERMANENT_DIAL_CODES = frozenset(
@@ -148,9 +150,13 @@ def dial_error_note(exc: BaseException) -> str:
 
 def error_from_dial_note(note: str | None) -> OctopError | None:
     text = (note or "").strip()
-    if not text.startswith(_DIAL_ERROR_PREFIX):
+    prefix = next(
+        (p for p in (_DIAL_ERROR_PREFIX, _LEGACY_DIAL_ERROR_PREFIX) if text.startswith(p)),
+        None,
+    )
+    if prefix is None:
         return None
-    body = text[len(_DIAL_ERROR_PREFIX) :]
+    body = text[len(prefix) :]
     name, _, query = body.partition("?")
     try:
         code = ErrorCode(name)
