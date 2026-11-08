@@ -161,6 +161,7 @@ git merge upstream/develop -X theirs   # 内容冲突一律取上游（“以上
 | 12 | **TokenHub / Tencent 供应商模板带回** | 设置页出现 `Tencent Cloud TokenHub`；`provider_template.json` 含 `tencent-tokenhub` | 白标去腾讯系：删 harness `provider_template.json` 的 `tencent-tokenhub` 条目（保留其余 tencent 模板，口径需与用户确认）。`presets.py` 里的 `tencent-tokenhub` 只是能力探测（非预设入口），保留无害 |
 | 13 | **release_download_links.py 被上游覆写** | 下载页出现 `TencentCloud`/`Octop-*`/fnos 链接；测试断言 fnos_assets | merge 后重写为白标版：`kolehank/Octop` + `agentbuddy-desktop-*` + 无 fnos + 保留上游 lite/full 感知（`docker_image_section(lite, full)`）。与本地 Docker 发布语义对齐：`:{version}`=lite、`-full`=full |
 | 14 | **CI Windows 偶发时序失败** | `test_reload_agent_does_not_block_event_loop` 等 1s 硬超时在 Windows runner 偶发 Timeout | 本地既有 flaky（非本次引入）：本地过 + Linux 绿 + Windows 偶红 → 先 rerun 确认；确系时序偶发则接受（不擅改超时）。一轮 CI 约 20-30 分钟，用后台 worker 监控而非主线轮询 |
+| 15 | **白标回归（新增代码带回 Octop 命名 / 已删能力被整链同步回来）** | UI 文案/locales 出现 “Octop”；`X-Octop-*` 头（如 MFA 的 `X-Octop-Reauth`）；localStorage `octop:*`；持久化错误码前缀 `octop:stream_errors`/`octop:apiErrors`；`octop.log`；`index.html` `<title>Octop</title>` | 上游每次发版会**新增**带 Octop 命名的代码，不只是改旧文件。同步后必跑 `docs/rebrand-phase2-filesystem-env.md` §9.1 回归扫描（8 组 grep）；判据：用户可见文案改「政务伙伴/agentbuddy」、协议标识改 `X-Agentbuddy-*`/`agentbuddy:*`、持久化错误码改生成端但**保留 legacy 解析**（参照 `i18n/domains/agents.py`）、i18n 键名与 CLI 命令名 `octop` 不改。**另按 `docs/rebrand-phase2-filesystem-env.md` §10 对 `WHITELABEL.md` §P0/P1 逐项复验**——「文件已删」类遗漏（如 CVM 控制台整链、专家模板）grep 名字查不出；默认打开的外部站点（工作台/浏览器起始页）不得指向厂商官网 |
 
 ### 10.3 运行时库（packages/）升级法（2026-11-07 首次，1.0.3b3/b4 同步验证）
 

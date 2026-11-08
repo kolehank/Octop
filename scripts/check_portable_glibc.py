@@ -7,6 +7,7 @@ portable zip 要能在 glibc 2.17 基线的机器(银河麒麟 glibc 2.23 / FT-2
 
 Usage: python3 scripts/check_portable_glibc.py <packages 目录>
 """
+
 from __future__ import annotations
 
 import glob
