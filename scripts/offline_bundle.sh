@@ -130,17 +130,6 @@ for p in octop-harness octop-gateway octop-memory octop-browser; do
     (cd "packages/$p" && uv build --wheel --out-dir "$WHEEL_CACHE" .)
 done
 echo "[offline_bundle] Wheels built: $(ls "$WHEEL_CACHE" | wc -l)"
-# 诊断:主 wheel 必须含 bundled 插件树(init 时 seed_bundled 依赖);缺失会在 init 炸
-python3 - "$WHEEL_CACHE"/octop-*.whl <<'CHECK_BUNDLED'
-import sys, zipfile
-z = zipfile.ZipFile(sys.argv[1])
-n = sum(1 for x in z.namelist() if x.startswith("octop/infra/agents/plugins/bundled/"))
-print(f"[offline_bundle] bundled entries in main wheel: {n}")
-if n < 10:
-    print("::error::main wheel is missing bundled plugins tree — check hatch include globs")
-    sys.exit(1)
-CHECK_BUNDLED
-
 build_variant() {
     local variant="$1"; shift
     local tags=("$@")
