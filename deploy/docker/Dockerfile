@@ -129,6 +129,8 @@ WORKDIR /app
 # full：桌面、本地向量、OCR。lite：只留运行所需的 browser extra。
 ARG OCTOP_IMAGE_VARIANT=full
 COPY pyproject.toml uv.lock README.md LICENSE ./
+# uv workspace:四个上游包源码在本仓库 packages/,--frozen 解析需要它们在位
+COPY packages/ ./packages/
 RUN --mount=type=cache,target=/root/.cache/uv \
     if [ -n "$PIP_INDEX_URL" ]; then \
         export UV_INDEX_URL="$PIP_INDEX_URL"; \
