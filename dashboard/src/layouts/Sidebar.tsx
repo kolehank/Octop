@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
@@ -41,7 +41,6 @@ import {
 } from "./sidebarNav";
 import { sectionsFromLayout, type SidebarNavLayout } from "./sidebarNavLayout";
 import SidebarNavCustomizer from "./SidebarNavCustomizer";
-import OnboardingGuide from "../components/OnboardingGuide";
 import styles from "./Sidebar.module.less";
 import { typeSize } from "../utils/mobileTypeScale";
 
@@ -175,7 +174,6 @@ function NavItemButton({
   return (
     <div
       className={styles.navItemRow}
-      data-nav-key={item.key}
       style={{
         background: active ? "var(--fn-sidebar-item-active-bg)" : "transparent",
       }}
@@ -437,8 +435,6 @@ export default function Sidebar({
   );
   const [savedLayout, setSavedLayout] = useState<SidebarNavLayout | null>(null);
   const [customizerOpen, setCustomizerOpen] = useState(false);
-  const [onboardingOpen, setOnboardingOpen] = useState(false);
-  const onboardingChecked = useRef(false);
   const navSections = useMemo(
     () => sectionsFromLayout(catalog, savedLayout),
     [catalog, savedLayout],
@@ -454,14 +450,7 @@ export default function Sidebar({
     void preferencesApi
       .get()
       .then((prefs) => {
-        if (cancelled) return;
-        setSavedLayout(prefs.sidebar_nav ?? null);
-        // Open the welcome guide once per session for users who have not
-        // finished or skipped it yet.
-        if (!onboardingChecked.current) {
-          onboardingChecked.current = true;
-          if (!prefs.onboarding_completed) setOnboardingOpen(true);
-        }
+        if (!cancelled) setSavedLayout(prefs.sidebar_nav ?? null);
       })
       .catch(() => {
         /* keep the default nav */
@@ -566,13 +555,6 @@ export default function Sidebar({
       layout={savedLayout}
       onClose={() => setCustomizerOpen(false)}
       onSaved={setSavedLayout}
-    />
-  );
-
-  const onboarding = (
-    <OnboardingGuide
-      open={onboardingOpen}
-      onClose={() => setOnboardingOpen(false)}
     />
   );
 
@@ -800,7 +782,6 @@ export default function Sidebar({
         >
           {userFooter}
           {customizer}
-          {onboarding}
         </div>
       </div>
     );
@@ -886,7 +867,6 @@ export default function Sidebar({
 
         {userFooter}
         {customizer}
-        {onboarding}
       </div>
     </div>
   );
