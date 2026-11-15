@@ -76,11 +76,11 @@ def _human_wire(content: str) -> str:
 
 def test_valid_screen_keys() -> None:
     for key in (
-        "demo/overview",
-        "demo/investment",
-        "demo/investment/region",
-        "demo/investment/department/fagai"[:0] or "demo/topic_1/region",
-        "demo/" + "a" * 115,
+        "fgw/overview",
+        "fgw/investment",
+        "fgw/investment/region",
+        "fgw/investment/department/fagai"[:0] or "fgw/topic_1/region",
+        "fgw/" + "a" * 116,
     ):
         assert is_valid_screen_key(key), key
 
@@ -88,41 +88,41 @@ def test_valid_screen_keys() -> None:
 def test_invalid_screen_keys() -> None:
     for key in (
         "",  # empty
-        "demo",  # no second segment
+        "fgw",  # no second segment
         "overview",  # missing registered prefix
-        "invest/demo",  # unknown prefix
-        "demo/a:b",  # colon banned (session keys split on :)
-        "demo/a%",  # LIKE wildcard banned
-        "demo/a_b%x",  # % banned even mixed with _
-        "demo/a b",  # no whitespace
-        "demo/投资",  # CJK outside charset
-        "demo/a?b",  # query chars banned
-        "demo/a#b",
-        "demo/a/b/c/d",  # more than 3 segments
-        "demo/" + "a" * 116,  # over length cap
+        "invest/fgw",  # unknown prefix
+        "fgw/a:b",  # colon banned (session keys split on :)
+        "fgw/a%",  # LIKE wildcard banned
+        "fgw/a_b%x",  # % banned even mixed with _
+        "fgw/a b",  # no whitespace
+        "fgw/投资",  # CJK outside charset
+        "fgw/a?b",  # query chars banned
+        "fgw/a#b",
+        "fgw/a/b/c/d",  # more than 3 segments
+        "fgw/" + "a" * 117,  # over length cap
     ):
         assert not is_valid_screen_key(key), key
 
 
 def test_underscore_and_hyphen_are_allowed() -> None:
-    assert is_valid_screen_key("demo/over-view")
-    assert is_valid_screen_key("demo/a_b")
-    assert is_valid_screen_key("demo/topic/dim_1")
+    assert is_valid_screen_key("fgw/over-view")
+    assert is_valid_screen_key("fgw/a_b")
+    assert is_valid_screen_key("fgw/topic/dim_1")
 
 
 def test_screen_topic_prefix() -> None:
-    assert screen_topic_prefix("demo/overview") == "demo/overview"
-    assert screen_topic_prefix("demo/investment") == "demo/investment"
-    assert screen_topic_prefix("demo/investment/region") == "demo/investment"
-    assert screen_topic_prefix("demo/topic/dim") == "demo/topic"
+    assert screen_topic_prefix("fgw/overview") == "fgw/overview"
+    assert screen_topic_prefix("fgw/investment") == "fgw/investment"
+    assert screen_topic_prefix("fgw/investment/region") == "fgw/investment"
+    assert screen_topic_prefix("fgw/topic/dim") == "fgw/topic"
 
 
 def test_screen_key_method_builds_dashboard_channel_session_key() -> None:
-    sk = ThreadRegistry.screen_key(agent_id="a1", user_id=7, screen_key="demo/investment")
-    assert sk == "a1:dashboard:7:screen:demo/investment"
+    sk = ThreadRegistry.screen_key(agent_id="a1", user_id=7, screen_key="fgw/investment")
+    assert sk == "a1:dashboard:7:screen:fgw/investment"
     assert ThreadRegistry.is_virtual_channel("dashboard")
     with pytest.raises(ValueError, match="invalid screen_key"):
-        ThreadRegistry.screen_key(agent_id="a1", user_id=7, screen_key="demo/a:b")
+        ThreadRegistry.screen_key(agent_id="a1", user_id=7, screen_key="fgw/a:b")
 
 
 # ── scope semantics (ADR 004 D7) ─────────────────────────────────────────────
@@ -130,13 +130,13 @@ def test_screen_key_method_builds_dashboard_channel_session_key() -> None:
 
 @pytest.mark.asyncio
 async def test_scope_screen_exact_match(ctx: SimpleNamespace) -> None:
-    sk, tid = await _screen_thread(ctx, screen_key="demo/investment/region")
-    await _screen_thread(ctx, screen_key="demo/investment")
-    await _screen_thread(ctx, screen_key="demo/economic")
+    sk, tid = await _screen_thread(ctx, screen_key="fgw/investment/region")
+    await _screen_thread(ctx, screen_key="fgw/investment")
+    await _screen_thread(ctx, screen_key="fgw/economic")
     await _dashboard_thread(ctx)
 
     rows = ctx.registry.list_threads(
-        agent_id=AGENT, user_id=USER, scope="screen", screen_key="demo/investment/region"
+        agent_id=AGENT, user_id=USER, scope="screen", screen_key="fgw/investment/region"
     )
     assert [r.thread_id for r in rows] == [tid]
     assert {r.session_key for r in rows} == {sk}
@@ -144,14 +144,14 @@ async def test_scope_screen_exact_match(ctx: SimpleNamespace) -> None:
 
 @pytest.mark.asyncio
 async def test_scope_topic_prefix_enforces_segment_boundary(ctx: SimpleNamespace) -> None:
-    _, topic_tid = await _screen_thread(ctx, screen_key="demo/investment")
-    _, region_tid = await _screen_thread(ctx, screen_key="demo/investment/region")
-    await _screen_thread(ctx, screen_key="demo/investmentx", title="lookalike")
-    await _screen_thread(ctx, screen_key="demo/economic", title="other")
+    _, topic_tid = await _screen_thread(ctx, screen_key="fgw/investment")
+    _, region_tid = await _screen_thread(ctx, screen_key="fgw/investment/region")
+    await _screen_thread(ctx, screen_key="fgw/investmentx", title="lookalike")
+    await _screen_thread(ctx, screen_key="fgw/economic", title="other")
     await _dashboard_thread(ctx)
 
     rows = ctx.registry.list_threads(
-        agent_id=AGENT, user_id=USER, scope="topic", screen_key="demo/investment/region"
+        agent_id=AGENT, user_id=USER, scope="topic", screen_key="fgw/investment/region"
     )
     ids = {r.thread_id for r in rows}
     assert ids == {topic_tid, region_tid}
@@ -159,7 +159,7 @@ async def test_scope_topic_prefix_enforces_segment_boundary(ctx: SimpleNamespace
 
 @pytest.mark.asyncio
 async def test_scope_all_dashboard_and_legacy(ctx: SimpleNamespace) -> None:
-    _, screen_tid = await _screen_thread(ctx, screen_key="demo/overview")
+    _, screen_tid = await _screen_thread(ctx, screen_key="fgw/overview")
     dash_tid = await _dashboard_thread(ctx)
 
     all_rows = ctx.registry.list_threads(agent_id=AGENT, user_id=USER, scope="all")
@@ -174,7 +174,7 @@ async def test_scope_all_dashboard_and_legacy(ctx: SimpleNamespace) -> None:
 
 @pytest.mark.asyncio
 async def test_screen_bound_thread_deleted_reads_unbound(ctx: SimpleNamespace) -> None:
-    sk, tid = await _screen_thread(ctx, screen_key="demo/overview")
+    sk, tid = await _screen_thread(ctx, screen_key="fgw/overview")
     assert ctx.registry.get_bound_thread_id(sk) == tid
     ctx.registry.delete_thread(tid)
     assert ctx.registry.get_bound_thread_id(sk) is None
@@ -184,7 +184,7 @@ async def test_screen_bound_thread_deleted_reads_unbound(ctx: SimpleNamespace) -
         user_id=USER,
         channel_type=ThreadRegistry.CHANNEL_DASHBOARD,
         channel_subject_id=str(USER),
-        channel_chat_type="screen:demo/overview",
+        channel_chat_type="screen:fgw/overview",
     )
     assert tid2 != tid
     assert ctx.registry.get_bound_thread_id(sk) == tid2
@@ -199,8 +199,8 @@ async def test_screen_bound_thread_deleted_reads_unbound(ctx: SimpleNamespace) -
 
 @pytest.mark.asyncio
 async def test_q_matches_title_with_escaped_wildcards(ctx: SimpleNamespace) -> None:
-    _, wild_tid = await _screen_thread(ctx, screen_key="demo/economic", title="project_2024%Q1")
-    await _screen_thread(ctx, screen_key="demo/investment", title="projectX2024YQ1")
+    _, wild_tid = await _screen_thread(ctx, screen_key="fgw/economic", title="project_2024%Q1")
+    await _screen_thread(ctx, screen_key="fgw/investment", title="projectX2024YQ1")
 
     rows = ctx.registry.list_threads(agent_id=AGENT, user_id=USER, q="project_2024%Q1")
     assert [r.thread_id for r in rows] == [wild_tid]
@@ -208,8 +208,8 @@ async def test_q_matches_title_with_escaped_wildcards(ctx: SimpleNamespace) -> N
 
 @pytest.mark.asyncio
 async def test_q_underscore_does_not_wildcard(ctx: SimpleNamespace) -> None:
-    await _screen_thread(ctx, screen_key="demo/economic", title="abc_xyz")
-    await _screen_thread(ctx, screen_key="demo/investment", title="abcXxyz")
+    await _screen_thread(ctx, screen_key="fgw/economic", title="abc_xyz")
+    await _screen_thread(ctx, screen_key="fgw/investment", title="abcXxyz")
     rows = ctx.registry.list_threads(agent_id=AGENT, user_id=USER, q="abc_xyz")
     # Only the literal-underscore title matches; \_ is not a wildcard.
     assert len(rows) == 1
@@ -218,7 +218,7 @@ async def test_q_underscore_does_not_wildcard(ctx: SimpleNamespace) -> None:
 
 @pytest.mark.asyncio
 async def test_q_matches_first_user_message_text(ctx: SimpleNamespace) -> None:
-    sk, tid = await _screen_thread(ctx, screen_key="demo/economic")
+    sk, tid = await _screen_thread(ctx, screen_key="fgw/economic")
     ctx.message_repo.append_if_ready(
         tid,
         [
@@ -241,7 +241,7 @@ async def test_q_matches_first_user_message_text(ctx: SimpleNamespace) -> None:
 
 @pytest.mark.asyncio
 async def test_first_user_text_returns_raw_then_strip(ctx: SimpleNamespace) -> None:
-    _, tid = await _screen_thread(ctx, screen_key="demo/economic")
+    _, tid = await _screen_thread(ctx, screen_key="fgw/economic")
     ctx.message_repo.append_if_ready(
         tid,
         [
@@ -268,19 +268,19 @@ async def test_first_user_text_returns_raw_then_strip(ctx: SimpleNamespace) -> N
 async def test_list_pagination_limit_offset(ctx: SimpleNamespace) -> None:
     tids = []
     for _ in range(5):
-        _sk, tid = await _screen_thread(ctx, screen_key="demo/overview")
+        _sk, tid = await _screen_thread(ctx, screen_key="fgw/overview")
         tids.append(tid)
     expected = set(tids)
 
     page0 = ctx.registry.list_threads(
-        agent_id=AGENT, user_id=USER, scope="screen", screen_key="demo/overview", limit=2
+        agent_id=AGENT, user_id=USER, scope="screen", screen_key="fgw/overview", limit=2
     )
     assert len(page0) == 2
     page1 = ctx.registry.list_threads(
         agent_id=AGENT,
         user_id=USER,
         scope="screen",
-        screen_key="demo/overview",
+        screen_key="fgw/overview",
         limit=2,
         offset=2,
     )
@@ -289,7 +289,7 @@ async def test_list_pagination_limit_offset(ctx: SimpleNamespace) -> None:
         agent_id=AGENT,
         user_id=USER,
         scope="screen",
-        screen_key="demo/overview",
+        screen_key="fgw/overview",
         limit=2,
         offset=4,
     )

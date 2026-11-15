@@ -1,0 +1,63 @@
+# =============================================================================
+# agentbuddy — Docker Compose
+#
+# From the repository root:
+#   docker compose -f deploy/docker/docker-compose.yml up -d
+#   AGENTBUDDY_PORT=9090 docker compose -f deploy/docker/docker-compose.yml up -d
+#   AGENTBUDDY_DEFAULT_PASSWORD=<your-strong-password> docker compose -f deploy/docker/docker-compose.yml up -d
+#
+# Optional deploy/docker/.env (Compose interpolation only), for example:
+#   AGENTBUDDY_PORT=9090
+#   AGENTBUDDY_DEFAULT_PASSWORD=<your-strong-password>
+#   AGENTBUDDY_ADMIN_USERNAME=admin
+#   AGENTBUDDY_DATABASE_DRIVER=postgresql
+#   AGENTBUDDY_DATABASE_URL=postgresql://octop:octop@host.docker.internal:5432/octop
+#
+# A key in deploy/docker/.env reaches the container only when listed under
+# environment below. The same keys can also live in ~/.agentbuddy/env on the
+# mounted data directory.
+# The password must be at least 8 characters and contain both letters and
+# digits. If it is unset or rejected, no admin is created and the setup
+# wizard starts (unlock password in /data/.agentbuddy/agentbuddy-login.txt).
+# =============================================================================
+
+services:
+  agentbuddy:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+    image: agentbuddy:latest
+    container_name: agentbuddy
+    restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    # Xvnc needs more than Docker's default 64MB /dev/shm after the user enables the desktop.
+    shm_size: "1gb"
+    ports:
+      - "${AGENTBUDDY_PORT:-8088}:${AGENTBUDDY_PORT:-8088}"
+    volumes:
+      - ${AGENTBUDDY_DATA:-~/.agentbuddy}:/data/.agentbuddy
+    environment:
+      - HOME=/data
+      - AGENTBUDDY_BIND_HOST=0.0.0.0
+      - AGENTBUDDY_PORT=${AGENTBUDDY_PORT:-8088}
+      - AGENTBUDDY_LOG_LEVEL=${AGENTBUDDY_LOG_LEVEL:-info}
+      - AGENTBUDDY_DEFAULT_PASSWORD=${AGENTBUDDY_DEFAULT_PASSWORD:-}
+      - AGENTBUDDY_ADMIN_USERNAME=${AGENTBUDDY_ADMIN_USERNAME:-admin}
+      - AGENTBUDDY_ADMIN_DISPLAY_NAME=${AGENTBUDDY_ADMIN_DISPLAY_NAME:-Admin}
+      - AGENTBUDDY_DATABASE_URL=${AGENTBUDDY_DATABASE_URL:-}
+      - AGENTBUDDY_DATABASE_DRIVER=${AGENTBUDDY_DATABASE_DRIVER:-}
+      - AGENTBUDDY_DATABASE_SQLITE_PATH=${AGENTBUDDY_DATABASE_SQLITE_PATH:-}
+      - AGENTBUDDY_DATABASE_HOST=${AGENTBUDDY_DATABASE_HOST:-}
+      - AGENTBUDDY_DATABASE_PORT=${AGENTBUDDY_DATABASE_PORT:-}
+      - AGENTBUDDY_DATABASE_NAME=${AGENTBUDDY_DATABASE_NAME:-}
+      - AGENTBUDDY_DATABASE_USER=${AGENTBUDDY_DATABASE_USER:-}
+      - AGENTBUDDY_DATABASE_PASSWORD=${AGENTBUDDY_DATABASE_PASSWORD:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY:-}
+      - LANGFUSE_TRACING_ENABLED=${LANGFUSE_TRACING_ENABLED:-true}
+      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY:-}
+      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY:-}
+      - LANGFUSE_BASE_URL=${LANGFUSE_BASE_URL:-}

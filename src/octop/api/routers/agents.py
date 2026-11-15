@@ -87,13 +87,16 @@ class AgentPatchBody(AgentRuntimeFields):
     mcp_servers: list[str] | None = None
 
 
-def _attach_unread_counts(
+def _attach_viewer_stats(
     server: Any, user_id: int, payloads: list[dict[str, Any]]
 ) -> list[dict[str, Any]]:
+    """Unread totals and this viewer's latest chat time, one query each."""
     agent_ids = [p["agent_id"] for p in payloads]
     totals = server.services.session_repo.unread_totals_by_agent(user_id, agent_ids)
+    activity = server.services.thread_repo.latest_activity_by_agent(user_id, agent_ids)
     for payload in payloads:
         payload["unread_count"] = totals.get(payload["agent_id"], 0)
+        payload["last_active"] = activity.get(payload["agent_id"])
     return payloads
 
 
@@ -145,6 +148,42 @@ def _agent_icon_url(row: Any, cfg: dict[str, Any]) -> str | None:
     return team_icon_url(stored)
 
 
+def _viewer_mcp_servers(
+    row: Any,
+    *,
+    viewer_user_id: int | None,
+    server: Any | None,
+) -> list[str]:
+    """MCP names for this viewer. Shared custom servers use the catalog name."""
+    if (getattr(row, "kind", None) or "expert") == "team":
+        return []
+    names = id_list_from_row(row, "mcp_servers")
+    owner_id = getattr(row, "user_id", None)
+    if (
+        not names
+        or viewer_user_id is None
+        or not isinstance(owner_id, int)
+        or owner_id == viewer_user_id
+        or server is None
+    ):
+        return names
+    registry = getattr(getattr(server, "app_runtime", None), "agent_registry", None)
+    present = getattr(registry, "present_mcp_names_for_viewer", None)
+    if not callable(present):
+        return names
+    return list(present(owner_id, viewer_user_id, names))
+
+
+def _same_user_id(left: Any, right: Any) -> bool:
+    """True when both ids are present and numerically equal."""
+    if left is None or right is None:
+        return False
+    try:
+        return int(left) == int(right)
+    except (TypeError, ValueError):
+        return False
+
+
 def _row_dict(
     row: Any,
     *,
@@ -190,15 +229,11 @@ def _row_dict(
         "color": row.color or cfg.get("color"),
         "skill_package_ids": packages,
         "knowledge_base_ids": id_list_from_row(row, "knowledge_base_ids"),
-        "mcp_servers": (
-            []
-            if (getattr(row, "kind", None) or "expert") == "team"
-            else id_list_from_row(row, "mcp_servers")
-        ),
+        "mcp_servers": _viewer_mcp_servers(row, viewer_user_id=viewer_user_id, server=server),
         "published_expert_id": row.published_expert_id,
         "welcome_message": welcome_from_row(row),
         "is_shared": bool(int(getattr(row, "is_shared", 0) or 0)),
-        "is_owner": row.user_id is not None and row.user_id == viewer_user_id,
+        "is_owner": _same_user_id(row.user_id, viewer_user_id),
         "owner_username": owner_username,
         "kind": getattr(row, "kind", None) or "expert",
         **agent_runtime_values(cfg),
@@ -238,6 +273,11 @@ async def list_agents(
     Default ``scope=mine`` returns agents owned by the authenticated user plus
     agents other users have explicitly shared.
     Holders of the ``users`` permission (and admins) may pass ``scope=all``.
+
+    Each row includes ``unread_count`` and ``last_active`` for the caller.
+    ``last_active`` is the newest ``threads.last_active`` on that user's own
+    threads (empty threads are omitted, so a never-chatted agent is ``null``).
+    A shared expert does not inherit another user's activity.
     """
     if scope == "all" and not user_has_permission(user, "users"):
         raise OctopError(
@@ -266,7 +306,7 @@ async def list_agents(
             )
             for r in rows
         ]
-        return _attach_unread_counts(server, user.id, payloads)
+        return _attach_viewer_stats(server, user.id, payloads)
 
     owned = registry.list_agents(user.id)
     shared = server.services.agent_repo.list_shared(
@@ -281,7 +321,7 @@ async def list_agents(
         owner = server.services.user_repo.get(row.user_id)
         if owner is not None:
             shared_owner_username_by_id[row.user_id] = owner.username
-    return _attach_unread_counts(
+    return _attach_viewer_stats(
         server,
         user.id,
         [

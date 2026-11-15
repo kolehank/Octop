@@ -167,6 +167,19 @@ def test_browser_idle_timeout_defaults_and_can_be_disabled(tmp_path: Path):
     assert load_config(cfg_path).browser_idle_timeout_minutes == 0
 
 
+def test_ws_attachment_max_bytes_env_and_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    cfg = load_config(tmp_path / "config.json")
+    assert cfg.ws_attachment_max_bytes == 8 * 1024 * 1024
+
+    monkeypatch.setenv("AGENTBUDDY_WS_ATTACHMENT_MAX_BYTES", "1048576")
+    assert load_config(tmp_path / "config.json").ws_attachment_max_bytes == 1048576
+
+    monkeypatch.delenv("AGENTBUDDY_WS_ATTACHMENT_MAX_BYTES")
+    cfg_path = tmp_path / "custom.json"
+    cfg_path.write_text(json.dumps({"ws_attachment_max_bytes": 0}))
+    assert load_config(cfg_path).ws_attachment_max_bytes == 0
+
+
 def test_database_env_sqlite_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("AGENTBUDDY_DATABASE_SQLITE_PATH", "/tmp/octop-test.db")
     cfg = load_config(tmp_path / "config.json")

@@ -132,6 +132,10 @@ agent 重建时即自动挂载新工具，无需额外配置。
 
 ### 3.3 移除 Brave 与 Google（harness 侧）
 
+> ✅ **2026-11-15 已执行**（此前仅完成 §4 Octop/dashboard 侧；harness 侧按本节
+> 补齐：两模块删除、registry/加载器清理、middleware 搜索工具清单、vendored
+> `test_web_search_tools.py` 的两组期望集合与显式列表用例）。
+
 - 删除 `brave.py`、`google.py` 两个工具模块；
 - `_registry.py`：`WebSearchToolName` 去掉 `"brave"`、`"google"` 字面量，
   `WEB_SEARCH_PROVIDERS` 删除两条及对应懒加载器；

@@ -1,0 +1,11 @@
+id: office
+version: 0.1.0
+name: Office 文档
+description: >-
+  生成、读取、改写 Word / Excel / PowerPoint 文档并导出 PDF 的技能插件。
+  Agent 启动时把 skills/office-docs 同步进工作区，模型通过
+  skills/office-docs/scripts/ 下的脚本按 JSON spec 稳定产出可打开的 Office 文件。
+kind: skill
+icon: "📄"
+group: tools
+entry: main.py

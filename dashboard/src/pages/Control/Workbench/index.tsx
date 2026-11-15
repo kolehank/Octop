@@ -57,7 +57,7 @@ export default function WorkbenchPage({
           return {
             value,
             label: t(`workbench.tabs.${value}`),
-            icon: <Icon size={14} strokeWidth={2} />,
+            icon: <Icon size={14} strokeWidth={1.75} />,
           };
         },
       ),

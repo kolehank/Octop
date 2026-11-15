@@ -1,0 +1,66 @@
+diff --git a/dashboard/src/pages/Chat/index.tsx b/dashboard/src/pages/Chat/index.tsx
+index a11fce02..1fbfa1f9 100644
+--- a/dashboard/src/pages/Chat/index.tsx
++++ b/dashboard/src/pages/Chat/index.tsx
+@@ -802,6 +802,18 @@ function ChatPageInner() {
+     ],
+   );
+ 
++  // Wire plugin UI host methods into the chat page. sendUserTurn reuses
++  // wrappedHandleSend, and wrappedHandleSend is a dep so the dock handlers
++  // never capture a stale send closure.
++  useEffect(() => {
++    setPluginUiDockHandlers({
++      openSidePanel: openToolUiTab,
++      closeSidePanel: closeToolUiPanel,
++      sendUserTurn: (text) => wrappedHandleSend(text),
++    });
++    return () => setPluginUiDockHandlers({});
++  }, [openToolUiTab, closeToolUiPanel, wrappedHandleSend]);
++
+   const flushQueuedItem = useCallback(
+     (item: QueuedChatItem, ctx: ChatQueueFlushContext): boolean => {
+       if (!ctx.threadId) {
+diff --git a/dashboard/src/plugins/toolRenderers/host.ts b/dashboard/src/plugins/toolRenderers/host.ts
+index b1a43aec..0b3a3514 100644
+--- a/dashboard/src/plugins/toolRenderers/host.ts
++++ b/dashboard/src/plugins/toolRenderers/host.ts
+@@ -20,6 +20,7 @@ let dockHandlers: {
+     toolName?: string;
+   }) => void;
+   closeSidePanel?: (callId: string) => void;
++  sendUserTurn?: (text: string) => void;
+ } = {};
+ 
+ /** Chat page wires dock open/close for plugin ``host.openSidePanel``. */
+@@ -75,6 +76,9 @@ function createHost(defaultPluginId: string): OctopPluginUIHost {
+     closeSidePanel(callId) {
+       dockHandlers.closeSidePanel?.(callId);
+     },
++    sendUserTurn(text) {
++      dockHandlers.sendUserTurn?.(text);
++    },
+   };
+ }
+ 
+diff --git a/dashboard/src/plugins/toolRenderers/types.ts b/dashboard/src/plugins/toolRenderers/types.ts
+index c7b6282b..6aa9c75a 100644
+--- a/dashboard/src/plugins/toolRenderers/types.ts
++++ b/dashboard/src/plugins/toolRenderers/types.ts
+@@ -54,6 +54,7 @@ export interface ToolRendererRegistration {
+ }
+ 
+ export interface OpenSidePanelOptions {
++  /** Tool call id — the side dock keeps one tab per callId. */
+   callId: string;
+   title?: string;
+   toolName?: string;
+@@ -72,6 +73,8 @@ export interface OctopPluginUIHost {
+   openSidePanel(opts: OpenSidePanelOptions): void;
+   /** Close the side dock tab for this tool call, if open. */
+   closeSidePanel(callId: string): void;
++  /** Send a user turn through the chat pipeline (same path as ACP cards). */
++  sendUserTurn(text: string): void;
+ }
+ 
+ /** Shape expected from ``ui/dist/index.js``. */

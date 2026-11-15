@@ -25,10 +25,11 @@ SCRIPT = REPO_ROOT / "desktop" / "portable" / "vendor-wheels.sh"
 BASH = shutil.which("bash")
 
 # ``extra`` is empty for these; the override platforms add an argument.
-# linux-amd64 now overrides too (manylinux2014 downgrade pins, see
-# write_green_overrides in desktop/portable/_common.sh).
-NO_OVERRIDE_PLATS = ["darwin-arm64", "windows-amd64"]
-OVERRIDE_PLATS = ["darwin-amd64", "linux-amd64"]
+# darwin-arm64 / darwin-amd64 pin macOS-13-era wheels (onnxruntime, Intel
+# opencv, universal2 cryptography) and linux-amd64 carries the manylinux2014
+# downgrade pins — see write_green_overrides in desktop/portable/_common.sh.
+NO_OVERRIDE_PLATS = ["windows-amd64"]
+OVERRIDE_PLATS = ["darwin-arm64", "darwin-amd64", "linux-amd64"]
 
 # The installers and packaging scripts are POSIX shell entry points.
 posix_only = pytest.mark.skipif(os.name != "posix", reason="POSIX-only shell scripts")

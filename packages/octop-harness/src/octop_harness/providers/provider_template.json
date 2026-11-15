@@ -63,6 +63,17 @@
         ]
       },
       {
+        "id": "hy4",
+        "name": "Hy4",
+        "max_input_tokens": 960000,
+        "context_window": 1024000,
+        "max_output_tokens": 64000,
+        "reasoning": true,
+        "input": [
+          "text"
+        ]
+      },
+      {
         "id": "minimax-m2.7",
         "name": "MiniMax-M2.7",
         "max_input_tokens": 204800,
@@ -138,6 +149,17 @@
         "id": "auto",
         "name": "Auto",
         "max_input_tokens": 196608,
+        "input": [
+          "text"
+        ]
+      },
+      {
+        "id": "hy4",
+        "name": "Hy4",
+        "max_input_tokens": 960000,
+        "context_window": 1024000,
+        "max_output_tokens": 64000,
+        "reasoning": true,
         "input": [
           "text"
         ]
@@ -283,6 +305,17 @@
     "api_key_prefix": "sk-tp-",
     "logo": "tencent-token-plan.png",
     "models": [
+      {
+        "id": "hy4",
+        "name": "Hy4",
+        "max_input_tokens": 960000,
+        "context_window": 1024000,
+        "max_output_tokens": 64000,
+        "reasoning": true,
+        "input": [
+          "text"
+        ]
+      },
       {
         "id": "hy3",
         "name": "Hy3",
@@ -992,6 +1025,22 @@
     "logo": "minimax.png",
     "models": [
       {
+        "id": "MiniMax-M3.1-Flash",
+        "name": "MiniMax M3.1 Flash",
+        "max_input_tokens": 1000000,
+        "context_window": 1000000,
+        "reasoning": true,
+        "input": ["text", "image"]
+      },
+      {
+        "id": "MiniMax-M3",
+        "name": "MiniMax M3",
+        "max_input_tokens": 1000000,
+        "context_window": 1000000,
+        "reasoning": true,
+        "input": ["text", "image"]
+      },
+      {
         "id": "MiniMax-M2.5",
         "name": "MiniMax M2.5",
         "max_input_tokens": 204800
@@ -1025,6 +1074,22 @@
     "api_key_prefix": "",
     "logo": "minimax.png",
     "models": [
+      {
+        "id": "MiniMax-M3.1-Flash",
+        "name": "MiniMax M3.1 Flash",
+        "max_input_tokens": 1000000,
+        "context_window": 1000000,
+        "reasoning": true,
+        "input": ["text", "image"]
+      },
+      {
+        "id": "MiniMax-M3",
+        "name": "MiniMax M3",
+        "max_input_tokens": 1000000,
+        "context_window": 1000000,
+        "reasoning": true,
+        "input": ["text", "image"]
+      },
       {
         "id": "MiniMax-M2.5",
         "name": "MiniMax M2.5",

@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.9] - 2026-11-10
+
+### 新增
+
+- MiniMax（国内站 / 国际站）供应商预设加入 MiniMax-M3 和 MiniMax-M3.1-Flash，上下文 1M，原生多模态。
+
+### 修复
+
+- `/compact` 写入的摘要事件带上 `cutoff_message_id` 和 `created_at_index`，与 deepagents 自动摘要一致：压缩后保留的消息不再带着已被摘要掉的对话所绑定的 Claude 推理块；截止点优先按消息 id 定位，仅在 id 找不到时才回退为「摘要 + 最新消息」。
+- 已禁用的 skill 不再出现在系统提示词中；请求级 `skills` 过滤（包括 Ask/Plan 模式的 `skills=[]`）也作用于提示词。此前只拦截文件工具访问，模型仍能看到这些 skill。
+- 存储的摘要截止点超出当前消息列表时，回退为「摘要 + 最新消息」，模型不再只看到旧摘要；切片不会从裸工具结果开始。
+- 空闲维护时清理旧的 LangGraph checkpoint，默认保留每个线程最近 20 个及恢复依赖，跳过有待处理工作的线程。保留窗口、裁剪前备份及 VACUUM 仍可配置。
+- `memory_save(content, topic, kind)` 支持 Fact、Preference、Decision、Task；中英文运行时规则引导当前对话模型直接选择类别，不额外调用分类模型。旧调用默认 Fact；连接不支持 kind 的旧 memory 库时，非 Fact 保存明确提示升级，不静默降级。需先合入并安装 memory 对应 API；保存 Task 不创建提醒，历史事实不变。
+
+### 变更
+
+- 要求 `deepagents>=0.7.35`，随之需要 langchain 1.4.9+、langchain-core 1.7.6+、langgraph 1.2.12+。主 agent 的模型拒答仍作为普通回复返回，不中断本轮；子 agent 拒答时，`task` 结果会说明拒答原因，不再是空字符串。系统提示词中 skill 段落的位置有变化，升级后第一轮提示词缓存会失效一次。
+- SQLite checkpoint 裁剪默认只在首次清理前尝试备份，备份保留 7 天。空间不足或备份失败时继续裁剪，标记会阻止重复尝试。`always` 要求每次备份成功后才裁剪，`off` 关闭备份。
+- LangGraph checkpoint 默认在调用退出时保存（`OCTOP_CHECKPOINT_DURABILITY=exit`），减少中间步骤的写入。若进程在一轮进行中被强制终止，该轮尚未落盘的消息、工具结果和执行进度会丢失，已产生的外部工具副作用可能仍在。设 `OCTOP_CHECKPOINT_DURABILITY=async` 可恢复按步骤异步保存，也可设为 `sync` 按步骤同步保存。
+
+## [1.0.8] - 2026-11-05
+
+### 新增
+
+- 文件工具接受工作区相对路径。`base_dir` 从文档所在目录解析路径，`execute` 的 `cwd` 只作用于这一条命令。
+- 新增腾讯云 TokenHub 供应商预设，并在 TokenHub、Token Plan、企业版 Token Plan 和混元 Token Plan 中加入 HY4 模型。
+
+### 修复
+
+- 每轮模式提示、队友名单和决策短名单放在用户消息之后，系统提示和核心工具列表保持可缓存。以 `[turn note]` 或 `[本轮说明]` 开头的用户消息仍视为用户原文。
+- OpenAI 兼容请求去掉内联的 office 和 PDF 文件块，图片保留。
+- 召回追加在用户原文和附件之后，以带来源和角色标记的历史引用隔离旧问题和指令；冻结每轮快照，保留已有 checkpoint 的精确重放和请求公共前缀（TencentCloud/Octop#2043）。
+- 召回 DEBUG 日志附完整查询长度和 SHA-256 指纹，长查询可检索、对账，无需输出查询原文（TencentCloud/Octop#811）。
+- 记忆运行时关闭后，等待已提交的后台采集、提炼和维护任务完成再释放数据库，避免数据库已关闭错误和对话记忆丢失；同时覆盖配置变更前的旧中间件及图构建前的会话提炼（TencentCloud/Octop#484）。
+
+### 变更
+
+- 技能位置提示里 `.octop/skills` 排在最前。同名冲突仍由最后加载的来源覆盖。
+- 未打分的决策轮次保持同一份可缓存系统提示和核心工具列表。打分服务不可达时，完整目录留在本轮说明里。
+
+## [1.0.7] - 2026-11-04
+
+### 修复
+
+- 将 octop-memory 最低依赖提高到 1.0.3，确保后台手动文档审核入口可用，并带入长会话分批提炼、游标持久化及未决审计状态修复。
+- OpenSandbox 可以创建、删除和移动工作区路径。专家启动、技能卸载和工作区重命名不再因为沙箱没有这些操作而失败。
+
+### 变更
+
+- SearchFree 网页搜索的默认 `search_depth` 从 `advanced` 改为更快的 `basic`，仍可显式选择 `advanced`。
+
 ## [1.0.6] - 2026-11-01
 
 ### 新增

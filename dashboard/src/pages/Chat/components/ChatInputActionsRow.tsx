@@ -159,6 +159,7 @@ interface ChatInputActionsRowProps {
   onConversationModeChange?: (mode: "ask" | "plan" | "craft") => void;
   hitlPolicy?: HitlSessionPolicy;
   onHitlPolicyChange?: (policy: HitlSessionPolicy) => void;
+  lockThreadSettings?: boolean;
   availableConnectors?: {
     mcp_server_name: string;
     label: string;
@@ -222,6 +223,7 @@ export default function ChatInputActionsRow({
   onConversationModeChange,
   hitlPolicy,
   onHitlPolicyChange,
+  lockThreadSettings = false,
   availableConnectors,
   selectedConnectors = [],
   onConnectorsChange,
@@ -246,6 +248,13 @@ export default function ChatInputActionsRow({
   onSubmit,
 }: ChatInputActionsRowProps) {
   const { t } = useTranslation();
+  const settingsLockedHint = lockThreadSettings
+    ? t("chat.threadSettingsOwnerOnly", "只有会话创建人可以改模型和审批设置")
+    : undefined;
+  const modelChange = lockThreadSettings ? undefined : onModelChange;
+  const reasoningChange = lockThreadSettings ? undefined : onReasoningChange;
+  const modeChange = lockThreadSettings ? undefined : onConversationModeChange;
+  const hitlChange = lockThreadSettings ? undefined : onHitlPolicyChange;
   const navigate = useNavigate();
   const remoteManaged = Boolean(agentId?.startsWith("bridge:"));
   const skillDisplayName = useSkillDisplayName();
@@ -486,7 +495,7 @@ export default function ChatInputActionsRow({
   };
 
   const openModelReasoning = (modelRef: string) => {
-    if (selectedModel !== modelRef) onModelChange?.(modelRef);
+    if (selectedModel !== modelRef) modelChange?.(modelRef);
     setReasoningModelRef(modelRef);
   };
 
@@ -530,7 +539,7 @@ export default function ChatInputActionsRow({
                 styles.reasoningMenuChoice,
                 reasoningMode === mode && styles.reasoningMenuChoiceActive,
               )}
-              onClick={() => onReasoningChange?.(mode, reasoningEffort)}
+              onClick={() => reasoningChange?.(mode, reasoningEffort)}
             >
               <span>{reasoningModeLabel(mode)}</span>
               {reasoningMode === mode && <Check size={16} />}
@@ -552,7 +561,7 @@ export default function ChatInputActionsRow({
                       styles.reasoningMenuChoiceActive,
                   )}
                   onClick={() =>
-                    onReasoningChange?.(
+                    reasoningChange?.(
                       reasoningMode === "disabled" ? "enabled" : reasoningMode,
                       effort,
                     )
@@ -595,7 +604,7 @@ export default function ChatInputActionsRow({
                   !selectedModel && styles.modelMenuItemActive,
                 )}
                 onClick={() => {
-                  onModelChange?.(null);
+                  modelChange?.(null);
                   closePlusMenu();
                 }}
               >
@@ -623,7 +632,7 @@ export default function ChatInputActionsRow({
                     type="button"
                     className={styles.modelMenuSelect}
                     onClick={() => {
-                      onModelChange?.(active ? null : value);
+                      modelChange?.(active ? null : value);
                       closePlusMenu();
                     }}
                   >
@@ -744,7 +753,11 @@ export default function ChatInputActionsRow({
             styles.mobileOverflowItem,
             compactPicker === "mode" && styles.mobileOverflowItemActive,
           )}
-          onClick={() => openCompactPicker("mode")}
+          title={settingsLockedHint}
+          onClick={() => {
+            if (lockThreadSettings) return;
+            openCompactPicker("mode");
+          }}
         >
           <span className={styles.mobileOverflowItemMain}>
             <ModeIcon size={16} />
@@ -765,7 +778,11 @@ export default function ChatInputActionsRow({
             styles.mobileOverflowItem,
             compactPicker === "model" && styles.mobileOverflowItemActive,
           )}
-          onClick={() => openCompactPicker("model")}
+          title={settingsLockedHint}
+          onClick={() => {
+            if (lockThreadSettings) return;
+            openCompactPicker("model");
+          }}
         >
           <span className={styles.mobileOverflowItemMain}>
             <Cpu size={16} />
@@ -892,7 +909,7 @@ export default function ChatInputActionsRow({
           <ConversationModeMenu
             conversationMode={conversationMode}
             onChange={(mode) => {
-              onConversationModeChange?.(mode);
+              modeChange?.(mode);
               closePlusMenu();
             }}
           />
@@ -1041,7 +1058,9 @@ export default function ChatInputActionsRow({
         {onHitlPolicyChange && (
           <HitlPolicyPicker
             policy={hitlPolicy ?? { mode: "ask" }}
-            onChange={onHitlPolicyChange}
+            onChange={hitlChange ?? onHitlPolicyChange}
+            disabled={lockThreadSettings}
+            disabledHint={settingsLockedHint}
           />
         )}
         <Popover

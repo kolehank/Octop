@@ -146,3 +146,111 @@
 - 硬编码消费方跟随:teams manifest 改用裸逻辑名 `manifest.json`(由 BackendWorkspace 按各自前缀落位)、avatar(`AVATAR_DIR` 新 + legacy 读)、builtin_skills 守卫、memory 清理候选、skills 发现根、publish 种子 glob、`manage_skills.py`(随技能下发)。
 - harness/主仓测试同步:assert 默认 `.agentbuddy`,legacy `.octop` 用例保留;harness 失败集合与基线逐条 diff 为零(26 个失败全部为改造前已存在的 env 依赖用例)。
 - **容器端到端复核**(镜像重建后):创建 agent → `config.system_files_path=".agentbuddy"`、`workspace_dir=/data/.agentbuddy/agents/<id>`;`find /data -name .octop` 零命中;容器内直调解析函数确认 legacy `/.octop/workspaces/A1` 仍正确映射。
+
+## 9. 上游同步后的白标回归清单(2026-11-07 补充)
+
+上游每次发版都会**新增**带 `Octop`/`octop` 命名的代码与文案(不只是改旧文件),同步后必须按下面清单回归一遍,否则新功能会把白标漏点带回来。本次(1.0.3b3/b4 同步)实际发现 5 类遗漏:
+
+| # | 类型 | 实例 | 处置 |
+|---|------|------|------|
+| 1 | **UI 产品名文案** | `dashboard/index.html` `<title>Octop</title>`;locales 里 "随 Octop 一起提供"、"把本机连到另一台 Octop"、mac 权限/关怀/LDAP 说明等 15+ 处;`bigscreen` 登录提示 | 中文改「政务伙伴」,英文改 `agentbuddy`;不改 i18n **键名**(`askOctopHint`/`copyErrorForOctop`/`sectionOctop` 等)与 CLI 命令名 `octop run` |
+| 2 | **协议请求头** | `X-Octop-Reauth`(上游 b2 MFA 新增,7 处后端 + 1 处前端) | → `X-Agentbuddy-Reauth`,前后端同船 |
+| 3 | **localStorage/事件前缀** | 上游新组件用 `octop:*`(`octop:update-status`、`octop:remote-browser:ai-*`、`octop:terminal-ai-*`、`octop:inflight-transcript`) | → `agentbuddy:*`(与既有 `agentbuddy:active-agent` 等一致);同步改测试断言 |
+| 4 | **持久化错误码前缀** | `octop:stream_errors.*`(`i18n/domains/stream.py`)、`octop:apiErrors.*`(`infra/bridge/manager.py` + 前端 `BridgeSettings`),会写入 DB `last_error`/跨实例 note | 生成端 → `agentbuddy:` / `agentbuddy:apiErrors.`;**解析端保留 legacy 兼容**(参照 `i18n/domains/agents.py` 的 `_LEGACY_ERROR_PREFIX` 模式),并补 legacy 用例 |
+| 5 | **日志/服务文件** | `setup/service.py` launchd plist 指向 `logs/octop.log` | → `logs/agentbuddy.log`(`server.py` 的 legacy 读取保留) |
+
+### 9.1 回归扫描命令(同步后必跑,输出应为空或仅深水区)
+
+```bash
+# 1) UI 可见 Octop 文案(locales + 后端 i18n;排除 key 名/OctopBot 平台名)
+grep -rn 'Octop' dashboard/src/locales src/octop/i18n/*.json \
+  | grep -vE 'octopbot|OctopBot|askOctopHint|copyErrorForOctop|sectionOctop'
+grep -n '<title>' dashboard/index.html   # 应为 政务伙伴
+
+# 2) 协议头
+grep -rn 'X-Octop' src/octop dashboard/src --include='*.py' --include='*.ts' --include='*.tsx'
+
+# 3) 前端存储前缀
+grep -rn '"octop:' dashboard/src --include='*.ts' --include='*.tsx'
+
+# 4) 持久化错误码前缀(仅剩 legacy 兼容定义)
+grep -rn 'octop:stream_errors\|octop:apiErrors' src/octop dashboard/src --include='*.py' --include='*.ts' --include='*.tsx'
+
+# 5) 日志名
+grep -rn 'octop\.log' src/octop --include='*.py' | grep -v legacy
+
+# 6) 白标路径/协议名(上游新测试常写死官方名)
+grep -rn '\.octop/\|octop\.db\|OCTOP_IN_CONTAINER\|OCTOP_HOME' tests/ src/octop --include='*.py' \
+  | grep -vE 'legacy|LEGACY|pre-rebrand|pre-rename|OCTOP_HOME.*fallback'
+
+# 7) 上游专属交付物残留
+grep -rln 'fnos\|FnOS' src/octop scripts tests .github/workflows --include='*.py' --include='*.sh' --include='*.yml'
+grep -rn 'tencent-tokenhub' packages/octop-harness/src/octop_harness/providers/provider_template.json
+
+# 8) 构建产物抽查(F12/产物里不应有旧名)
+grep -rl 'X-Octop-Reauth' src/octop/dashboard/assets 2>/dev/null; echo "(空=重新 build 后无残留)"
+
+# 9) 默认打开的外部站点(curl/工作台/浏览器起始页不得指向厂商官网)
+grep -rn 'DEFAULT_START_URL\|DEFAULT_URL' dashboard/src --include='*.tsx' --include='*.ts' \
+  | grep -iE 'tencent|aliyun|huawei|cloud\.' ; echo "(空=干净)"
+
+# 10) 市场/其他 OCTOP_ 环境变量(兼容 fallback 之外应为 0)
+grep -rho 'OCTOP_[A-Z_]*' src/octop --include='*.py' | sort | uniq -c
+# 期望仅: OCTOP_HOME(fallback)、OCTOP_(PROTECTED_ENV_PREFIXES)
+
+# 11) 整链功能残留(决策排除的能力链:api/infra/cli/前端/专家/依赖)
+ls src/octop/api/routers/cloud.py src/octop/infra/cloud src/octop/cli/commands/cloud.py \
+   dashboard/src/pages/Control/CloudHosts 2>/dev/null; echo "(空=已整链移除)"
+grep -n 'tencentcloud-sdk' pyproject.toml; echo "(空=依赖已移除)"
+```
+
+### 9.2 判据
+
+- **要改**:用户可见文案、协议标识(头/cookie/localStorage/env)、持久化错误码前缀、日志名、发行物命名。
+- **不改(深水区,见 §2)**:PyPI 包名 `octop`、CLI 命令名 `octop`、`octop_harness` 等模块导入路径、第三方平台专有名(`OctopBot` 平台本身)、i18n **键名**、代码标识符(`OctopAgent`/`OctopSpinner` 等组件名)。
+- **兼容读取**:凡是**已持久化**的标识(DB `last_error`、跨实例 note、工作区 `system_files_path`),改生成端的同时必须保留旧值解析(legacy 前缀常量 + 用例),与 §8 的双前缀策略一致。
+
+## 10. 白标对账记录(2026-11-07 第二轮:文档 vs 实际代码)
+
+> 背景:上游同步后用户反馈「工作台打开还是腾讯云网址」,而该点位在白标一期(`WHITELABEL.md`)中已登记。说明**文档声称已改 ≠ 代码实际已改**,本节点对一期清单逐项复验,记录差值与处置,供后续同步时对照。
+
+### 10.1 一期清单(`WHITELABEL.md` §P0/P1)复验结果
+
+| # | 一期登记项 | 复验结果 | 处置 |
+|---|-----------|---------|------|
+| 1 | `AvatarDropdown` 的项目地址/帮助反馈链接 | ✅ 已是 `about:blank` | 无需动 |
+| 2 | `UpdateConfig.tsx` 的 finnie 安装命令 | ✅ 文件已随白标删除 | 无需动 |
+| 3 | **内置浏览器 + 远程浏览器默认起始页 `https://cloud.tencent.com`** | ⚠️ `BrowserWorkspace` 已改 `about:blank`,但 **`Control/RemoteBrowser` 的 `DEFAULT_START_URL` 仍是腾讯云官网** —— 这就是「工作台一打开就是腾讯云」的直接原因 | 本次改为 `about:blank`;`utils/normalizeUrl.ts` 放行 `about:`/`file:` 协议(否则会被拼成 `https://about:blank`) |
+| 4 | 渠道抽屉引导外链(octopbot/qq/元宝) | ✅ 仅剩元宝默认域名 placeholder(`bot.yuanbao.tencent.com`),属渠道协议必需 | 保留 |
+| 5 | `SkillHubTab` 的 `skillhub.tencent.com` | ✅ 已无 | 无需动 |
+| 6 | 环境变量页「需要腾讯云密钥?」外链 | ✅ 已无 | 无需动 |
+| 7 | `BackendBuilder` 的 `Tencent Cloud COS` 选项 | ⚠️ 仍存在 | **保留**:存储后端为功能性能力(非营销入口);若确定不用 COS 再从后端注册表一并移除 |
+| 8 | `assets/providers/index.ts` 的腾讯云「获取 API Key」外链 | ⚠️ 仍存在(`tencent-coding-plan`/`tencent-token-plan`/`tencent-hai`) | 保留:这些是仍保留的 tencent 供应商模板的官方链接;`tencent-tokenhub` 模板已剔除 |
+| 9 | `presetUtils.ts` 把 `tencent` 置顶 | ✅ 已无 | 无需动 |
+| 10 | 登录页腾讯防水墙验证码(`turing.captcha.qcloud.com`) | ⚠️ 仍存在(`captchaAdapters.ts:59-60`) | **保留但默认不启用**:可选适配器,启用需自备腾讯云账号;白标交付不引导使用 |
+| 11 | 语音预设 `Tencent Cloud` | ⚠️ 仍存在(`infra/voice/presets.py:38`) | 保留(与 #7/#10 同理:可选功能项,非默认入口) |
+| 12 | 连接器目录 14 个腾讯系条目 | ⚠️ 仍在 `infra/connectors/catalog.json` | 保留:连接器是可安装能力目录;白标侧未默认启用 |
+| 13 | 专家库 19 个内置模板 | ⚠️ 上游同步又把 `tencent-cvm-ops` 带回(本地曾删) | 本次重新删除:`experts/library/tencent-cvm-ops/`、精选 id `cvm-ai-doctor`/`cvm-cluster-doctor`/`tencentcloud-api`(22→19)、前端孤儿 hook `useCvmOpsExpert.ts` |
+| 14 | `general-assistant/skills/octop-assistant/SKILL.md` 的 finnie 管道命令 | ✅ 技能已迁到 `experts/supplements/`;正文已白标 | 本次补:`supplements/octop-assistant/` 目录名 → `agentbuddy-assistant/`(SKILL.md 的 `name` 早已是后者,目录名未跟) |
+| 15 | `skills.py` 的 SkillHub COS 安装 URL | ✅ 已无直接 URL | 无需动 |
+| 16 | 页面 title / PWA manifest / 离线页 / document.title | ⚠️ `index.html` title 曾回退为 `Octop` | 本次改「政务伙伴」;manifest 与 document.title 已是 i18n |
+| 17 | 视觉资产(octop-mascot-*.webp 等) | ✅ 文件名已白标 | 无需动 |
+| 18 | `app.py` `title="Octop API"` / `openapi_meta.py` 文案 | ✅ 已无 | 无需动 |
+| 19 | `update.py` 的 `Upgrade Octop` / `OCTOP_SERVICE_MODE` / `finnie` docstring | ⚠️ 仅剩模块首行 docstring `mirrors finnie/octop dashboard update flow` | 本次改为中性描述 |
+| 20 | 桌面壳 productIdentifier/APP_NAME/托盘标题 | ✅ 已白标(`com.kolehank.agentbuddy` 系) | 无需动 |
+
+### 10.2 本轮新发现(一期清单未登记)
+
+| 项 | 位置 | 处置 |
+|----|------|------|
+| 市场远程源环境变量仍用 `OCTOP_` 前缀 | `infra/market/http.py`:`OCTOP_PORTAL_ORIGIN`、`OCTOP_MARKET_REMOTE_ORIGIN` | 改为 `AGENTBUDDY_PORTAL_ORIGIN` / `AGENTBUDDY_MARKET_REMOTE_ORIGIN`,**旧名保留 fallback**(环境变量属协议面) |
+| docstring 里的 `~/.octop` 路径 | `utils/paths.py`(avatars×4)、`utils/install_reset.py`、`users/resource_policy.py`、`desktop/src/settings.go`、`control/desktop/scripts/linux/v1.0/start.sh`、`scripts/install.sh:7` | 全量改 `~/.agentbuddy`(§3.1 已要求,实际漏改) |
+| 安装脚本文件名 | `scripts/install-octop.sh`(中文版安装器) | 改名 `scripts/install-zh.sh`(内容早已白标,仅文件名残留) |
+| 腾讯云 CVM 能力链(上游 #2778)被整链同步进来 | `api/routers/cloud.py`、`infra/cloud/`、`cli/commands/cloud.py`、`experts/library/tencent-cvm-ops/`、`dashboard/src/pages/Control/CloudHosts/`(20 文件)、Workbench `cloud` tab、`tests/unit/infra/cloud/`、`pyproject.toml` 的 `tencentcloud-sdk-python` | **全部移除**(决策:白标去腾讯系,不交付 CVM 控制台);locales 的 `cloud.*` 与 `workbench.tabs.cloud` 一并清理 |
+
+### 10.3 判据补充(本次确立)
+
+- **默认打开的外部站点**必须白标:内置浏览器、远程浏览器、工作台各 tab 的初始 URL 一律不得指向厂商官网(用 `about:blank`)。
+- **文档 ≠ 实现**:同步后不仅要跑 §9.1 的 grep,还要按本节点对 `WHITELABEL.md` §P0/P1 逐项复验(尤其「文件是否还存在」这类结构性遗漏,grep 名字查不出)。
+- **可选功能 vs 营销入口**:COS 存储、验证码适配器、语音预设、连接器目录属**可选能力**(保留,不默认引导);CVM 控制台、TokenHub 预设、安装命令、官网链接属**推广入口**(移除)。
+- **上游整链功能同步**:若某上游提交携带整条能力链(api + infra + 前端 + 专家 + CLI + 依赖),决策为「不同步」时必须在同步后**整链删除**,并在文档记录删除清单,避免下次 merge 又带回。

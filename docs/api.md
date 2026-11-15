@@ -126,7 +126,7 @@ does not set these headers itself.
 
 | Method | Path | Auth | Notes |
 |--------|------|------|-------|
-| `GET`    | `/agents` | user | `[{id, agent_id, name, persona_mbti, state, unread_count, ...}]` |
+| `GET`    | `/agents` | user | `[{id, agent_id, name, persona_mbti, state, unread_count, last_active, ...}]` — `last_active` is this user's latest thread touch (unix seconds), or `null` |
 | `POST`   | `/agents` | user | body `{name, persona_mbti?, default_model?, system_prompt?, description?, icon?, template_name?, config?}` → `201` |
 | `GET`    | `/agents/{id}` | owner | full agent row |
 | `PATCH`  | `/agents/{id}` | owner | body subset of create body |
@@ -288,7 +288,10 @@ in the list. If the process is down for more than 24 hours past that
 time and the job never ran, `last_status` is `missed` and the job is
 disabled. `prompt` must be non-empty and ≤ 2000 characters. `name` is
 an optional display label; when omitted, the server derives one from
-`prompt`.
+`prompt`. `session_key` omitted or `latest` uses the owner's Dashboard
+channel and, on each run, that channel's most recent conversation.
+`thread:{thread_id}` pins the job to that conversation. `fresh_thread`
+starts a new conversation on the channel and ignores the history pin.
 
 ## Providers
 
@@ -393,6 +396,7 @@ Bundled experts live in `src/octop/infra/agents/experts/library/`
 | `GET`    | `/agents/{aid}/heartbeat-config` | owner | read heartbeat YAML |
 | `PUT`    | `/agents/{aid}/heartbeat-config` | owner | write heartbeat YAML |
 | `GET`    | `/agents/{aid}/memory/daily` | owner | list daily memory files |
+| `GET`/`PUT` | `/agents/{aid}/memory/extract-config` | owner/admin | Read/update memory runtime and extraction options; omitted fields retain their stored values |
 | `GET`/`PUT` | `/agents/{aid}/memory/strong` | owner | read/edit user-maintained MEMORY.md, including for stopped agents; new sessions snapshot full content once, existing sessions keep their snapshot |
 | `GET`/`PUT` | `/agents/{aid}/memory/user` | owner | read/edit user-maintained USER.md with the same session snapshot policy; distinct from the derived profile |
 | `GET` | `/agents/{aid}/memory/manual-review` | owner | read persisted reconciliation status against current documents; no model call or memory mutation |
@@ -400,6 +404,13 @@ Bundled experts live in `src/octop/infra/agents/experts/library/`
 | `GET`    | `/agents/{aid}/memory/daily/{filename}` | owner | read one daily memory |
 | `DELETE` | `/agents/{aid}/memory/daily/{filename}` | owner | delete one daily memory |
 | `GET`/`POST` | `/memory/...` | user | memory API (dashboard memory tab) |
+
+The extraction-config API accepts independent `memory_capture_enabled` and
+`memory_recall_inject_enabled` booleans. Both default to `true`: set the first to
+`false` to stop automatic conversation-event capture, or the second to `false` to
+stop automatically injecting recalled memory into model context. These switches
+do not disable explicit memory tools. Check `supported_call_options` before using
+them with an older harness; unsupported options are not forwarded to its config.
 
 ### Manual document reconciliation
 
@@ -535,10 +546,34 @@ for non-`/` paths.
 | `GET`    | `/connectors/oauth/pending/{state_id}` | user | poll the OAuth result |
 
 Custom MCP OAuth (streamable HTTP, public HTTPS URL only): agentbuddy discovers the authorization
-server from the MCP URL (401 / RFC 9728 protected-resource metadata), requires dynamic client
-registration (DCR), stores encrypted tokens in the custom MCP spec, and injects `Authorization:
+server from the MCP URL (401 / RFC 9728 protected-resource metadata), registers a client
+dynamically (DCR), stores encrypted tokens in the custom MCP spec, and injects `Authorization:
 Bearer` when loading tools. Loopback and LAN MCP URLs may use HTTP and do not use remote OAuth
 discovery.
+
+When the authorization server has no DCR, the probe answers `oauth.client_required: true` and the
+server needs a pre-registered client in its spec:
+
+```json
+{
+  "transport": "streamable_http",
+  "url": "https://mcp.example.com/mcp",
+  "oauth_client": {
+    "client_id": "…",
+    "client_secret": "…",
+    "scope": "read write",
+    "authorization_endpoint": "https://auth.example.com/authorize",
+    "token_endpoint": "https://auth.example.com/token"
+  }
+}
+```
+
+Only `client_id` is required. `client_secret` is write-only: responses carry
+`has_client_secret` instead, and omitting the field on save keeps the stored secret. `scope`
+overrides the scopes the server advertises. The two endpoints go together and replace discovery,
+for servers that publish no metadata; both must be public HTTPS URLs. Register
+`<public base>/api/connectors/oauth/callback` as the redirect URI of the OAuth app. Changing
+the client drops the stored tokens, so the server asks for authorization again.
 
 ## Internal MCP (octop-harness agents)
 

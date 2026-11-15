@@ -24,7 +24,6 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from dataclasses import replace
 from typing import Any
 
 from octop_memory.application.config import MemoryRuntimeConfig
@@ -32,7 +31,7 @@ from octop_memory.application.runtime import MemoryRuntime
 from octop_memory.core import Memory
 from octop_memory.pipeline.recall import DEFAULT_RECALL_LIMIT, RecallResult, recall_for_prompt
 from octop_memory.ports.llm import LLMClient
-from octop_memory.types import MemoryNode
+from octop_memory.types import CandidateType, MemoryNode
 
 logger = logging.getLogger("octop_memory")
 
@@ -52,7 +51,7 @@ class MemoryService:
         host: the ``RawEvent.host`` tag stamped on captured events
             (e.g. ``"octop-harness"`` / ``"hermes"``).
         manual_documents_provider: optional backend-aware reader of USER.md and
-            MEMORY.md, used after saves/promotions, never per prompt turn.
+            MEMORY.md. Background review reads it; ``save`` does not.
     """
 
     def __init__(
@@ -74,6 +73,7 @@ class MemoryService:
             llm=llm,
             manual_documents_provider=manual_documents_provider,
         )
+        self._manual_review_scheduler: Callable[[], None] | None = None
 
     @property
     def memory(self) -> Memory:
@@ -93,7 +93,11 @@ class MemoryService:
         limit: int = DEFAULT_RECALL_LIMIT,
         manual_context: dict[str, str] | None = None,
     ) -> RecallResult:
-        """Recall relevant memories as prompt-injectable text.
+        """Recall canonical atoms as prompt-injectable text.
+
+        Automatic recall never falls back to raw conversations or page
+        summaries. Use :meth:`search` for explicit multi-source retrieval;
+        its ``recall.raw_policy`` does not widen automatic injection.
 
         Returns a :class:`RecallResult`; use ``.rendered`` for a ready-to-inject
         markdown block or ``.snippets`` to format your own. No model required.
@@ -111,16 +115,41 @@ class MemoryService:
             manual_context=manual_context,
         )
 
+    def set_manual_review_scheduler(self, scheduler: Callable[[], None] | None) -> None:
+        """Register a non-blocking hook invoked after a fact is stored.
+
+        The hook must return immediately. Document comparison belongs on the
+        host's background worker, not on the call that stored the fact.
+        """
+        self._manual_review_scheduler = scheduler
+
+    def review_new_memory(self, *, max_atoms: int = 20) -> dict[str, Any] | None:
+        """Review one batch against current owner documents on a host worker.
+
+        This synchronous operation may call the model. Hosts must run it
+        outside the chat turn, for example from the registered scheduler or
+        a maintenance worker. Return the audit report, or ``None`` when no
+        document provider is configured or its documents are empty.
+        """
+        return self._runtime.review_new_memory(max_atoms=max_atoms)
+
     def reconcile_manual_documents(
-        self, documents: dict[str, str], *, is_current: Callable[[], bool] | None = None
+        self,
+        documents: dict[str, str],
+        *,
+        is_current: Callable[[], bool] | None = None,
+        max_atoms: int = 100,
     ) -> dict[str, Any]:
         """Compare user-owned documents with atoms; quarantine conflicts for review.
 
         The caller supplies current file contents, never a stale chat snapshot.
         ``is_current`` can cancel applying a plan if files changed during analysis.
         Partial/unavailable semantic checks are explicit in the result.
+        ``max_atoms`` caps this call; the host's background drain uses a smaller batch.
         """
-        return self._runtime.reconcile_manual_documents({"documents": documents}, is_current=is_current)
+        return self._runtime.reconcile_manual_documents(
+            {"documents": documents, "maxAtoms": max_atoms}, is_current=is_current
+        )
 
     def search(
         self,
@@ -164,6 +193,7 @@ class MemoryService:
         content: str,
         *,
         topic: str | None = None,
+        kind: CandidateType = "Fact",
         metadata: dict[str, Any] | None = None,
     ) -> MemoryNode:
         """Explicitly save a durable memory.
@@ -171,20 +201,18 @@ class MemoryService:
         This is the in-process equivalent of a host exposing a
         ``memory_save`` tool. It uses :meth:`Memory.store`, so manual saves
         enter the canonical atom/tree path instead of being kept only as raw
-        transcript events.
+        transcript events. Comparison with USER.md and MEMORY.md is not done
+        here; a registered scheduler is notified so the host can review later.
+        ``kind`` is supplied by the caller (Fact/Preference/Decision/Task),
+        defaults to Fact for compatibility, and adds no classification call.
         """
-        node = self._memory.store(content, topic=topic, metadata=metadata)
-        review = self._runtime.review_new_memory()
-        if review is not None:
-            atom = self._memory.get_atom(node.atom_id) if node.atom_id else None
-            node = replace(
-                node,
-                metadata={
-                    **node.metadata,
-                    "manual_document_review": review,
-                    "manual_document_conflict": bool(atom and atom.deprecated_at),
-                },
-            )
+        node = self._memory.store(content, topic=topic, kind=kind, metadata=metadata)
+        scheduler = self._manual_review_scheduler
+        if scheduler is not None:
+            try:
+                scheduler()
+            except Exception:
+                logger.warning("manual review scheduler failed", exc_info=True)
         return node
 
     def capture_turn(

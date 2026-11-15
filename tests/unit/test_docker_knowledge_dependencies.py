@@ -9,7 +9,7 @@ from pathlib import Path
 def test_docker_syncs_retain_knowledge_extras() -> None:
     """A later exact uv sync must not prune extras installed in an earlier layer."""
     repo = Path(__file__).resolve().parents[2]
-    dockerfile = (repo / "docker" / "Dockerfile").read_text(encoding="utf-8")
+    dockerfile = (repo / "deploy" / "docker" / "Dockerfile").read_text(encoding="utf-8")
     commands = dockerfile.replace("\\\n", " ").splitlines()
     syncs = [shlex.split(line.strip()) for line in commands if "uv sync " in line]
     assert len(syncs) == 2
@@ -42,20 +42,35 @@ def _desktop_smoke_import(dockerfile: str) -> bool:
 def test_variant_is_validated_and_compiler_is_purged_in_the_install_layer() -> None:
     """A typo must not silently build the full image, and gcc must not stay in it."""
     repo = Path(__file__).resolve().parents[2]
-    text = (repo / "docker" / "Dockerfile").read_text(encoding="utf-8")
+    text = (repo / "deploy" / "docker" / "Dockerfile").read_text(encoding="utf-8")
     assert "OCTOP_IMAGE_VARIANT must be full or lite" in text
     layers = text.split("\nRUN ")
-    runtime = next(layer for layer in layers if "libgl1" in layer)
+    runtime = next(layer for layer in layers if "libgl1" in layer and "uv sync " not in layer)
     assert "build-essential" not in runtime
     install = next(layer for layer in layers if "uv sync " in layer)
     assert "build-essential" in install
     assert "apt-get purge" in install
 
 
+def test_project_sync_purges_compiler_only_when_it_is_installed() -> None:
+    """The source layer must not purge a compiler the dependency layer already removed.
+
+    Lite does not run apt-get update here. An unconditional purge then fails
+    with ``Unable to locate package build-essential``.
+    """
+    repo = Path(__file__).resolve().parents[2]
+    text = (repo / "deploy" / "docker" / "Dockerfile").read_text(encoding="utf-8")
+    layers = [layer for layer in text.split("\nRUN ") if "uv sync " in layer]
+    assert len(layers) == 2
+    project = layers[1]
+    assert "dpkg -s build-essential" in project
+    assert "apt-get purge -y --auto-remove build-essential" in project
+
+
 def test_images_bake_desktop_without_starting_or_downloading_laya() -> None:
     """Both images install the desktop stack and leave Xvnc stopped."""
     repo = Path(__file__).resolve().parents[2]
-    bake = (repo / "docker" / "bake-desktop.sh").read_text(encoding="utf-8")
+    bake = (repo / "deploy" / "docker" / "bake-desktop.sh").read_text(encoding="utf-8")
     install = (repo / "src/octop/infra/control/desktop/scripts/linux/v1.0/install.sh").read_text(
         encoding="utf-8"
     )
@@ -66,7 +81,7 @@ def test_images_bake_desktop_without_starting_or_downloading_laya() -> None:
     assert "firefox-esr" in bake
     assert "chromium-browser" in install
     assert 'if [ "$NO_START" = 1 ]' in install
-    for rel in ("docker/Dockerfile",):
+    for rel in ("deploy/docker/Dockerfile",):
         text = (repo / rel).read_text(encoding="utf-8")
         assert "bake-desktop.sh" in text
         assert "playwright install" not in text

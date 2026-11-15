@@ -124,7 +124,7 @@ describe("AvatarDropdown personal settings", () => {
       screen.getByRole("button", { name: "account.changePassword" }),
     ).toBeInTheDocument();
     expect(
-      document.querySelector(".ant-drawer-right, .octop-drawer-right"),
+      document.querySelector(".ant-drawer-right, .agentbuddy-drawer-right"),
     ).toBeTruthy();
   });
 });

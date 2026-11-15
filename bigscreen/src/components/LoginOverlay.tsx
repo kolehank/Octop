@@ -30,7 +30,7 @@ export default function LoginOverlay({ onSuccess }: { onSuccess: () => void }) {
     <div className={styles.loginOverlay}>
       <form className={styles.loginCard} onSubmit={submit}>
         <h3 className={styles.loginTitle}>登录大屏</h3>
-        <p className={styles.loginHint}>使用 Octop 账号登录后即可对话</p>
+        <p className={styles.loginHint}>使用政务伙伴账号登录后即可对话</p>
         <label className={styles.loginField}>
           <span>用户名</span>
           <input

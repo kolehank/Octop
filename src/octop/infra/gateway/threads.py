@@ -12,7 +12,7 @@ from octop.infra.utils.ulid import new_ulid
 
 #: Registered big-screen project prefixes (ADR 004 D2). New project-level
 #: prefixes must be added here before any client may use them.
-SCREEN_KEY_PREFIXES = ("demo/",)
+SCREEN_KEY_PREFIXES = ("fgw/",)
 #: ``screen_key`` charset ``[A-Za-z0-9_/-]``. ``:`` is banned because session
 #: keys split on ``:``; ``%``/``_`` are banned because scope/q run through SQL
 #: LIKE; whitespace and CJK punctuation are not in the charset.
@@ -28,7 +28,7 @@ def is_valid_screen_key(screen_key: str) -> bool:
     """Validate a big-screen route template per ADR 004 D2.
 
     Requires 1..120 chars of ``[A-Za-z0-9_/-]``, a registered project prefix
-    (``demo/`` this release) and at most 3 slash segments.
+    (``fgw/`` this release) and at most 3 slash segments.
     """
     if not isinstance(screen_key, str):
         return False
@@ -42,11 +42,11 @@ def is_valid_screen_key(screen_key: str) -> bool:
 
 
 def screen_topic_prefix(screen_key: str) -> str:
-    """First two segments (``demo/<topic>``) of a screen key.
+    """First two segments (``fgw/<topic>``) of a screen key.
 
     ``scope=topic`` lists every screen under one topic (ADR 004 D7), so
-    ``demo/investment/region`` and ``demo/investment`` both map to
-    ``demo/investment``.
+    ``fgw/investment/region`` and ``fgw/investment`` both map to
+    ``fgw/investment``.
     """
     return "/".join(screen_key.split("/")[:2])
 
@@ -333,7 +333,14 @@ class ThreadRegistry:
         """IM sessions bound to *thread_id* (excludes dashboard / CLI)."""
         return [row for row in self.sessions_for_thread(thread_id) if self.is_im_session(row)]
 
-    async def rebind(self, *, session_key: str, thread_id: str, agent_id: str) -> None:
+    async def rebind(
+        self,
+        *,
+        session_key: str,
+        thread_id: str,
+        agent_id: str,
+        acting_user_id: int | None = None,
+    ) -> None:
         row = self._threads.get(thread_id)
         if row is None:
             msg = f"thread {thread_id!r} not found"
@@ -359,10 +366,14 @@ class ThreadRegistry:
                 metadata = {"channel_type": row.channel_type, "user_id": row.user_id}
                 channel_id = None
             if session is None:
+                session_user_id = acting_user_id if acting_user_id is not None else row.user_id
+                if acting_user_id is not None:
+                    subject_id = str(acting_user_id)
+                    metadata = {"channel_type": channel_type, "user_id": acting_user_id}
                 self._sessions.upsert(
                     session_key=session_key,
                     agent_id=agent_id,
-                    user_id=row.user_id,
+                    user_id=session_user_id,
                     channel_type=channel_type,
                     chat_type=chat_type,
                     thread_id=thread_id,
@@ -510,7 +521,7 @@ class ThreadRegistry:
         """List threads, optionally filtered for big-screen sessions (ADR 004 D7).
 
         ``scope`` is one of ``screen`` (exact screen session), ``topic``
-        (``demo/<topic>`` prefix), ``all`` (screen sessions only), ``dashboard``
+        (``fgw/<topic>`` prefix), ``all`` (screen sessions only), ``dashboard``
         (exclude screen sessions) or None (legacy: every thread for the pair).
         ``q`` LIKE-matches the title or the first user message later in SQL.
         """
@@ -546,8 +557,21 @@ class ThreadRegistry:
             offset=offset,
         )
 
+    def list_visible_threads(
+        self, *, agent_id: str, user_id: int, limit: int = 50
+    ) -> list[ThreadRow]:
+        """Threads this user owns, plus ones contributed on the same expert."""
+        return self._threads.list_visible(agent_id=agent_id, user_id=user_id, limit=limit)
+
+    def set_contributed(self, thread_id: str, contributed: bool) -> None:
+        self._threads.set_contributed(thread_id, contributed)
+
     def list_threads_for_session(self, *, session_key: str, limit: int = 50) -> list[ThreadRow]:
         return self._threads.list_by_session(session_key=session_key, limit=limit)
+
+    def latest_active_thread(self, *, session_key: str) -> ThreadRow | None:
+        """Most recent conversation on this channel, ignoring empty threads."""
+        return self._threads.latest_active_for_session(session_key=session_key)
 
     def create_thread(
         self,
@@ -605,6 +629,9 @@ class ThreadRegistry:
     def mark_thread_read(self, thread_id: str) -> None:
         self._sessions.clear_unread_for_thread(thread_id)
 
+    def mark_thread_read_for_user(self, thread_id: str, user_id: int) -> None:
+        self._sessions.clear_unread_for_user_thread(thread_id, user_id)
+
     def mark_agent_read(self, agent_id: str, user_id: int) -> None:
         self._sessions.clear_unread_for_agent(agent_id, user_id)
 
@@ -617,6 +644,15 @@ class ThreadRegistry:
 
 def _new_thread_id() -> str:
     return f"thr_{new_ulid()}"
+
+
+def thread_visible_to(row: ThreadRow, user_id: int) -> bool:
+    """Owner, or anyone who can open an expert that this thread was contributed to.
+
+    Rows that predate the column, and test fakes, have no ``contributed`` flag.
+    Those stay private to the owner.
+    """
+    return row.user_id == user_id or bool(getattr(row, "contributed", False))
 
 
 def thread_row_has_messages(row: ThreadRow) -> bool:

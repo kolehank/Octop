@@ -54,6 +54,7 @@ export interface ToolRendererRegistration {
 }
 
 export interface OpenSidePanelOptions {
+  /** Tool call id — the side dock keeps one tab per callId. */
   callId: string;
   title?: string;
   toolName?: string;
@@ -72,6 +73,8 @@ export interface OctopPluginUIHost {
   openSidePanel(opts: OpenSidePanelOptions): void;
   /** Close the side dock tab for this tool call, if open. */
   closeSidePanel(callId: string): void;
+  /** Send a user turn through the chat pipeline (same path as ACP cards). */
+  sendUserTurn(text: string): void;
 }
 
 /** Shape expected from ``ui/dist/index.js``. */
