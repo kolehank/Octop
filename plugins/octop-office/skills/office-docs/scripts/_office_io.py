@@ -78,6 +78,8 @@ def verify_output(path: Path) -> str:
 
 def emit(result: dict, *, exit_code: int = 0) -> None:
     """打印 JSON 结果并退出（不保证返回）。"""
+    # Windows 控制台默认 cp1252，中文 JSON 会 UnicodeEncodeError——强制 UTF-8。
+    sys.stdout.reconfigure(encoding="utf-8")
     print(json.dumps(result, ensure_ascii=False))
     sys.exit(exit_code)
 
