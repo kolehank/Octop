@@ -69,6 +69,13 @@ git push dstech develop
 
 ## 4. 同步上游流（固定 5 步，本地是合并中枢）
 
+> ⚠️ **铁律（2026-11-15 事故教训）**：上游同步**只能在 `oss` 分支上做**。
+> 绝不从 `develop`（或基于 develop 的 feature 分支）做上游同步再合回 oss——
+> develop 携带业务大屏与业务数据，那条路径会把业务内容带进公开线/公开历史
+> （本次事故靠"从未 push"才没有泄漏，靠 `git merge` 是洗不掉已进历史的业务提交的）。
+> 同步期间的冲突解法可以参考 develop 侧的同类工作，但**公开线的提交必须以干净
+> 基线为起点重建**，业务路径一律不带。
+
 ```bash
 git switch oss
 git fetch upstream
