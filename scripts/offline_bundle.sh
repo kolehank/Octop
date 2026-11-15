@@ -185,6 +185,9 @@ build_variant() {
 import re, sys
 p = sys.argv[1]
 lines = open(p).read().splitlines()
+# 云存储 SDK 链(oss2/华为 OBS/阿里云/crcmod/腾讯 COS)在 offline 内网包里无意义,
+# 且其传递依赖在部分 tier 缺轮子会造成 wheelhouse 不一致——整链排除。
+EXCLUDE = {"oss2", "esdk-obs-python", "aliyun-python-sdk-core", "crcmod", "cos-python-sdk-v5"}
 out = []
 skip = False
 for line in lines:
@@ -195,6 +198,9 @@ for line in lines:
         m = re.search(r"python_full_version >= '3\.1[3-9]|3\.[2-9]\d", marker)
         if m:
             continue
+    m = re.match(r"^([A-Za-z0-9_.-]+)[=~<>!]", line)
+    if m and m.group(1).lower().replace("_", "-") in EXCLUDE:
+        continue
     out.append(line)
 open(p, "w").write("\n".join(out) + "\n")
 print(f"filtered to {sum(1 for l in out if l and not l.startswith('#'))} lines")
