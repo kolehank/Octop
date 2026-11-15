@@ -19,8 +19,8 @@ if (!/^\d+\.\d+\.\d+(?:-(?:alpha|beta|rc)\.\d+)?$/.test(electronVersion)) {
   throw new Error(`Unsupported agentbuddy release version: ${productVersion}`);
 }
 const artifactName = process.env.OCTOP_PLATFORM
-  ? `Octop-desktop-${process.env.OCTOP_PLATFORM}-${productVersion}.\${ext}`
-  : `Octop-desktop-\${os}-\${arch}-\${version}.\${ext}`;
+  ? `agentbuddy-desktop-${process.env.OCTOP_PLATFORM}-${productVersion}.\${ext}`
+  : `agentbuddy-desktop-\${os}-\${arch}-\${version}.\${ext}`;
 const productName = "agentbuddy";
 
 export default {
