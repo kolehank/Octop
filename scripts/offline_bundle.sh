@@ -429,7 +429,8 @@ print(" ".join(missing))
     # ---- 打包 + 校验和 --------------------------------------------------------
     echo "[offline_bundle] [$variant] Packing + checksums..."
     local total
-    total=$(ls "$out_dir"/*.whl "$out_dir"/*.tar.gz 2>/dev/null | wc -l)
+    # pipefail 下 ls 对无匹配 glob 返回 2 会炸掉 set -e;零 sdist(全 wheel 命中)时 *.tar.gz 无匹配是常态
+    total=$(ls "$out_dir"/*.whl "$out_dir"/*.tar.gz 2>/dev/null | wc -l || true)
     ( cd dist && tar -czf "agentbuddy-offline-$name_suffix-$PYTAG.tar.gz" "$(basename "$out_dir")/" )
     ( cd "$out_dir" && sha256sum ./*.whl ./*.tar.gz requirements-third-party.txt > "../SHA256SUMS-$variant.txt" 2>/dev/null \
       || sha256sum ./* > "../SHA256SUMS-$variant.txt" )
