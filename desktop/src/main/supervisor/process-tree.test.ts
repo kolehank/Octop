@@ -18,7 +18,7 @@ function env(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
 }
 
 test("buildSidecarEnv disables the wizard password gate", () => {
-  assert.equal(env().OCTOP_REQUIRE_SETUP_PASSWORD, "0");
+  assert.equal(env().AGENTBUDDY_REQUIRE_SETUP_PASSWORD, "0");
 });
 
 test("buildSidecarEnv leaves the access token TTL to the server", () => {
@@ -28,10 +28,10 @@ test("buildSidecarEnv leaves the access token TTL to the server", () => {
 test("buildSidecarEnv keeps the identity and loopback pins", () => {
   const built = env();
   assert.equal(built.OCTOP_DESKTOP_SHELL, "1");
-  assert.equal(built.OCTOP_HOME, "/tmp/home");
+  assert.equal(built.AGENTBUDDY_HOME, "/tmp/home");
   // Built with node:path, so the separator follows the host.
-  assert.equal(built.OCTOP_GREEN_PACKAGES, join("/tmp/portable", "packages"));
-  assert.equal(built.OCTOP_BIND_HOST, "127.0.0.1");
+  assert.equal(built.AGENTBUDDY_GREEN_PACKAGES, join("/tmp/portable", "packages"));
+  assert.equal(built.AGENTBUDDY_BIND_HOST, "127.0.0.1");
   assert.equal(built.AGENTBUDDY_PORT, "51234");
   assert.equal(built.PYTHONNOUSERSITE, "1");
   assert.equal(built.PYTHONPYCACHEPREFIX, join("/tmp/home", "pyc"));

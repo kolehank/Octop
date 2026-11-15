@@ -43,7 +43,7 @@ test("downloadFilename never escapes the update directory", () => {
   // Shell-significant characters collapse into a single separator.
   assert.equal(downloadFilename(asset("Oct; rm -rf ~ .dmg", "dmg"), "v1.0.3"), "Oct-rm--rf-.dmg");
   // Empty name → version-based fallback that still carries the extension.
-  assert.equal(downloadFilename(asset("", "dmg"), "v1.0.3"), "Octop-v1.0.3.dmg");
+  assert.equal(downloadFilename(asset("", "dmg"), "v1.0.3"), "agentbuddy-v1.0.3.dmg");
 });
 
 test("planInstall keeps the shell-selected url and kind", () => {

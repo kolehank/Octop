@@ -130,7 +130,7 @@ function statExists(path: string): boolean {
 test("portableZipName is the unsuffixed release zip", () => {
   assert.equal(
     portableZipName("windows-amd64", "1.0.3b4"),
-    "Octop-portable-windows-amd64-1.0.3b4.zip",
+    "agentbuddy-portable-windows-amd64-1.0.3b4.zip",
   );
 });
 

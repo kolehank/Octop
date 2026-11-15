@@ -27,13 +27,13 @@ function Splash() {
         <img
           className={`${styles.logo} ${styles.logoLight}`}
           src={logoDarkUrl}
-          alt="Octop"
+          alt="政务伙伴"
           height={72}
         />
         <img
           className={`${styles.logo} ${styles.logoDark}`}
           src={logoWhiteUrl}
-          alt="Octop"
+          alt="政务伙伴"
           height={72}
         />
         <p className={styles.status}>
