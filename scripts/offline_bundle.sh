@@ -101,11 +101,15 @@ LEGACY_EXCLUDE=(
     "deepagents-backends"
     "langchain-aws"
     # 云存储 SDK 无 manylinux2014 轮子(crcmod 仅源码包);legacy 内网不用云存储后端,
-    # 配置 OSS/OBS/阿里云 后端会在 legacy 安装上报 ImportError——按需自装
+    # 配置 OSS/OBS/阿里云/腾讯 COS 后端会在 legacy 安装上报 ImportError——按需自装
     "oss2"
     "esdk-obs-python"
     "aliyun-python-sdk-core"
     "crcmod"
+    "cos-python-sdk-v5"
+    # 桌面键鼠控制链(pynput→evdev)无 2014 档轮子;legacy 无头部署不用
+    "pynput"
+    "evdev"
 )
 
 OUT="$REPO_ROOT/dist/offline"

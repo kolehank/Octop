@@ -129,7 +129,7 @@ assemble_one() {
       python3 - "$req_file" <<'GREEN_EXCLUDE'
 import re, sys
 path = sys.argv[1]
-excluded = {"deepagents-backends", "langchain-aws", "oss2", "esdk-obs-python", "aliyun-python-sdk-core", "crcmod"}
+excluded = {"deepagents-backends", "langchain-aws", "oss2", "esdk-obs-python", "aliyun-python-sdk-core", "crcmod", "cos-python-sdk-v5", "pynput", "evdev"}
 lines = open(path).read().splitlines()
 kept, drop_next_via = [], False
 for line in lines:
