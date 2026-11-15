@@ -251,6 +251,11 @@ pbs_archive_name() {
 # darwin-amd64 builds then compile from sdist and link Homebrew OpenSSL
 # (/usr/local/opt/openssl@3), which is missing on end-user machines.
 # Pin to the last release that still ships macosx_*_universal2 wheels.
+#
+# uv --python-platform *-apple-darwin resolves as macOS 13.0 unless
+# MACOSX_DEPLOYMENT_TARGET is set. Locked onnxruntime 1.28 only publishes
+# macosx_14_0_arm64 (no Intel wheel). opencv-python 5.x Intel wheels are
+# macosx_14_0_x86_64. Pins below stay inside those 13.0 tags.
 write_green_overrides() {
   local plat="$1"
   local out="${2:-${GREEN_ROOT}/overrides-${plat}.txt}"
@@ -260,9 +265,23 @@ write_green_overrides() {
       {
         echo "psycopg-binary ; sys_platform == 'agentbuddy-unsupported'"
         echo "sqlite-vec ; sys_platform == 'agentbuddy-unsupported'"
+        # rapidocr pulls these. No release has ever published a win_arm64 wheel.
+        # opencv-python's sdist compiles all of OpenCV; pyclipper's sdist is Cython.
+        # Drop both so the zip can install. Local RapidOCR stays unavailable
+        # on Windows ARM64 until those wheels exist.
+        echo "opencv-python ; sys_platform == 'agentbuddy-unsupported'"
+        echo "pyclipper ; sys_platform == 'agentbuddy-unsupported'"
         # 46.0.0 is the only release shipping a win_arm64 wheel; newer ones would
         # fall back to a Rust + OpenSSL source build that fails on the runner.
         echo "cryptography==46.0.0"
+      } > "$out"
+      echo "$out"
+      ;;
+    darwin-arm64)
+      {
+        # 1.23.2 is the last onnxruntime with cp312 macosx_13_0_arm64 wheels.
+        # fastembed 0.9.1 allows it on Python 3.12 (>=1.17, not 1.20/1.24.0/1.24.1).
+        echo "onnxruntime==1.23.2"
       } > "$out"
       echo "$out"
       ;;
@@ -275,6 +294,13 @@ write_green_overrides() {
         # 26.x only publishes macosx_15_0 wheels, which uv rejects on the
         # macOS-14 runner and on older Intel macs.
         echo "argon2-cffi-bindings==25.1.0"
+        # 1.23.2 is the last onnxruntime with cp312 macosx_13_0_arm64 wheels.
+        # fastembed 0.9.1 allows it on Python 3.12 (>=1.17, not 1.20/1.24.0/1.24.1).
+        echo "onnxruntime==1.23.2"
+        # 4.12 needs numpy<2.3, which fights the locked numpy 2.5. 4.13+ Intel
+        # wheels are macosx_14. 4.11.0.86 still has macosx_13_0_x86_64 and
+        # accepts numpy>=1.26 on Python 3.12.
+        echo "opencv-python==4.11.0.86"
       } > "$out"
       echo "$out"
       ;;

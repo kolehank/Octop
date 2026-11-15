@@ -117,7 +117,9 @@ export default function TopicScreen({
                 entry.id === topicId ? styles.topicButtonActive : ""
               }`}
               onClick={() =>
-                navigate(entry.id === "overview" ? "/demo/" : `/demo/${entry.id}`)
+                navigate(
+                  entry.id === "overview" ? "/demo/" : `/demo/${entry.id}`,
+                )
               }
             >
               {entry.title}

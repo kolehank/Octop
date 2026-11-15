@@ -36,7 +36,7 @@ from collections.abc import Iterable
 from typing import Any, Literal, cast
 
 WebSearchToolName = Literal[
-    "tavily", "brave", "doubao", "deepseek", "exa", "google", "kimi", "yuanbao", "searchfree", "you"
+    "tavily", "doubao", "deepseek", "exa", "kimi", "yuanbao", "searchfree", "you"
 ]
 
 # ``provider name → (required env vars, lazy loader returning a langchain tool)``.
@@ -47,12 +47,6 @@ def _load_tavily() -> Any:
     from octop_harness.builtin.tools.web_search.tavily import tavily_search
 
     return tavily_search
-
-
-def _load_brave() -> Any:
-    from octop_harness.builtin.tools.web_search.brave import brave_search
-
-    return brave_search
 
 
 def _load_doubao() -> Any:
@@ -71,12 +65,6 @@ def _load_exa() -> Any:
     from octop_harness.builtin.tools.web_search.exa import exa_search
 
     return exa_search
-
-
-def _load_google() -> Any:
-    from octop_harness.builtin.tools.web_search.google import google_search
-
-    return google_search
 
 
 def _load_kimi() -> Any:
@@ -105,11 +93,9 @@ def _load_you() -> Any:
 
 WEB_SEARCH_PROVIDERS: dict[WebSearchToolName, tuple[tuple[str, ...], Any]] = {
     "tavily": (("TAVILY_API_KEY",), _load_tavily),
-    "brave": (("BRAVE_API_KEY",), _load_brave),
     "doubao": (("DOUBAO_SEARCH_API_KEY",), _load_doubao),
     "deepseek": (("DEEPSEEK_API_KEY",), _load_deepseek),
     "exa": (("EXA_API_KEY",), _load_exa),
-    "google": (("GOOGLE_API_KEY", "GOOGLE_CSE_ID"), _load_google),
     "kimi": (("MOONSHOT_API_KEY",), _load_kimi),
     "yuanbao": (("TENCENTCLOUD_WSA_APIKEY",), _load_yuanbao),
     # ``searchfree`` needs no env vars — empty tuple makes it always

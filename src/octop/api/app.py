@@ -19,6 +19,7 @@ from fastapi.responses import (
 )
 from scalar_fastapi import get_scalar_api_reference
 
+from octop.api.deps import authenticate_request, get_server
 from octop.api.middleware.jwt_auth import install as install_jwt_auth
 from octop.api.middleware.setup_lockdown import install as install_setup_lockdown
 from octop.api.openapi_meta import API_DESCRIPTION, OPENAPI_TAGS, configure_openapi
@@ -113,6 +114,16 @@ def _bigscreen_index_response(bigscreen_dir: Path) -> FileResponse | HTMLRespons
         # Friendly hint instead of a bare 404 while the SPA has not been built.
         return HTMLResponse(_BIGSCREEN_MISSING_HTML)
     return _dashboard_response(index_file, "")
+
+
+def is_bigscreen_data_path(full_path: str) -> bool:
+    """True when ``/screen/<full_path>`` is a board data file under ``data/``.
+
+    The big-screen SPA shell, hashed assets and hint pages stay public so the
+    frontend login gate can load; only the JSON/geo content that feeds the
+    board is JWT-gated (ADR 003 D1, board content now protected).
+    """
+    return full_path == "data" or full_path.startswith("data/")
 
 
 def _bigscreen_fallback(bigscreen_dir: Path, full_path: str) -> FileResponse | HTMLResponse:
@@ -221,7 +232,9 @@ def build_app(server: OctopServer) -> FastAPI:
         agent_mcp,
         agent_tools,
         agents,
+        app_config,
         auth,
+        auth_device,
         auth_ldap,
         auth_mfa,
         auth_oauth,
@@ -288,6 +301,7 @@ def build_app(server: OctopServer) -> FastAPI:
             _RouterMount(setup.router, "/api", ["setup"]),
             _RouterMount(auth.router, "/api/auth", ["auth"]),
             _RouterMount(auth_mfa.router, "/api/auth", ["auth"]),
+            _RouterMount(auth_device.router, "/api/auth", ["auth"]),
             _RouterMount(auth_oidc.router, "/api/auth", ["auth"]),
             _RouterMount(auth_oauth.router, "/api/auth", ["auth"]),
             _RouterMount(auth_ldap.router, "/api/auth", ["auth"]),
@@ -318,6 +332,7 @@ def build_app(server: OctopServer) -> FastAPI:
             _RouterMount(providers.router, "/api/providers", ["providers"]),
             _RouterMount(voice.router, "/api/voice", ["voice"]),
             _RouterMount(admin.router, "/api/admin", ["admin"]),
+            _RouterMount(app_config.router, "/api", ["admin"]),
             _RouterMount(backup.router, "/api/admin", ["admin"]),
             _RouterMount(admin_providers_router, "/api/admin/providers", ["admin"]),
             _RouterMount(admin_voice_router, "/api/admin/voice/providers", ["admin"]),
@@ -391,7 +406,7 @@ def build_app(server: OctopServer) -> FastAPI:
         return _bigscreen_index_response(bigscreen_dir)
 
     @app.get("/screen/{full_path:path}", include_in_schema=False)
-    async def bigscreen_spa(full_path: str) -> Response:
+    async def bigscreen_spa(full_path: str, request: Request) -> Response:
         if full_path:
             raw_path = Path(full_path)
             # Reject absolute paths and parent-dir references before joining,
@@ -404,6 +419,10 @@ def build_app(server: OctopServer) -> FastAPI:
             except ValueError:
                 raise HTTPException(status_code=404, detail="Not Found") from None
             if candidate.is_file():
+                if is_bigscreen_data_path(full_path):
+                    # Board data files require a valid session (``authenticate_request``
+                    # raises 401 OctopError handled by the global handler).
+                    authenticate_request(request, get_server(request))
                 return _dashboard_response(candidate, full_path)
         return _bigscreen_fallback(bigscreen_dir, full_path)
 

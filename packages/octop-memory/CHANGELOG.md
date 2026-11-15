@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-11-10
+
+### 修复
+
+- SQLite checkpoint 裁剪保留每个恢复点依赖的快照、写入和原有 ID。离线维护仍可通过调用方提供的名单保护指定快照。
+- `Memory.store()` / `MemoryService.save()` 接受显式 `kind`，保存 Fact、Preference、Decision、Task，修复手动“记住”路径固定写成 Fact 的限制；调用方选择类型，不新增分类模型调用。省略时保留 Fact 默认值，拒绝非法类别与直接晋升 ConflictCandidate；保留原始证据、事务、用户来源与后台审核调度，不重新分类历史内容或增加 schema。
+
+### 变更
+
+- 每轮自动召回只检索 Atom（含可选向量 Atom），没有匹配时返回空，不再回退注入原始对话或页面摘要；主动工具搜索继续保留多源及 raw 策略。OpenClaw hybrid 预取与 Hermes 同步采用该规则，缓存隔离自动注入和多源搜索，不增加模型调用或删除历史记录。
+- 文档与当前实现对齐：README 链接中英文 Wiki，维护者文档统一为英文，集成指南提供中英文两版。
+
+## [1.0.3] - 2026-11-04
+
+### 修复
+
+- 候选提炼按单批事件数（默认 100）与字符预算（默认 20,000）分批调用模型，不再把整个 session 的事件塞进一次请求；此前长会话积压会让 prompt 超出上下文、以「长度截断 / 超时」失败（#25）。
+- 「已提炼」游标写入 `{ns}_meta`（`extracted_ids/v1/<session>`），重启后从 meta 恢复，不再整段重跑（#25）。增量提取路径以 `strict=True` 持久化游标：游标写失败会让整个事务回滚、候选写入一并撤销，事件留在未提炼状态等待重试，而非被默默跳过；仅非严格路径的持久化失败才只告警。
+- 旧手动文档审计记录缺少 `uncertain` 字段时，不再信任其已比较进度：只读状态将活跃事实列为待审，后续按现有批次上限重审一次；新格式的空未决集合保留有效进度，避免重复调用模型（#33）。
+- EntityPage 再生成写回校验页面修订号，拒绝覆盖模型调用期间的用户编辑、事实 dirty 标记或更新的生成结果；迟到的生成失败不会重新污染已成功的新页。SQLite/PostgreSQL schema 2 自动补充修订列，SQLite 并发首次迁移使用短写事务；原有 summary_version 含义及不带条件的旧页接口调用保持兼容。
+- Windows 宿主文件扫描忽略带根或驱动器的 allowlist glob，避免 rooted pattern 抛错；portable source 测试正确隔离 Windows 用户目录。
+- **Hermes 适配器不再丢弃 `llm` / `extraction` 配置**：`_bridge_config()` 现在按桥解析器的同一语义把两个配置块转发进 `MemoryRuntimeConfig`，`$HERMES_HOME/octopmemory.json` 里的模型端点与抽取开关能真正抵达运行时；非对象值按缺省处理，坏配置不会挡住启动，`stats` 输出依旧不回显 `api_key`。此前 Hermes 宿主永远落到 `NoopLLMClient`，模型辅助抽取静默不可用（无 candidate/atom，也不报错）（#9）。
+- 补齐 `MemoryService.review_new_memory(max_atoms=20)` 公共入口，修复宿主保存后和定时维护静默跳过手动文档审核的问题；保存仍不等待模型。新增真实 octop-harness 中间件与 SQLite/PostgreSQL 的跨包测试，并纳入 CI 和发布检查（TencentCloud/Octop#2358）。
+- 手动文档审计中，无结论（`uncertain`）的比较仍推进游标，但不再被报告为 `complete`：未验证的 atom 按断言哈希记录，后续无待比对项的巡检仍返回 `uncertain`；新文档 revision 重新比对后可恢复 `complete`（TencentCloud/octop-memory#33）。
+- 手动文档审计的未决集合改按当前活跃 atom 计算：已停用、已删除或断言已变的记录不再滞留，`remaining` 与状态读取同样只统计活跃 atom，因此停用一个 atom 后无需修改文档即可清除 `uncertain`，SQLite/PostgreSQL 同组回归（TencentCloud/octop-memory#33）。
+
+### 变更
+
+- **修正 Hermes 安装文档**：`docs/integrations.md` 与 provider README 收敛为一条可用路径——用 `hermes plugins install TencentCloud/octop-memory/plugins/hermes/octopmemory --ref <完整 40 位 SHA>` 从本仓子目录直接安装，无需独立插件仓库；并补充用 `hermes --print-runtime-command` 获取网关实际解释器。同时写明仓库未向 PyPI 发布独立的 `octop-memory-hermes` 插件包（按旧命令执行会 404），`installer.py` 仅为仓库内 E2E 工具（#10）。
+
 ## [1.0.2] - 2026-10-16
 
 ### 新增

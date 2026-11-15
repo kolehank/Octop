@@ -1,0 +1,8 @@
+node_modules/
+package-lock.json
+
+# The repo-level .gitignore ignores any `dist/`; the plugin ships a prebuilt
+# UI, so re-include ours for the installer (the flattened plugin dir is zipped
+# verbatim without running npm).
+!dist/
+!dist/*

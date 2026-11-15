@@ -202,6 +202,46 @@ async def test_deepseek_ok(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
+async def test_kimi_ok(monkeypatch: pytest.MonkeyPatch) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url == "https://api.moonshot.cn/v1/tools/search_pro"
+        assert request.headers.get("Authorization") == "Bearer kimi-key"
+        body = json.loads(request.content)
+        assert body["text_query"]
+        assert body["limit"] == 1
+        return httpx.Response(
+            200,
+            json={
+                "search_results": [
+                    {
+                        "title": "T",
+                        "url": "https://example.com",
+                        "site_name": "example",
+                        "chunks": [],
+                    },
+                ],
+            },
+        )
+
+    _patch_client(monkeypatch, httpx.MockTransport(handler))
+    result = await search_probe.probe_search_provider("kimi", {"MOONSHOT_API_KEY": "kimi-key"})
+    assert result["success"] is True
+    assert result["result_count"] == 1
+    assert result["provider_id"] == "kimi"
+
+
+@pytest.mark.asyncio
+async def test_kimi_auth_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(401, text="")
+
+    _patch_client(monkeypatch, httpx.MockTransport(handler))
+    result = await search_probe.probe_search_provider("kimi", {"MOONSHOT_API_KEY": "bad"})
+    assert result["success"] is False
+    assert result["error_type"] == "auth_error"
+
+
+@pytest.mark.asyncio
 @pytest.mark.asyncio
 async def test_exa_ok(monkeypatch: pytest.MonkeyPatch) -> None:
     def handler(request: httpx.Request) -> httpx.Response:

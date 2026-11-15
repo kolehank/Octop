@@ -26,7 +26,7 @@ else
   AGENTBUDDY_HOME="${AGENTBUDDY_HOME:-${OCTOP_HOME:-$HOME/.agentbuddy}}"
   INSTALL_ROOT="/opt/octop-desktop"
   DISPLAY_NUM=":99"
-  # Docker hides the image's /data/.octop with a volume, so the log dir from
+  # Docker hides the image's /data/.agentbuddy with a volume, so the log dir from
   # install time is gone. Create it or the redirect below aborts start.sh.
   mkdir -p "${OCTOP_HOME}/desktop"
   if ! _xvnc_alive "Xvnc.*${DISPLAY_NUM}"; then

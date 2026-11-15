@@ -25,6 +25,7 @@ ErrorType = Literal[
 
 _TIMEOUT_S = 30.0
 _TEST_QUERY = "octop connectivity probe"
+_KIMI_ENDPOINT = "https://api.moonshot.cn/v1/tools/search_pro"
 _KNOWN: frozenset[str] = frozenset({"tavily", "doubao", "deepseek", "exa", "kimi", "yuanbao"})
 _REQUIRED: dict[str, tuple[str, ...]] = {
     "tavily": ("TAVILY_API_KEY",),
@@ -149,16 +150,23 @@ async def _exa(client: httpx.AsyncClient, api_key: str) -> dict[str, Any]:
 
 async def _kimi(client: httpx.AsyncClient, api_key: str) -> dict[str, Any]:
     response = await client.post(
-        "https://api.moonshot.cn/v1/chat/completions",
+        _KIMI_ENDPOINT,
         headers={"Authorization": f"Bearer {api_key}"},
-        json={
-            "model": "moonshot-v1-128k",
-            "messages": [{"role": "user", "content": _TEST_QUERY}],
-            "tools": [{"type": "web_search"}],
-            "temperature": 0.3,
-        },
+        json={"text_query": _TEST_QUERY, "limit": 1, "timeout_seconds": 20},
     )
-    return _from_kimi(response)
+    fail = _http_failure(response)
+    if fail is not None:
+        return fail
+    try:
+        results = response.json().get("search_results")
+    except ValueError:
+        return {"success": False, "error": "invalid JSON response", "error_type": "unknown"}
+    count = len(results) if isinstance(results, list) else 0
+    return {
+        "success": True,
+        "result_count": count,
+        "message": "Kimi search test successful",
+    }
 
 
 def _from_response(
@@ -261,27 +269,6 @@ async def _yuanbao(client: httpx.AsyncClient, api_key: str) -> dict[str, Any]:
         "success": True,
         "result_count": count,
         "message": "Yuanbao search test successful",
-    }
-
-
-def _from_kimi(response: httpx.Response) -> dict[str, Any]:
-    fail = _http_failure(response)
-    if fail is not None:
-        return fail
-    try:
-        payload = response.json()
-    except ValueError:
-        return {"success": False, "error": "invalid JSON response", "error_type": "unknown"}
-    choices = payload.get("choices") if isinstance(payload, dict) else None
-    content = None
-    if isinstance(choices, list) and choices:
-        message = choices[0].get("message") if isinstance(choices[0], dict) else None
-        if isinstance(message, dict):
-            content = message.get("content")
-    return {
-        "success": True,
-        "result_count": 1 if content else 0,
-        "message": "Kimi search test successful",
     }
 
 

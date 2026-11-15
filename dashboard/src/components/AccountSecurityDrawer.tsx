@@ -847,7 +847,7 @@ export default function AccountSecurityDrawer({
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
                 a.href = url;
-                a.download = "octop-recovery-codes.txt";
+                a.download = "agentbuddy-recovery-codes.txt";
                 a.click();
                 URL.revokeObjectURL(url);
               }}

@@ -35,4 +35,9 @@ COMMANDS: dict[str, tuple[str, str, str]] = {
     "sandbox": (".commands.sandbox", "sandbox", "Manage sandbox containers."),
     "acp": (".commands.acp", "acp_cmd", "Run agentbuddy agent as ACP server (stdio)."),
     "plugin": (".commands.plugin", "plugin", "Install and manage plugins."),
+    "migrate": (
+        ".commands.migrate",
+        "migrate",
+        "Migrate an OpenClaw or Hermes Agent setup into an expert.",
+    ),
 }

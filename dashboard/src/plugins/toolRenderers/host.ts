@@ -20,6 +20,7 @@ let dockHandlers: {
     toolName?: string;
   }) => void;
   closeSidePanel?: (callId: string) => void;
+  sendUserTurn?: (text: string) => void;
 } = {};
 
 /** Chat page wires dock open/close for plugin ``host.openSidePanel``. */
@@ -74,6 +75,9 @@ function createHost(defaultPluginId: string): OctopPluginUIHost {
     },
     closeSidePanel(callId) {
       dockHandlers.closeSidePanel?.(callId);
+    },
+    sendUserTurn(text) {
+      dockHandlers.sendUserTurn?.(text);
     },
   };
 }

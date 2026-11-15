@@ -4,10 +4,10 @@ Mounted only when :func:`octop_harness.decision.decision_active` is true.
 A low score, a failed request, or a user who already named a teammate leaves
 that catalog as it was.
 
-The system prompt and the core tool list stay byte-stable across turns so a
-provider prefix cache keeps hitting. Skills and long-tail tools selected for
-this turn are appended after the conversation. Long-tail tools are called
-through ``call_deferred_tool``, whose schema does not change.
+The system prompt and the core tool list stay byte-stable on every turn, including
+turns that do not score a shortlist, so a provider prefix cache keeps hitting.
+Skills and long-tail tools for this turn are inserted after the user message.
+Long-tail tools are called through ``call_deferred_tool``, whose schema does not change.
 """
 
 from __future__ import annotations
@@ -35,6 +35,7 @@ from octop_harness.decision.config import DecisionConfig
 from octop_harness.decision.select import Candidate, keep_confident, lexical_shortlist
 from octop_harness.middleware.peer import has_agent_at_mention
 from octop_harness.middleware.runtime import runtime_config
+from octop_harness.middleware.turn_note import insert_turn_note, is_turn_note
 from octop_harness.teams.profile import peer_description
 from octop_harness.teams.util import coerce_user_id
 
@@ -118,8 +119,6 @@ _TOOLS_ALWAYS_KEPT = frozenset(
         "ask_agent",
         "web_fetch",
         "tavily_search",
-        "brave_search",
-        "google_search",
         "kimi_search",
         "deepseek_search",
         "yuanbao_search",
@@ -202,10 +201,14 @@ def _stringify_content(content: Any) -> str:
     return str(content or "")
 
 
+def _is_user_turn(msg: Any) -> bool:
+    return isinstance(msg, HumanMessage) and not is_turn_note(msg)
+
+
 def _latest_user_text(request: ModelRequest) -> str:
     messages = getattr(request, "messages", None) or []
     for msg in reversed(messages):
-        if isinstance(msg, HumanMessage):
+        if _is_user_turn(msg):
             return _stringify_content(msg.content).strip()
     return ""
 
@@ -335,11 +338,13 @@ class DecisionMiddleware(AgentMiddleware[Any, Any]):
         team: Any | None = None,
         language: str = "zh",
         scorer: Any | None = None,
+        skills_rendered_late: bool = False,
     ) -> None:
         super().__init__()
         self._config = config
         self._team = team
         self._chinese = language != "en"
+        self._skills_rendered_late = skills_rendered_late
         self._scorer = scorer or HttpDecisionClient(
             endpoint=config.endpoint,
             api_key=config.api_key,
@@ -383,7 +388,7 @@ class DecisionMiddleware(AgentMiddleware[Any, Any]):
             else:
                 work = self._collect(request)
                 if work is None:
-                    narrowed = request
+                    narrowed = self._commit(request, _turn_key(request), _TurnFilter())
                 else:
                     try:
                         probabilities = await self._scorer.score_async(
@@ -438,7 +443,7 @@ class DecisionMiddleware(AgentMiddleware[Any, Any]):
     ) -> ModelRequest:
         work = self._collect(request)
         if work is None:
-            return request
+            return self._commit(request, _turn_key(request), _TurnFilter())
         try:
             probabilities = score(
                 state=_state_text(request, chinese=self._chinese),
@@ -594,9 +599,8 @@ class DecisionMiddleware(AgentMiddleware[Any, Any]):
 
     def _apply(self, request: ModelRequest, work: _Work, probabilities: dict[str, float]) -> ModelRequest:
         if not probabilities:
-            self._remember_turn(work.turn_key, _TurnFilter())
             self._publish(empty=True, parts=[])
-            return request
+            return self._commit(request, work.turn_key, _TurnFilter())
         parts: list[dict[str, Any]] = []
         hints: list[str] = []
         skill_kept: set[str] | None = None
@@ -631,10 +635,9 @@ class DecisionMiddleware(AgentMiddleware[Any, Any]):
             rewrite_skills=rewrite_skills,
             hints=tuple(hints),
         )
-        self._remember_turn(work.turn_key, turn)
         if parts:
             self._publish(empty=False, parts=parts)
-        return self._present(request, turn)
+        return self._commit(request, work.turn_key, turn)
 
     def _apply_result(
         self,
@@ -666,6 +669,30 @@ class DecisionMiddleware(AgentMiddleware[Any, Any]):
         )
         return part, True, hint
 
+    def _commit(self, request: ModelRequest, key: str, turn: _TurnFilter) -> ModelRequest:
+        pinned = self._pin_prefix(request, turn)
+        self._remember_turn(key, pinned)
+        return self._present(request, pinned)
+
+    def _pin_prefix(self, request: ModelRequest, turn: _TurnFilter) -> _TurnFilter:
+        """Keep one system prompt and one core tool list whether or not this turn scored."""
+        rewrite = turn.rewrite_skills
+        skills = turn.skills
+        tools = turn.tools
+        if not rewrite and self._has_skill_catalog(request):
+            # Stub the prompt, but do not paste the unscored catalog into the note.
+            rewrite = True
+            skills = set()
+        if self._config.tools and tools is None:
+            incoming = list(request.tools or [])
+            named = [name for tool in incoming if (name := _tool_name(tool))]
+            tail = _long_tail_names(incoming)
+            if len(named) > self._config.tool_min_count and tail:
+                tools = set()
+        if rewrite == turn.rewrite_skills and skills is turn.skills and tools is turn.tools:
+            return turn
+        return replace(turn, rewrite_skills=rewrite, skills=skills, tools=tools)
+
     def _remember_turn(self, key: str, turn: _TurnFilter) -> None:
         self._turns.pop(key, None)
         self._turns[key] = turn
@@ -676,10 +703,14 @@ class DecisionMiddleware(AgentMiddleware[Any, Any]):
         return self._present(request, turn)
 
     def _present(self, request: ModelRequest, turn: _TurnFilter) -> ModelRequest:
-        """Keep the cached prefix stable and append this turn's variable note."""
+        """Keep the cached prefix stable and place this turn's note after the user message."""
         sections: list[str] = []
         if turn.rewrite_skills:
             request, skill_text = _relocate_skills(request, turn.skills, chinese=self._chinese)
+            if self._skills_rendered_late:
+                stub = _STABLE_SKILLS_ZH if self._chinese else _STABLE_SKILLS_EN
+                state = cast(AgentState[Any], {**request.state, _SKILL_CATALOG_STUB: stub})
+                request = request.override(state=state)
             if skill_text:
                 sections.append(skill_text)
         if turn.tools is not None:
@@ -690,8 +721,7 @@ class DecisionMiddleware(AgentMiddleware[Any, Any]):
         if not sections:
             return request
         title = "[本轮说明]\n" if self._chinese else "[turn note]\n"
-        note = HumanMessage(content=title + "\n\n".join(sections))
-        return request.override(messages=[*list(request.messages or []), note])
+        return request.override(messages=insert_turn_note(list(request.messages or []), title + "\n\n".join(sections)))
 
     def _relocate_tools(self, request: ModelRequest, kept: set[str]) -> tuple[ModelRequest, str]:
         incoming = list(request.tools or [])
@@ -867,11 +897,29 @@ class DecisionMiddleware(AgentMiddleware[Any, Any]):
     def _model_label(self) -> str:
         return self._config.model or self._config.provider
 
+    def _has_skill_catalog(self, request: ModelRequest) -> bool:
+        return (
+            self._config.skills
+            and _metadata_skill_count(request) >= 2
+            and (self._skills_rendered_late or _request_has_skill_region(request))
+        )
+
+    def _kept_catalog(self, request: ModelRequest) -> _TurnFilter:
+        """Full catalog in the note when the decision service cannot be reached."""
+        rewrite = self._has_skill_catalog(request)
+        tools: set[str] | None = None
+        if self._config.tools:
+            incoming = list(request.tools or [])
+            named = [name for tool in incoming if (name := _tool_name(tool))]
+            tail = _long_tail_names(incoming)
+            if len(named) > self._config.tool_min_count and tail:
+                tools = tail
+        return _TurnFilter(tools=tools, skills=None, rewrite_skills=rewrite)
+
     def _unavailable(self, request: ModelRequest, work: _Work, error: DecisionRequestError) -> ModelRequest:
         """Keep the catalog when the decision service cannot be reached."""
-        self._remember_turn(work.turn_key, _TurnFilter())
         self._publish(empty=True, parts=[], error="request_failed", detail=error.detail)
-        return request
+        return self._commit(request, work.turn_key, self._kept_catalog(request))
 
     def _publish(
         self,
@@ -1123,7 +1171,7 @@ def _earlier_user_text(request: ModelRequest) -> str:
     messages = getattr(request, "messages", None) or []
     seen_latest = False
     for msg in reversed(messages):
-        if not isinstance(msg, HumanMessage):
+        if not _is_user_turn(msg):
             continue
         if not seen_latest:
             seen_latest = True
@@ -1183,7 +1231,7 @@ def _fit_lines(lines: list[str], limit: int, *, head: str = "") -> str:
 def _user_texts(request: ModelRequest) -> list[str]:
     texts: list[str] = []
     for msg in getattr(request, "messages", None) or []:
-        if not isinstance(msg, HumanMessage):
+        if not _is_user_turn(msg):
             continue
         text = _stringify_content(msg.content).strip()
         if text:
@@ -1194,7 +1242,7 @@ def _user_texts(request: ModelRequest) -> list[str]:
 def _conversation_lines(request: ModelRequest, *, chinese: bool) -> list[str]:
     lines: list[str] = []
     for msg in getattr(request, "messages", None) or []:
-        if isinstance(msg, ToolMessage):
+        if isinstance(msg, ToolMessage) or is_turn_note(msg):
             continue
         line = _message_line(msg, chinese=chinese)
         if line:
@@ -1237,6 +1285,42 @@ _STABLE_SKILLS_ZH = "**Available Skills:**\n\n这一轮要使用的技能列在�
 _STABLE_SKILLS_EN = (
     "**Available Skills:**\n\nSkills for this turn are listed in the turn note at the end of the conversation.\n\n"
 )
+_SKILL_CATALOG_STUB = "_octop_skill_catalog_stub"
+
+
+def _metadata_skill_count(request: ModelRequest) -> int:
+    raw = request.state.get("skills_metadata")
+    if not isinstance(raw, list):
+        return 0
+    return sum(1 for row in raw if isinstance(row, dict) and str(row.get("name") or "").strip())
+
+
+def _content_has_skill_region(content: Any) -> bool:
+    if isinstance(content, str):
+        return _skill_region(content) is not None
+    if isinstance(content, list):
+        for block in content:
+            if isinstance(block, str) and _skill_region(block) is not None:
+                return True
+            if isinstance(block, dict) and _skill_region(str(block.get("text") or "")) is not None:
+                return True
+    return False
+
+
+def _request_has_skill_region(request: ModelRequest) -> bool:
+    system = request.system_message
+    if system is None:
+        return False
+    return _content_has_skill_region(system.content)
+
+
+def _long_tail_names(tools: list[Any]) -> set[str]:
+    names: set[str] = set()
+    for tool in tools:
+        name = _tool_name(tool)
+        if name and name not in _TOOLS_ALWAYS_KEPT and name != _DEFERRED_TOOL_NAME and _deferrable(tool):
+            names.add(name)
+    return names
 
 
 def _skill_region(text: str) -> tuple[int, int] | None:
@@ -1310,11 +1394,27 @@ def _rewrite_skill_content(content: Any, kept: set[str] | None, stub: str) -> tu
     return (blocks if changed else content), "\n".join(notes)
 
 
-def _metadata_skill_lines(request: ModelRequest, kept: set[str] | None) -> str:
+def _kept_skills_have_path(request: ModelRequest, kept: set[str] | None) -> bool:
+    raw = request.state.get("skills_metadata")
+    if not isinstance(raw, list):
+        return False
+    for row in raw:
+        if not isinstance(row, dict):
+            continue
+        name = str(row.get("name") or "").strip()
+        if not name or (kept is not None and name not in kept):
+            continue
+        if str(row.get("path") or "").strip():
+            return True
+    return False
+
+
+def _metadata_skill_lines(request: ModelRequest, kept: set[str] | None, *, chinese: bool) -> str:
     raw = request.state.get("skills_metadata")
     if not isinstance(raw, list):
         return ""
     lines: list[str] = []
+    read_hint = "直接调用 read_file 读取" if chinese else "Call read_file directly on"
     for row in raw:
         if not isinstance(row, dict):
             continue
@@ -1322,7 +1422,11 @@ def _metadata_skill_lines(request: ModelRequest, kept: set[str] | None) -> str:
         if not name or (kept is not None and name not in kept):
             continue
         description = str(row.get("description") or "").strip()
-        lines.append(f"- **{name}**: {description}" if description else f"- **{name}**")
+        line = f"- **{name}**: {description}" if description else f"- **{name}**"
+        path = str(row.get("path") or "").strip()
+        if path:
+            line += f"\n  {read_hint} `{path}`"
+        lines.append(line)
     return "\n".join(lines)
 
 
@@ -1348,21 +1452,36 @@ def _relocate_skills(
     chinese: bool,
 ) -> tuple[ModelRequest, str]:
     """Replace the skill catalog with a stable stub and return the selected bullets."""
-    system = request.system_message
     stub = _STABLE_SKILLS_ZH if chinese else _STABLE_SKILLS_EN
-    note = ""
-    if system is not None:
-        updated, note = _rewrite_skill_content(system.content, kept, stub)
-        if updated != system.content:
-            request = request.override(system_message=system.model_copy(update={"content": updated}))
-    if not note:
-        note = _metadata_skill_lines(request, kept)
+    request, extracted = _replace_skill_catalog(request, kept, stub)
+    # The loader already resolved this agent's skill file. Prefer that path
+    # over a catalog bullet the model would otherwise guess.
+    located = _metadata_skill_lines(request, kept, chinese=chinese)
+    note = located if _kept_skills_have_path(request, kept) else extracted or located
     if kept is not None:
         request = _narrow_skill_state(request, kept)
     if not note.strip():
         return request, ""
     title = "技能:" if chinese else "Skills:"
     return request, f"{title}\n{note.strip()}"
+
+
+def _replace_skill_catalog(request: ModelRequest, kept: set[str] | None, stub: str) -> tuple[ModelRequest, str]:
+    system = request.system_message
+    if system is None:
+        return request, ""
+    updated, extracted = _rewrite_skill_content(system.content, kept, stub)
+    if updated != system.content:
+        request = request.override(system_message=system.model_copy(update={"content": updated}))
+    return request, extracted
+
+
+def finalize_decision_skill_prompt(request: ModelRequest) -> ModelRequest:
+    """Keep the stable stub after deepagents renders the skill catalog."""
+    stub = request.state.get(_SKILL_CATALOG_STUB)
+    if isinstance(stub, str):
+        request, _ = _replace_skill_catalog(request, set(), stub)
+    return request
 
 
 def _tool_args_schema(tool: Any) -> str:
@@ -1451,7 +1570,7 @@ def _turn_key(request: ModelRequest) -> str:
     messages = getattr(request, "messages", None) or []
     for index in range(len(messages) - 1, -1, -1):
         msg = messages[index]
-        if isinstance(msg, HumanMessage):
+        if _is_user_turn(msg):
             ident = str(getattr(msg, "id", "") or "") or _clip(_stringify_content(msg.content), 80)
             # The graph may omit message ids. The position is stable while
             # tool/assistant messages are appended, and distinguishes a later

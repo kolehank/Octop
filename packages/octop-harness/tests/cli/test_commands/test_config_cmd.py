@@ -24,7 +24,7 @@ def test_config_set_and_get(tmp_path: Path, monkeypatch: object) -> None:
     assert result.exit_code == 0
     assert "Set" in result.output
 
-    config_file = tmp_path / "harness" / "config.json"
+    config_file = tmp_path / ".octop-harness" / "config.json"
     assert config_file.exists()
     data = json.loads(config_file.read_text())
     assert data["cli"]["theme"] == "light"

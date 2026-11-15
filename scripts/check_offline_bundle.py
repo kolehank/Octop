@@ -10,6 +10,7 @@
 
 用法: python3 scripts/check_offline_bundle.py <offline 目录> [--variant legacy|standard]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -19,7 +20,9 @@ import re
 import sys
 
 MAIN_PACKAGES = {"octop", "octop_harness", "octop_gateway", "octop_memory", "octop_browser"}
-WHEEL_NAME_RE = re.compile(r"^(?P<name>[^-]+)-(?P<ver>[^-]+)-(?P<py>[^-]+)-(?P<abi>[^-]+)-(?P<tags>[^-]+)\.whl$")
+WHEEL_NAME_RE = re.compile(
+    r"^(?P<name>[^-]+)-(?P<ver>[^-]+)-(?P<py>[^-]+)-(?P<abi>[^-]+)-(?P<tags>[^-]+)\.whl$"
+)
 
 
 def wheel_tag_baseline_glibc(tags_field: str) -> tuple[int, int] | None:
@@ -112,7 +115,10 @@ def main() -> int:
 
         missing_in_bundle = sorted(n for n in pinned if n not in actual)
         # sdist 兜底的包(.tar.gz)不在 actual 里,单独放行提示
-        sdists = {os.path.basename(p).split("-")[0].lower().replace("_", "-") for p in glob.glob(os.path.join(bundle, "*.tar.gz"))}
+        sdists = {
+            os.path.basename(p).split("-")[0].lower().replace("_", "-")
+            for p in glob.glob(os.path.join(bundle, "*.tar.gz"))
+        }
         missing_in_bundle = [n for n in missing_in_bundle if n not in sdists]
         if missing_in_bundle:
             failures.append(f"清单锁定但 bundle 内无对应 wheel/sdist: {missing_in_bundle}")

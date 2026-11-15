@@ -9,7 +9,7 @@
 <p align="center">
   <a href="https://www.python.org/downloads/"><img alt="Python 3.12+" src="https://img.shields.io/badge/python-3.12%2B-blue?logo=python&logoColor=white" /></a>
   <a href="https://github.com/TencentCloud/Octop/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green" /></a>
-  <a href="https://github.com/TencentCloud/Octop/releases"><img alt="Version" src="https://img.shields.io/badge/version-1.0.3b2-orange" /></a>
+  <a href="https://github.com/TencentCloud/Octop/releases"><img alt="Version" src="https://img.shields.io/badge/version-1.0.3b5-orange" /></a>
   <a href="https://pypi.org/project/octop/"><img src="https://img.shields.io/pypi/v/octop" alt="PyPI" /></a>
   <a href="https://github.com/astral-sh/ruff"><img alt="Code Style: Ruff" src="https://img.shields.io/badge/code%20style-ruff-000000?logo=ruff&logoColor=white" /></a>
   <a href="about:blank"><img alt="Discord" src="https://img.shields.io/badge/Discord-Join%20Us-5865F2?logo=discord&logoColor=white" /></a>
@@ -181,19 +181,19 @@ This roadmap may shift as the community grows; treat it as indicative only.
 **macOS / Linux** — one-line installer (recommended):
 
 ```bash
-curl -fsSL <YOUR_RELEASE_BASE>/install.sh | bash
+curl -fsSL https://download.octop.cloud/octop/scripts/install.sh | bash
 ```
 
 **Windows (PowerShell)**:
 
 ```powershell
-irm <YOUR_RELEASE_BASE>/install.ps1 | iex
+irm https://download.octop.cloud/octop/scripts/install.ps1 | iex
 ```
 
 **Windows (cmd)** — download and run, or from a cloned repo:
 
 ```bat
-curl -fsSL <YOUR_RELEASE_BASE>/install.bat -o install.bat
+curl -fsSL https://download.octop.cloud/octop/scripts/install.bat -o install.bat
 install.bat
 ```
 
@@ -209,7 +209,7 @@ The installer places `octop` on your PATH via `~/.agentbuddy/bin`. Optional extr
 
 ```bash
 # Download Playwright Chromium for browser automation (skipped if a system Chrome/Chromium is already present)
-curl -fsSL <YOUR_RELEASE_BASE>/install.sh | bash -s -- --extras browser
+curl -fsSL https://download.octop.cloud/octop/scripts/install.sh | bash -s -- --extras browser
 ```
 
 See [scripts/README.md](scripts/README.md) for all install options (`--version`, `--from-source`, `--mirror`, Windows flags).
@@ -267,13 +267,13 @@ Open **http://127.0.0.1:8088**. With Docker, a valid `AGENTBUDDY_DEFAULT_PASSWOR
 
 ```bash
 # Build and start
-docker compose -f docker/docker-compose.yml up -d
+docker compose -f deploy/docker/docker-compose.yml up -d
 
 # China mirror when ghcr.io is unreachable (no local build)
-docker compose -f docker/docker-compose.cn.yml up -d
+docker compose -f deploy/docker/docker-compose.cn.yml up -d
 
 # Or build manually
-bash docker/docker_build.sh
+bash deploy/docker/docker_build.sh
 docker run -d \
   -p 8088:8088 \
   -v octop-data:/data/.agentbuddy \
@@ -283,6 +283,8 @@ docker run -d \
 ```
 
 Open `http://localhost:8088`. A valid `AGENTBUDDY_DEFAULT_PASSWORD` creates the admin on first boot and writes credentials to `/data/.agentbuddy/credential.txt`. If it is unset or rejected by the password policy, no admin is created — complete the setup wizard (unlock password in `/data/.agentbuddy/agentbuddy-login.txt`). Override the username via `AGENTBUDDY_ADMIN_USERNAME`.
+
+The Helm chart for a shared PostgreSQL and multiple replicas is documented in [deploy/helm/octop/README.md](deploy/helm/octop/README.md). Install it from `oci://ghcr.io/tencentcloud/octop/charts/octop`.
 
 > **Password policy:** at least 8 characters with letters and digits.
 
@@ -339,7 +341,7 @@ To serve the dashboard under a reverse-proxy subpath (for example `https://examp
 | Local script | macOS / Linux | `bash scripts/install.sh` |
 | Local script | Windows | `scripts\install.bat` or `install.ps1` |
 | PyPI | Any | `pip install octop` (optional extras such as `local-embedding`) |
-| Docker | Any | `docker/docker-compose.yml`; China mirror: `docker/docker-compose.cn.yml` |
+| Docker | Any | `deploy/docker/docker-compose.yml`; China mirror: `deploy/docker/docker-compose.cn.yml` |
 
 All install scripts provision an isolated environment at `~/.agentbuddy/venv` and a `~/.agentbuddy/bin/octop` wrapper — they do not touch system Python.
 
@@ -421,6 +423,7 @@ Full catalog, auth kinds, and MCP modes: **[docs/connectors.md](docs/connectors.
 | `octop skills` | Enable/disable per-agent skills |
 | `octop plugin` | Install and manage third-party plugins |
 | `octop backup` | Export / restore backups |
+| `octop migrate` | Migrate an OpenClaw or Hermes Agent setup into an expert |
 | `octop clean` | Remove CLI state or wipe `~/.agentbuddy/` |
 | `octop memory list` | List running agents eligible for memory maintenance; no database changes. |
 | `octop memory slim [--agent ID]` | Back up and slim SQLite memory through the running host; uses the selected agent or prompts by number. Shows terminal and dashboard progress. [Details](docs/memory-slim.md) |
@@ -442,6 +445,7 @@ After `octop run`, open **http://127.0.0.1:8088**.
 </p>
 
 - **Chat** — real-time conversation with experts and teams
+- **Cloud** — Tencent CVM fleet overview, instance metrics, and a resident ops expert
 - **Experts** — create experts, pick templates / MBTI personas, share or publish experts, configure providers
 - **AgentTeams** *(Beta)* — coordinator + member experts for multi-step work
 - **Connectors** — OAuth apps and MCP gateways
@@ -507,7 +511,7 @@ src/octop/
 
 dashboard/     frontend source (Vite) — edit here, run make build-frontend
 
-docker/        Docker Compose, entrypoint, build & deploy scripts
+deploy/        Docker (deploy/docker) and the Kubernetes Helm chart (deploy/helm/octop)
 tests/         unit/ + integration/
 ```
 
@@ -566,7 +570,23 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 - **Discord** — community invite to be filled in.
 
-> Support channels to be filled in — replace with your own group / ticket / email entry.
+### WeChat
+
+Search for **腾讯Octop** in WeChat, or scan:
+
+<p align="center">
+  <img src="docs/assets/wechat-octop.png" alt="WeChat search for 腾讯Octop" width="480" />
+</p>
+
+### WeCom Customer Group (CN)
+
+For the customer WeCom support group, scan:
+
+<p align="center">
+  <img src="docs/assets/qrcode.png" alt="WeCom customer group QR code" width="220" />
+</p>
+
+> Please scan the QR code to join the group. For any questions or assistance, please contact the group admin directly.
 
 ## 📄 License
 

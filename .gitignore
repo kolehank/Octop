@@ -1,5 +1,6 @@
 # Build
 build/
+# NSIS include lives here; the blanket build/ rule would hide it.
 !desktop/src/build/
 !desktop/src/build/**
 dist/
@@ -53,7 +54,9 @@ coverage.xml
 .hypothesis/
 
 # IDE / editors
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/css-custom-data.json
 .idea/
 .codebuddy
 *.swp
@@ -117,3 +120,9 @@ scripts/lh_image_install_octop_tencentos.sh
 .tmp-mfa-e2e/
 
 bigscreen/tsconfig.tsbuildinfo
+
+# Cindy/OpenDesign generated prototype drafts for business reference (never committed)
+opendesign-projects/
+
+# Vendored-library lockfiles are not part of the Octop resolution (never committed)
+packages/octop-memory/uv.lock

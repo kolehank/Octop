@@ -4,7 +4,7 @@
 #    or: bash scripts/install.sh --from-source   # install from a local checkout
 #    or: curl -fsSL <url>/install.sh | bash      # remote install
 #
-# Installs Octop into ~/.octop and uses uv to manage the Python environment.
+# Installs agentbuddy into ~/.agentbuddy and uses uv to manage the Python environment.
 # Python does not need to be installed first; uv handles that.
 # After install, octop is linked into a directory already on PATH (such as
 # /usr/local/bin) so the current terminal can run it without sourcing a profile.

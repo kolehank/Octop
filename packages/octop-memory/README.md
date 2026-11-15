@@ -21,7 +21,8 @@
   <a href="#external-agent-adapters">Integrations</a> ·
   <a href="#cli">CLI</a> ·
   <a href="#code-architecture">Architecture</a> ·
-  <a href="CONTRIBUTING.md">Contributing</a>
+  <a href="CONTRIBUTING.md">Contributing</a> ·
+  <a href="https://github.com/TencentCloud/octop-memory/wiki">Wiki</a>
 </p>
 
 <p align="center">
@@ -57,13 +58,15 @@ Your host manages agent execution and model scheduling; Octop Memory handles cap
 
 **Python 3.12+** is required. Automated extraction, promotion checks, and page regeneration use an injected `LLMClient`;
 installing the package alone does not configure a model. See the [integration guide](docs/integrations.md) for host setup.
-Existing installations should read the [rename migration guide](docs/integrations.md#更名与已有安装迁移) before upgrading.
+Existing installations should read the [rename migration guide](docs/integrations.md#renaming-and-migrating-existing-installations) before upgrading.
 
 ## Quick start
 
 ```bash
 pip install octop-memory
 ```
+
+Current release: **1.0.4**. See the [release notes](CHANGELOG.md).
 
 ```python
 from octop_memory import Memory, MemoryService
@@ -86,6 +89,12 @@ print(result.rendered)
 This creates a local database. Use terms present in the stored text for a minimal FTS example. `Memory.search()` searches archived conversation messages; it is a separate API from fact recall.
 
 ### Optional dependencies
+
+**Since 1.0.4:** explicit Python saves accept `kind="Fact"`, `"Preference"`, `"Decision"`, or `"Task"`:
+`MemoryService(memory).save("The user prefers Chinese replies", kind="Preference")`.
+`Memory.store()` accepts the same keyword. The caller selects the kind without an additional model call;
+omitting it retains `Fact`. Kind is independent of topic/entity type. Existing facts are not reclassified,
+and saving a Task does not create a reminder. Releases up to v1.0.3 do not accept this keyword.
 
 | Install | Purpose |
 |---|---|
@@ -128,7 +137,7 @@ octop-memory --help
 | `db`, `gc`, `consolidate` | Storage maintenance and lifecycle operations |
 | `config`, `openclaw`, `backfill` | Configuration, integration, historical extraction |
 
-Run `<command> --help` for arguments. `db slim FILE` previews SQLite checkpoint deduplication; `--apply --offline` creates a backup and performs it without deleting history. Read [checkpoint compatibility and maintenance](CONTRIBUTING.md#checkpoint-维护) before migration or reader downgrade.
+Run `<command> --help` for arguments. `db slim FILE` previews SQLite checkpoint deduplication; `--apply --offline` creates a backup and performs it without deleting history. Read [checkpoint compatibility and maintenance](CONTRIBUTING.md#checkpoint-maintenance) before migration or reader downgrade.
 
 The dashboard is available from a source checkout with `[dashboard]` dependencies; its modules are currently excluded from the wheel. Installing `octop-memory[dashboard]` from PyPI alone does not provide the dashboard command.
 
@@ -197,11 +206,11 @@ cases for user action. Pages are marked dirty and regenerated when triggered by 
 rather than immediately after every write. Episode extraction is a parallel path from raw events.
 Manual `Memory.store()` needs no model and directly creates RawEvent/Candidate/AtomCard plus a leaf reference.
 
-Prompt recall routes `atom` and `raw` by default, adds `page_headline` when an entity is resolved, and adds `vector` when configured. With the default raw fallback policy, durable hits suppress raw; passing the current session/thread excludes its raw events from prompt injection.
+Automatic prompt recall uses canonical `atom` facts only, including optional vector atom hits. No matching atom means an empty result; raw conversations and page summaries are not injected as fallback. Explicit `MemoryService.search()` / `memory_search` keeps multi-source retrieval and its configurable raw policy. Low-level callers can opt into that behavior with `recall_for_prompt(..., atom_only=False)`; current-session raw remains excluded.
 
 Synthetic runtime failures are excluded from automatic capture, extraction and raw prompt fallback. octop-harness / Octop raise model errors into checkpoint task failures and display diagnostics separately; automatic team failure notifications are excluded from capture. Hosts that still create synthetic replies must mark them with `payload.octop_runtime_error=true`; online filtering uses structured provenance only. Agents decide when to call `memory_save`; approvals and manual saves are protected by their provenance, without intent or troubleshooting-value keyword lists. Automatic capture keeps its length policy with no intent-keyword exception; explicit saves bypass that capture policy. Original diagnostics remain inspectable by ID. `operations.retention.audit_runtime_errors(memory)` previews eligible records by default; even `apply=True` retires only automatic atoms whose evidence is entirely marked as runtime failures. The fixed legacy retry envelope only nominates `review_atom_ids` / `review_candidate_ids`; missing and mixed evidence stays unchanged for human review.
 
-`MemoryService.reconcile_manual_documents({"USER.md": text, "MEMORY.md": text})` gives owner-edited documents priority. Bridge exposes the same operation and `manual_document_review_status`. Proven conflicts softly retire the old atom and create a replacement review candidate with original evidence and a journal trail; acceptance makes the replacement a confirmed fact. Duplicate atoms remain stored; pass the actual session snapshot as `recall(..., manual_context=documents)` to suppress repeated context. An optional `manual_documents_provider` checks current files after saves/automatic promotions, without refreshing chat snapshots. Each call checks up to 100 new facts and accepts at most 100,000 document characters. Partial checks are resumable; unavailable/uncertain/invalid semantic checks are explicit and never force retirement. Full documents are comparison metadata, not indexed atoms. See ADR-042.
+`MemoryService.reconcile_manual_documents({"USER.md": text, "MEMORY.md": text})` gives owner-edited documents priority. Bridge exposes the same operation and `manual_document_review_status`. Proven conflicts softly retire the old atom and create a replacement review candidate with original evidence and a journal trail; acceptance makes the replacement a confirmed fact. Duplicate atoms remain stored; pass the actual session snapshot as `recall(..., manual_context=documents)` to suppress repeated context. An optional `manual_documents_provider` supplies current files to background review. `save`, extraction, and promotion do not synchronously run manual-document comparison; the host calls the public `MemoryService.review_new_memory(max_atoms=20)` on a background worker (the method itself is synchronous). An explicit reconcile still checks up to 100 new facts per call and accepts at most 100,000 document characters. A failed model batch is deferred, and three failures mark those facts uncertain without retiring them. Partial checks are resumable; unavailable/uncertain/invalid semantic checks are explicit and never force retirement. Full documents are comparison metadata, not indexed atoms. See ADR-042.
 
 Start with [CONTRIBUTING.md](CONTRIBUTING.md); the [project map](docs/agent/PROJECT_MAP.md) covers architecture and data flow. AI contributors use [AGENTS.md](AGENTS.md), with task clarification and handoff in [HANDOFF.md](docs/agent/HANDOFF.md).
 

@@ -53,7 +53,10 @@ if ((${#STAGED_FILES[@]} > 0)); then
     fi
   done
   if ((${#existing[@]} > 0)); then
-    git add -- "${existing[@]}"
+    # -f: tracked build outputs under ignored directories (src/octop/bigscreen/
+    # data) are rejected by plain `git add` on the directory rule — these paths
+    # are already staged, so force only re-refreshes their index content.
+    git add -f -- "${existing[@]}"
   fi
 fi
 

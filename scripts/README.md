@@ -10,9 +10,9 @@
 
 | 平台 | 命令 |
 |------|------|
-| macOS / Linux | `curl -fsSL <YOUR_RELEASE_BASE>/install.sh \| bash` |
-| Windows (PowerShell) | `irm <YOUR_RELEASE_BASE>/install.ps1 \| iex` |
-| Windows (cmd) | 下载 `…/octop/install.bat` 后运行，或使用下方本地脚本 |
+| macOS / Linux | `curl -fsSL https://download.octop.cloud/octop/scripts/install.sh \| bash` |
+| Windows (PowerShell) | `irm https://download.octop.cloud/octop/scripts/install.ps1 \| iex` |
+| Windows (cmd) | 下载 `…/octop/scripts/install.bat` 后运行，或使用下方本地脚本 |
 
 ### 本地脚本（仓库内）
 
