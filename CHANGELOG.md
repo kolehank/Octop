@@ -6,6 +6,27 @@
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-15
+
+### 新增
+- 桌面客户端切换 Electron 壳（自带 Chromium，官方 linux-arm64，对信创国产环境更友好），自更新由壳接管并随安装包携带便携 runtime
+- 知识库实体图谱：按知识库构建实体关系图并用于检索；文档和文件夹可跨文件夹/跨知识库移动；检索新增 rerank
+- 自定义 MCP 支持填写 OAuth 应用凭证（无需动态注册），授权过期时引导重新授权并续跑回合
+- 支持单 PostgreSQL 多副本部署（含专家后端限额与资源策略），发布 Helm chart
+- 管理端可编辑进程配置并记录最后登录；新增 `octop migrate openclaw/hermes` 迁移命令
+- 通道卡片与 `/api/health` 展示通道入站/出站/重连/丢弃计数；记忆存储页展示 checkpoint 保留窗口与备份模式
+
+### 变更
+- 升级 octop-harness 1.0.9、octop-memory 1.0.4（deepagents 0.7.35）：已禁用 skill 不再进系统提示词、`/compact` 后裁剪已摘要的推理块、checkpoint 修剪默认先备份
+- 移除 Brave/Google 搜索渠道（国内/私有化内网不可达），保留 tavily/豆包/DeepSeek/Exa/Kimi/元宝/searchfree/you；Kimi 切换到专用 search_pro 端点
+- 下线 history v2：启动时自动把存量归档迁回原历史表（升级前停旧服务）
+- 会话搜索输入全程输入法安全（IME 组合不中断）；用户可见配置环境变量统一 `AGENTBUDDY_*` 前缀
+
+### 修复
+- 云端协同不再因 20s ping 超时反复断线（应用层心跳）；共享回复不再被插话打断、不再拼接同一气泡
+- checkpoint 裁剪默认先备份且保留窗口可配；Windows runner 打印中文 JSON 不再崩溃
+- 修复专家编辑器空占位符覆盖预置文件、QQ 引用消息进上下文、IM 回合推理覆盖与桌面路径对齐等一批问题
+
 ## [1.1.2] - 2026-11-04
 
 ### 修复
