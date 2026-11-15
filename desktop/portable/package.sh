@@ -167,9 +167,11 @@ GREEN_EXCLUDE
     --target "${staging}/packages"
     --python-platform "$pyplat"
     --python-version 3.12
-    # Never compile cryptography from sdist: on Intel macOS that links
-    # Homebrew OpenSSL and breaks portable zips on machines without brew.
+    # Never compile these from sdist. cryptography on Intel macOS links Homebrew
+    # OpenSSL. shapely's sdist needs GEOS; 2.2.0 publishes wheels for every
+    # portable target, including win_arm64.
     --only-binary cryptography
+    --only-binary shapely
   )
   if [[ -n "$override_file" ]]; then
     common_args+=( --overrides "$override_file" )
@@ -285,6 +287,13 @@ GREEN_EXCLUDE
       echo "[package] WARNING: pywin32 DLL fix failed — Windows runtime may miss pywintypes" >&2
     }
   fi
+
+  # Drop discovery documents, debug symbols, and third-party tests before the
+  # zip. The desktop installer copies this same tree (Windows copies the zip).
+  local prune_py
+  prune_py="$(runtime_python "${staging}/runtime")"
+  echo "[package] ${plat}: pruning site-packages"
+  "$prune_py" "${REPO_ROOT}/desktop/portable/prune_packages.py" "${staging}/packages"
 
   # macOS: reject Homebrew-linked native extensions before zipping.
   verify_no_homebrew_dylibs "${staging}/packages" "$plat"

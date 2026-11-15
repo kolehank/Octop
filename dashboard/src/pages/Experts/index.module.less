@@ -1078,14 +1078,14 @@
 
 /* antd Card's dark token tints these placeholders blue. */
 :global(html[data-theme="dark"]) .loadingSkeleton {
-  :global(.octop-card) {
+  :global(.agentbuddy-card) {
     background: var(--fn-bg-primary) !important;
     border-color: var(--fn-card-border-normal) !important;
   }
 
-  :global(.octop-skeleton-title),
-  :global(.octop-skeleton-paragraph > li),
-  :global(.octop-skeleton-avatar) {
+  :global(.agentbuddy-skeleton-title),
+  :global(.agentbuddy-skeleton-paragraph > li),
+  :global(.agentbuddy-skeleton-avatar) {
     background-image: linear-gradient(
       90deg,
       var(--fn-bg-tertiary) 25%,
@@ -1720,17 +1720,55 @@
   min-width: 0;
 }
 
+.moreConfig {
+  margin-top: 4px;
+}
+
+.moreConfigToggle {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin: 0;
+  padding: 8px 0 4px;
+  border: none;
+  background: transparent;
+  color: var(--fn-text-tertiary);
+  font-size: 13px;
+  line-height: 1.4;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--fn-text-secondary);
+  }
+}
+
+.moreConfigLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.moreConfigIcon,
+.moreConfigIconOpen {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.moreConfigIconOpen {
+  transform: rotate(180deg);
+}
+
 /* Section toggles in the create/edit drawers. Headers only — expanded bodies stay as-is. */
 .drawerCollapse {
   width: 100%;
   margin: 0;
 
-  > :global(.octop-collapse-item) {
+  > :global(.agentbuddy-collapse-item) {
     width: 100%;
     border: none !important;
   }
 
-  > :global(.octop-collapse-item) > :global(.octop-collapse-header) {
+  > :global(.agentbuddy-collapse-item) > :global(.agentbuddy-collapse-header) {
     width: 100% !important;
     align-items: center !important;
     padding: 6px 0 !important;
@@ -1738,15 +1776,15 @@
     margin: 0 !important;
   }
 
-  > :global(.octop-collapse-item)
-    > :global(.octop-collapse-header)
-    :global(.octop-collapse-expand-icon) {
+  > :global(.agentbuddy-collapse-item)
+    > :global(.agentbuddy-collapse-header)
+    :global(.agentbuddy-collapse-expand-icon) {
     padding-inline-start: 0 !important;
     padding-inline-end: 8px !important;
     margin-inline-start: 0 !important;
   }
 
-  :global(.octop-collapse-header-text) {
+  :global(.agentbuddy-collapse-header-text) {
     flex: 1 1 auto;
     min-width: 0;
     margin-inline: 0 !important;

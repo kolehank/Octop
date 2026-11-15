@@ -1,0 +1,10 @@
+id: design
+version: 0.1.0
+name: Design
+description: OpenDesign — 稿件建/改/查、右侧画板、元素批注、批注驱动 agent 改稿、revision 冲突保护
+icon: "🎨"
+kind: tool
+entry: main.py
+ui:
+  entry: ui/dist/index.js
+  manifest: ui/dist/manifest.json

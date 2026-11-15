@@ -105,16 +105,16 @@ jobs:
             variant: lite
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || needs.prepare.outputs.tag }}
           fetch-depth: 0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -122,7 +122,7 @@ jobs:
 
       - name: Docker metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: |
             ${{ needs.prepare.outputs.ghcr }}
@@ -133,17 +133,19 @@ jobs:
       # load 与 registry 导出不能同时开。先载入本机做启动测试，通过后再 docker push。
       # docker 导出不支持 provenance，这里关掉，避免 --load 失败。
       - name: Build and load
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
-          file: ./docker/Dockerfile
+          file: ./deploy/docker/Dockerfile
           push: false
           load: true
           provenance: false
           sbom: false
           platforms: ${{ matrix.platform }}
+          # NODE_MAX_OLD_SPACE_SIZE：Vite chunk 渲染峰值约 2GB，2048 会偶发退出码 134。
           build-args: |
             OCTOP_IMAGE_VARIANT=${{ matrix.variant }}
+            NODE_MAX_OLD_SPACE_SIZE=4096
           tags: |
             octop:ci-${{ matrix.variant }}
             ${{ steps.meta.outputs.tags }}
@@ -151,7 +153,7 @@ jobs:
           cache-from: type=gha,scope=docker-${{ matrix.variant }}-${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=docker-${{ matrix.variant }}-${{ matrix.arch }}
 
-      - uses: astral-sh/setup-uv@v4
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
 
@@ -185,7 +187,7 @@ jobs:
             esac
           done <<< "$TAGS"
 
-      - uses: astral-sh/setup-uv@v4
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
 
@@ -241,16 +243,16 @@ jobs:
             arch: arm64
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ needs.prepare.outputs.tag }}
           fetch-depth: 0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -265,7 +267,7 @@ jobs:
           echo "ghcr=${ghcr%/*}/agentbuddy-sandbox" >> "$GITHUB_OUTPUT"
 
       - name: Build and push sandbox image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./docker
           file: ./docker/Dockerfile.sandbox
@@ -290,10 +292,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}

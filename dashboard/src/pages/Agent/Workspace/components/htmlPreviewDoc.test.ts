@@ -6,9 +6,9 @@ describe("isolateHtmlPreview", () => {
     const doc = isolateHtmlPreview(
       "<html><head><title>x</title></head><body></body></html>",
     );
-    expect(doc).toContain('data-octop-preview-guard="1"');
+    expect(doc).toContain('data-agentbuddy-preview-guard="1"');
     expect(doc).toContain('<base href="about:srcdoc">');
-    expect(doc.indexOf("data-octop-preview-guard")).toBeLessThan(
+    expect(doc.indexOf("data-agentbuddy-preview-guard")).toBeLessThan(
       doc.indexOf("<title>"),
     );
   });

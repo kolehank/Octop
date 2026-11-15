@@ -32,7 +32,7 @@ const MAX_RETRY_MS = 15_000;
 function browserStorage(): Storage | null {
   try {
     const storage = window.localStorage;
-    const probe = "octop-push-probe";
+    const probe = "agentbuddy-push-probe";
     storage.setItem(probe, "1");
     storage.removeItem(probe);
     return storage;
@@ -102,7 +102,7 @@ export function useDashboardPushToast(): void {
 
     const onNotifyOpen = (event: MessageEvent) => {
       const data = event.data as { type?: string; path?: string } | null;
-      if (!data || data.type !== "octop-notify-open" || !data.path) return;
+      if (!data || data.type !== "agentbuddy-notify-open" || !data.path) return;
       window.focus();
       navigateRef.current(data.path);
     };

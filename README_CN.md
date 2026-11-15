@@ -9,7 +9,7 @@
 <p align="center">
   <a href="https://www.python.org/downloads/"><img alt="Python 3.12+" src="https://img.shields.io/badge/python-3.12%2B-blue?logo=python&logoColor=white" /></a>
   <a href="https://github.com/TencentCloud/Octop/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green" /></a>
-  <a href="https://github.com/TencentCloud/Octop/releases"><img alt="Version" src="https://img.shields.io/badge/version-1.0.3b4-orange" /></a>
+  <a href="https://github.com/TencentCloud/Octop/releases"><img alt="Version" src="https://img.shields.io/badge/version-1.0.3b5-orange" /></a>
   <a href="https://pypi.org/project/octop/"><img src="https://img.shields.io/pypi/v/octop" alt="PyPI" /></a>
   <a href="https://github.com/astral-sh/ruff"><img alt="Code Style: Ruff" src="https://img.shields.io/badge/code%20style-ruff-000000?logo=ruff&logoColor=white" /></a>
   <a href="about:blank"><img alt="Discord" src="https://img.shields.io/badge/Discord-%E5%8A%A0%E5%85%A5-5865F2?logo=discord&logoColor=white" /></a>
@@ -269,13 +269,13 @@ octop service start
 
 ```bash
 # 构建并启动
-docker compose -f docker/docker-compose.yml up -d
+docker compose -f deploy/docker/docker-compose.yml up -d
 
 # 官方 GHCR 拉取失败时用国内源（不本地构建）
-docker compose -f docker/docker-compose.cn.yml up -d
+docker compose -f deploy/docker/docker-compose.cn.yml up -d
 
 # 或手动构建
-bash docker/docker_build.sh
+bash deploy/docker/docker_build.sh
 docker run -d \
   -p 8088:8088 \
   -v octop-data:/data/.agentbuddy \
@@ -285,6 +285,8 @@ docker run -d \
 ```
 
 打开 `http://localhost:8088`。`AGENTBUDDY_DEFAULT_PASSWORD` 合格时首次启动会创建管理员，并把凭据写入 `/data/.agentbuddy/credential.txt`。未设置或密码被策略拒绝时不自动建账号，打开页面走设置向导（向导口令在 `/data/.agentbuddy/agentbuddy-login.txt`）。可通过 `AGENTBUDDY_ADMIN_USERNAME` 覆盖用户名。
+
+共用 PostgreSQL、多副本的 Kubernetes 安装说明在 [deploy/helm/octop/README_CN.md](deploy/helm/octop/README_CN.md)。安装地址是 `oci://ghcr.io/tencentcloud/octop/charts/octop`。
 
 > **密码策略：** 至少 8 位，且同时包含字母和数字。
 
@@ -339,7 +341,7 @@ docker run -d \
 | 本地脚本 | macOS / Linux | `bash scripts/install.sh` |
 | 本地脚本 | Windows | `scripts\install.bat` 或 `install.ps1` |
 | PyPI | 全平台 | `pip install octop`（可选 extras 如 `local-embedding`） |
-| Docker | 全平台 | `docker/docker-compose.yml`；国内镜像 `docker/docker-compose.cn.yml` |
+| Docker | 全平台 | `deploy/docker/docker-compose.yml`；国内镜像 `deploy/docker/docker-compose.cn.yml` |
 
 所有安装脚本均在 `~/.agentbuddy/venv` 创建隔离环境，并通过 `~/.agentbuddy/bin/octop` 包装 CLI，不会影响系统 Python。
 
@@ -418,6 +420,7 @@ OpenAI 兼容 API、DashScope（千问）、Ollama 等预设 — 在控制台或
 | `octop skills` | 按 Agent 启用/禁用 Skill |
 | `octop plugin` | 安装并管理第三方插件 |
 | `octop backup` | 导出 / 恢复备份 |
+| `octop migrate` | 把 OpenClaw 或 Hermes Agent 的配置迁移到一个专家 |
 | `octop clean` | 清理 CLI 状态或清空 `~/.agentbuddy/` |
 | `octop memory list` | 列出可参与记忆维护的运行中 Agent；不改动数据库。 |
 | `octop memory slim [--agent ID]` | 通过运行中的宿主备份并精简 SQLite 记忆；使用指定 Agent 或按提示选择。在终端与控制台显示进度。[详情](docs/memory-slim.md) |
@@ -504,7 +507,7 @@ src/octop/
 
 dashboard/     前端源码（Vite）— 在此编辑，运行 make build-frontend
 
-docker/        Docker Compose、入口脚本、构建与部署脚本
+deploy/        Docker（deploy/docker）与 Kubernetes Helm chart（deploy/helm/octop）
 tests/         unit/ + integration/
 ```
 

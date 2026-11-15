@@ -12,7 +12,7 @@ from octop.infra.utils.ulid import new_ulid
 
 #: Registered big-screen project prefixes (ADR 004 D2). New project-level
 #: prefixes must be added here before any client may use them.
-SCREEN_KEY_PREFIXES = ("demo/",)
+SCREEN_KEY_PREFIXES = ("fgw/",)
 #: ``screen_key`` charset ``[A-Za-z0-9_/-]``. ``:`` is banned because session
 #: keys split on ``:``; ``%``/``_`` are banned because scope/q run through SQL
 #: LIKE; whitespace and CJK punctuation are not in the charset.
@@ -28,7 +28,7 @@ def is_valid_screen_key(screen_key: str) -> bool:
     """Validate a big-screen route template per ADR 004 D2.
 
     Requires 1..120 chars of ``[A-Za-z0-9_/-]``, a registered project prefix
-    (``demo/`` this release) and at most 3 slash segments.
+    (``fgw/`` this release) and at most 3 slash segments.
     """
     if not isinstance(screen_key, str):
         return False
@@ -42,11 +42,11 @@ def is_valid_screen_key(screen_key: str) -> bool:
 
 
 def screen_topic_prefix(screen_key: str) -> str:
-    """First two segments (``demo/<topic>``) of a screen key.
+    """First two segments (``fgw/<topic>``) of a screen key.
 
     ``scope=topic`` lists every screen under one topic (ADR 004 D7), so
-    ``demo/investment/region`` and ``demo/investment`` both map to
-    ``demo/investment``.
+    ``fgw/investment/region`` and ``fgw/investment`` both map to
+    ``fgw/investment``.
     """
     return "/".join(screen_key.split("/")[:2])
 
@@ -521,7 +521,7 @@ class ThreadRegistry:
         """List threads, optionally filtered for big-screen sessions (ADR 004 D7).
 
         ``scope`` is one of ``screen`` (exact screen session), ``topic``
-        (``demo/<topic>`` prefix), ``all`` (screen sessions only), ``dashboard``
+        (``fgw/<topic>`` prefix), ``all`` (screen sessions only), ``dashboard``
         (exclude screen sessions) or None (legacy: every thread for the pair).
         ``q`` LIKE-matches the title or the first user message later in SQL.
         """
@@ -568,6 +568,10 @@ class ThreadRegistry:
 
     def list_threads_for_session(self, *, session_key: str, limit: int = 50) -> list[ThreadRow]:
         return self._threads.list_by_session(session_key=session_key, limit=limit)
+
+    def latest_active_thread(self, *, session_key: str) -> ThreadRow | None:
+        """Most recent conversation on this channel, ignoring empty threads."""
+        return self._threads.latest_active_for_session(session_key=session_key)
 
     def create_thread(
         self,

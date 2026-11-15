@@ -41,8 +41,6 @@ ASK_READ_TOOLS: frozenset[str] = frozenset(
         "grep",
         "web_fetch",
         "tavily_search",
-        "brave_search",
-        "google_search",
         "kimi_search",
         "deepseek_search",
         "yuanbao_search",

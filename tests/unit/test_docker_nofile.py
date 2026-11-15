@@ -11,9 +11,9 @@ import yaml
 @pytest.mark.parametrize(
     "relative_path",
     [
-        "docker/docker-compose.yml",
-        "docker/docker-compose.cn.yml",
-        "docker/docker-compose.mobile.yml",
+        "deploy/docker/docker-compose.yml",
+        "deploy/docker/docker-compose.cn.yml",
+        "deploy/docker/docker-compose.mobile.yml",
     ],
 )
 def test_octop_container_has_explicit_nofile_limit(relative_path):

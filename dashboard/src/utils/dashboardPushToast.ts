@@ -35,8 +35,8 @@ export function truncatePushText(text: string, max = 240): string {
 /** How long one tab's claim suppresses a duplicate system notification. */
 export const PUSH_HANDLED_TTL_MS = 2_000;
 
-const HANDLED_PREFIX = "octop-push-handled:";
-const LOCK_PREFIX = "octop-push-lock:";
+const HANDLED_PREFIX = "agentbuddy-push-handled:";
+const LOCK_PREFIX = "agentbuddy-push-lock:";
 
 export type SystemNotifyPermission =
   | "granted"

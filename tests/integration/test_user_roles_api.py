@@ -405,3 +405,175 @@ async def test_create_user_keeps_user_when_expert_template_missing(env):
     agents = await c.get("/api/agents", headers=auth, params={"scope": "all"})
     owned = [row for row in agents.json() if row["user_id"] == created.json()["id"]]
     assert owned == []
+
+
+async def test_allowed_backend_types_limit_expert_create(env):
+    c, _srv, auth = env
+    created = await c.post(
+        "/api/users/roles",
+        headers=auth,
+        json={
+            "user_role_name": "沙箱",
+            "permissions": ["browser"],
+            "policies": [
+                {"name": "allowed_backend_types", "value": "docker,opensandbox,filesystem"},
+            ],
+        },
+    )
+    assert created.status_code == 201, created.text
+    assert created.json()["allowed_backend_types"] == ["filesystem", "docker", "opensandbox"]
+    assert created.json()["policies"] == [
+        {"name": "allowed_backend_types", "value": "filesystem,docker,opensandbox"},
+    ]
+
+    unknown = await c.post(
+        "/api/users/roles",
+        headers=auth,
+        json={
+            "user_role_name": "坏类型",
+            "permissions": ["browser"],
+            "policies": [{"name": "allowed_backend_types", "value": "docker,nope"}],
+        },
+    )
+    assert unknown.status_code == 400, unknown.text
+
+    user = await c.post(
+        "/api/users",
+        headers=auth,
+        json={
+            "username": "boxed",
+            "password": TEST_PASSWORD,
+            "role": created.json()["user_role_id"],
+            "create_default_expert": False,
+        },
+    )
+    assert user.status_code == 201, user.text
+    assert user.json()["allowed_backend_types"] == ["filesystem", "docker", "opensandbox"]
+
+    token = await login(c, username="boxed", password=TEST_PASSWORD)
+    me = await c.get("/api/auth/me", headers=bearer(token))
+    assert me.status_code == 200, me.text
+    assert me.json()["allowed_backend_types"] == ["filesystem", "docker", "opensandbox"]
+    user_auth = bearer(token)
+
+    denied = await c.post(
+        "/api/agents",
+        headers=user_auth,
+        json={
+            "name": "host",
+            "config": {"backend": {"type": "local_shell", "root_dir": "/", "virtual_mode": True}},
+        },
+    )
+    assert denied.status_code == 403, denied.text
+    assert denied.json()["error"]["code"] == "BACKEND_TYPE_NOT_ALLOWED"
+
+    omitted = await c.post(
+        "/api/agents",
+        headers=user_auth,
+        json={"name": "omitted", "config": {}},
+    )
+    assert omitted.status_code == 403, omitted.text
+    assert omitted.json()["error"]["code"] == "BACKEND_TYPE_NOT_ALLOWED"
+
+    created_agent = await c.post(
+        "/api/agents",
+        headers=user_auth,
+        json={
+            "name": "files",
+            "config": {"backend": {"type": "filesystem", "root_dir": "/", "virtual_mode": True}},
+        },
+    )
+    assert created_agent.status_code == 201, created_agent.text
+    agent_id = created_agent.json()["agent_id"]
+
+    kept = await c.patch(
+        f"/api/agents/{agent_id}",
+        headers=user_auth,
+        json={
+            "name": "files-renamed",
+            "config": {"backend": {"type": "filesystem", "root_dir": "/", "virtual_mode": True}},
+        },
+    )
+    assert kept.status_code == 200, kept.text
+
+    tightened = await c.patch(
+        f"/api/users/{user.json()['id']}",
+        headers=auth,
+        json={"allowed_backend_types": ["docker"]},
+    )
+    assert tightened.status_code == 200, tightened.text
+    assert tightened.json()["allowed_backend_types"] == ["docker"]
+
+    still_kept = await c.patch(
+        f"/api/agents/{agent_id}",
+        headers=user_auth,
+        json={
+            "name": "files-kept",
+            "config": {"backend": {"type": "filesystem", "root_dir": "/", "virtual_mode": True}},
+        },
+    )
+    assert still_kept.status_code == 200, still_kept.text
+
+    switched = await c.patch(
+        f"/api/agents/{agent_id}",
+        headers=user_auth,
+        json={
+            "config": {"backend": {"type": "local_shell", "root_dir": "/", "virtual_mode": True}},
+        },
+    )
+    assert switched.status_code == 403, switched.text
+    assert switched.json()["error"]["code"] == "BACKEND_TYPE_NOT_ALLOWED"
+
+    cleared = await c.patch(
+        f"/api/users/{user.json()['id']}",
+        headers=auth,
+        json={"role": "user"},
+    )
+    assert cleared.status_code == 200, cleared.text
+    assert cleared.json()["allowed_backend_types"] is None
+
+
+async def test_create_user_bootstraps_market_only_expert(env, monkeypatch, tmp_path):
+    """A market-only template id is installed on demand, then used as the
+    new user's default expert (no bundled library entry required)."""
+    import json
+    from pathlib import Path
+
+    import octop.infra.market as market
+    from octop.infra.market.install import PortalExpertInstall
+
+    c, _srv, auth = env
+    monkeypatch.setenv("OCTOP_PORTAL_ORIGIN", "https://octop.cloud")
+    market.clear_market_cache()
+    slug = "clinical-assist"
+
+    def fake_install(slug_arg: str, cache_root: Path) -> PortalExpertInstall:
+        assert slug_arg == slug
+        d = Path(cache_root) / slug
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "manifest.json").write_text(
+            json.dumps({"id": slug, "label": {"zh": "临床辅助专家", "en": "Clinical"}}),
+            encoding="utf-8",
+        )
+        (d / "SOUL.md").write_text("# 临床辅助专家", encoding="utf-8")
+        return PortalExpertInstall(slug=slug, expert_id=slug, icon_url=None)
+
+    monkeypatch.setattr(market, "install_portal_expert", fake_install)
+
+    created = await c.post(
+        "/api/users",
+        headers=auth,
+        json={
+            "username": "market_expert_user",
+            "password": TEST_PASSWORD,
+            "role": "user",
+            "create_default_expert": True,
+            "expert_template_id": slug,
+        },
+    )
+    assert created.status_code == 201, created.text
+    agents = await c.get("/api/agents", headers=auth, params={"scope": "all"})
+    assert agents.status_code == 200, agents.text
+    owned = [r for r in agents.json() if r["user_id"] == created.json()["id"]]
+    assert len(owned) == 1
+    assert owned[0]["template_name"] == slug

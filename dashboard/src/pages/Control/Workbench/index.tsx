@@ -11,7 +11,10 @@ import styles from "./index.module.less";
 
 export type WorkbenchTab = "terminal" | "browser";
 
-const WORKBENCH_TABS = ["browser", "terminal"] as const satisfies readonly WorkbenchTab[];
+const WORKBENCH_TABS = [
+  "browser",
+  "terminal",
+] as const satisfies readonly WorkbenchTab[];
 
 const TAB_ICONS = {
   browser: Globe,

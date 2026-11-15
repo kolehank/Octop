@@ -1,4 +1,4 @@
-const GUARD_MARKER = 'data-octop-preview-guard="1"';
+const GUARD_MARKER = 'data-agentbuddy-preview-guard="1"';
 
 const GUARD = `<base href="about:srcdoc"><script ${GUARD_MARKER}>document.addEventListener("click",function(e){var n=e.target;while(n&&n.tagName!=="A")n=n.parentElement;if(!n)return;var h=n.getAttribute("href")||"";if(h.charAt(0)!=="#")return;e.preventDefault();var id=h.slice(1);var el=id?(document.getElementById(id)||document.getElementsByName(id)[0]):null;if(el&&el.scrollIntoView)el.scrollIntoView();});</script>`;
 

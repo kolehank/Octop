@@ -79,7 +79,7 @@ jobs:
 
       - name: Checkout
         if: steps.skip.outputs.skip != 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # push(tag)时用 tag ref;手动 dispatch 时用 main——dispatch 的 tag 输入
           # 仅用于把产物关联到某个 Release,脚本与 wheel 版本来自所 checkout 的树
@@ -89,15 +89,15 @@ jobs:
 
       - name: Install uv
         if: steps.skip.outputs.skip != 'true'
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
 
       - name: Set up Node.js (dashboard + bigscreen build)
         if: steps.skip.outputs.skip != 'true'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version: "24"
           cache: npm
           cache-dependency-path: |
             dashboard/package-lock.json
@@ -200,7 +200,7 @@ jobs:
 
       - name: Upload bundle artifacts
         if: steps.skip.outputs.skip != 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: offline-bundle-${{ matrix.arch }}
           path: |
@@ -221,12 +221,12 @@ jobs:
       # Checkout must run BEFORE downloading artifacts: actions/checkout
       # performs a `git clean -ffdx` that would wipe the bundles otherwise.
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.ref }}
 
       - name: Download all bundle artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: bundles/
 

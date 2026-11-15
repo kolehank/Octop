@@ -20,11 +20,13 @@ from octop_gateway.models import (
 )
 from octop_gateway.utils import close_event_stream
 
+from octop.config import DEFAULT_WS_ATTACHMENT_MAX_BYTES
 from octop.i18n.domains.stream import format_stream_error
 from octop.infra.gateway.media.attachment_hints import (
     inbound_attachments_from_parts,
     is_vision_attachment,
 )
+from octop.infra.gateway.media.backend_files import extract_workspace_rel
 from octop.infra.gateway.process.message_keys import (
     INBOUND_ATTACHMENTS_KEY,
     resolve_user_id_for_message,
@@ -51,10 +53,12 @@ class WebSocketChannel(BaseChannel):
         hub: WebSocketHub,
         steer: SteerCoordinator | None = None,
         channel_id: str = WS_CHANNEL_ID,
+        ws_attachment_max_bytes: int = DEFAULT_WS_ATTACHMENT_MAX_BYTES,
     ) -> None:
         super().__init__(processor, channel_id=channel_id, debounce_seconds=0.0)
         self._hub = hub
         self._steer = steer or SteerCoordinator()
+        self._ws_attachment_max_bytes = max(0, int(ws_attachment_max_bytes))
 
     def _default_constraints(self) -> ChannelConstraints:
         return ChannelConstraints(
@@ -159,7 +163,11 @@ class WebSocketChannel(BaseChannel):
             await self._hub.push_to_thread(thread_id, {"type": "done"})
             return
 
-        turn_id, started_seq, replaced = self._steer.begin_turn(thread_id)
+        starter = resolve_user_id_for_message(message, agent_owner_id=None)
+        turn_id, started_seq, replaced = self._steer.begin_turn(
+            thread_id,
+            user_id=starter if starter > 0 else None,
+        )
         if replaced is not None:
             await _push_discarded(self._hub, thread_id, replaced)
         self._steer.remember_context(
@@ -219,7 +227,10 @@ class WebSocketChannel(BaseChannel):
                     # flaky client disconnect can stop generation mid-node and leave
                     # an incomplete checkpoint.
                     try:
-                        await self._hub.push_to_thread(thread_id, chunk)
+                        payload = (
+                            _with_turn_id(chunk, turn_id) if isinstance(chunk, dict) else chunk
+                        )
+                        await self._hub.push_to_thread(thread_id, payload)
                     except Exception:
                         logger.exception(
                             "websocket push failed thread=%s (turn continues)",
@@ -307,9 +318,15 @@ class WebSocketChannel(BaseChannel):
             try:
                 await self._hub.push_to_thread(
                     thread_id,
-                    {"type": "error", "message": format_stream_error(exc, locale)},
+                    _with_turn_id(
+                        {"type": "error", "message": format_stream_error(exc, locale)},
+                        turn_id,
+                    ),
                 )
-                await self._hub.push_to_thread(thread_id, {"type": "done"})
+                await self._hub.push_to_thread(
+                    thread_id,
+                    _with_turn_id({"type": "done"}, turn_id),
+                )
             except Exception:
                 logger.exception("websocket failed to deliver error frame thread=%s", thread_id)
         finally:
@@ -384,8 +401,16 @@ class WebSocketChannel(BaseChannel):
             "type": "attachment",
             "kind": _media_kind(media),
             "mime_type": mime,
-            "data": base64.b64encode(raw_bytes).decode("ascii"),
+            "size": len(raw_bytes),
         }
+        if len(raw_bytes) <= self._ws_attachment_max_bytes:
+            frame["data"] = base64.b64encode(raw_bytes).decode("ascii")
+        elif path := _media_download_path(media):
+            # Large payloads stay off the WS frame; the client downloads by path.
+            frame["oversized"] = True
+            frame["path"] = path
+        else:
+            frame["oversized"] = True
         filename = getattr(media, "filename", None)
         if isinstance(filename, str) and filename.strip():
             frame["filename"] = filename.strip()
@@ -396,6 +421,13 @@ class WebSocketChannel(BaseChannel):
             await self._hub.push_to_thread(thread_id, frame)
         else:
             await self._hub.push(conn_id, frame)
+
+
+def _with_turn_id(frame: dict[str, Any], turn_id: str) -> dict[str, Any]:
+    """Keep each streamed chunk tied to its turn so clients do not merge replies."""
+    if not turn_id or frame.get("turn_id"):
+        return frame
+    return {**frame, "turn_id": turn_id}
 
 
 def _turn_user_frame(message: InboundMessage, thread_id: str, processor: Any) -> dict[str, Any]:
@@ -514,6 +546,25 @@ def _media_kind(media: ContentPart) -> str:
     if isinstance(media, FileContent):
         return "file"
     return "file"
+
+
+def _media_download_path(media: ContentPart) -> str | None:
+    """Derive a workspace-download ``path`` from a media part for oversized frames.
+
+    Prefer the part\u2019s ``url`` (``file:///…/outbound/x.docx``) then ``local_path``.
+    Only ``inbound/`` / ``outbound/`` relatives are emitted; anything else is left
+    to the client\u2019s history reconcile (the projection resolves the file block).
+    """
+    raw_url = ""
+    for attr in ("url", "local_path"):
+        value = getattr(media, attr, None)
+        if isinstance(value, str) and value.strip():
+            raw_url = value.strip()
+            break
+    if not raw_url:
+        return None
+    rel = extract_workspace_rel(raw_url)
+    return rel if rel and rel.startswith(("inbound/", "outbound/")) else None
 
 
 def _continuation_inbound(

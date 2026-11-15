@@ -1,0 +1,14 @@
+{
+  "renderers": [
+    {
+      "id": "design_canvas",
+      "tools": [
+        "design_new",
+        "design_context",
+        "design_update",
+        "design_open",
+        "design_annotations"
+      ]
+    }
+  ]
+}
