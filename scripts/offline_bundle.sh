@@ -187,7 +187,8 @@ p = sys.argv[1]
 lines = open(p).read().splitlines()
 # 云存储 SDK 链(oss2/华为 OBS/阿里云/crcmod/腾讯 COS)在 offline 内网包里无意义,
 # 且其传递依赖在部分 tier 缺轮子会造成 wheelhouse 不一致——整链排除。
-EXCLUDE = {"oss2", "esdk-obs-python", "aliyun-python-sdk-core", "crcmod", "cos-python-sdk-v5"}
+# pynput→evdev(键鼠控制)在 offline 无头部署无意义,且 evdev 无 cp312 manylinux 轮子
+EXCLUDE = {"oss2", "esdk-obs-python", "aliyun-python-sdk-core", "crcmod", "cos-python-sdk-v5", "pynput", "evdev"}
 out = []
 skip = False
 for line in lines:
