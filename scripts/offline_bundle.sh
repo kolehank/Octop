@@ -432,8 +432,8 @@ print(" ".join(missing))
     # pipefail 下 ls 对无匹配 glob 返回 2 会炸掉 set -e;零 sdist(全 wheel 命中)时 *.tar.gz 无匹配是常态
     total=$(ls "$out_dir"/*.whl "$out_dir"/*.tar.gz 2>/dev/null | wc -l || true)
     ( cd dist && tar -czf "agentbuddy-offline-$name_suffix-$PYTAG.tar.gz" "$(basename "$out_dir")/" )
-    ( cd "$out_dir" && sha256sum ./*.whl ./*.tar.gz requirements-third-party.txt > "../SHA256SUMS-$variant.txt" 2>/dev/null \
-      || sha256sum ./* > "../SHA256SUMS-$variant.txt" )
+    # find 限定顶层普通文件:兼容"无 sdist(全 wheel)"与"含 sqlite3/ 目录"两种形态
+    ( cd "$out_dir" && find . -maxdepth 1 -type f -print0 | sort -z | xargs -0 sha256sum > "../SHA256SUMS-$variant.txt" )
     echo "[offline_bundle] [$variant] Done: $total artifacts"
 }
 
