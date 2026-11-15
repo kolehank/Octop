@@ -43,6 +43,7 @@ def _run_script(script: str, spec: dict, out: Path, *, env: dict | None = None) 
         [sys.executable, str(SCRIPTS / script), "--spec", str(spec_file), "--out", str(out)],
         capture_output=True,
         text=True,
+        encoding="utf-8",
         cwd=str(out.parent),
         env=env,
         timeout=180,
