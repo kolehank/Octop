@@ -37,9 +37,13 @@ EXCLUDE_SUFFIXES = {".pyc", ".pyo"}
 EXCLUDE_NAMES = {".DS_Store"}
 
 
+def _yaml_text(plugin_dir: Path) -> str:
+    return (plugin_dir / "plugin.yaml").read_text(encoding="utf-8")
+
+
 def _plugin_meta(plugin_dir: Path) -> tuple[str, str]:
     """Read id/version from plugin.yaml without a YAML dependency."""
-    text = (plugin_dir / "plugin.yaml").read_text(encoding="utf-8")
+    text = _yaml_text(plugin_dir)
     ident = re.search(r"^id:\s*([A-Za-z0-9_.-]+)\s*$", text, re.M)
     version = re.search(r"^version:\s*([A-Za-z0-9_.+-]+)\s*$", text, re.M)
     if not ident:
@@ -70,7 +74,10 @@ def main() -> int:
     plugin_dir = args.plugin_dir.resolve()
     if not (plugin_dir / "plugin.yaml").is_file():
         raise SystemExit(f"not a plugin directory (no plugin.yaml): {plugin_dir}")
-    if not (plugin_dir / "ui" / "dist").is_dir():
+    # Only UI plugins (manifest declares ``ui:``) need the prebuilt bundle.
+    manifest_text = _yaml_text(plugin_dir)
+    declares_ui = "\nui:" in manifest_text or manifest_text.startswith("ui:")
+    if declares_ui and not (plugin_dir / "ui" / "dist").is_dir():
         print(
             "warning: ui/dist missing — run `npm run build` in ui/ before packing "
             "(the receiver runs no npm)",
