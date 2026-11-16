@@ -2,6 +2,7 @@
 
 > 适用对象：银河麒麟 ARM 定制机（glibc 2.23）、CentOS 7 系 x86 机（glibc 2.17）
 > 等 glibc 基线较老的信创政务机。新机器（Ubuntu 20.04+/较新麒麟）用 standard 包即可，无需读本篇。
+> **已有部署升级到新版本**：见 `docs/offline-upgrade-runbook.md`（覆盖升级五步流程 + 必须重启服务）。
 
 ## 一、怎么判断用哪个包
 
