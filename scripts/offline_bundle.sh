@@ -68,7 +68,13 @@ SQLITE_ARCHIVEDIR="${SQLITE_ARCHIVEDIR:-}"
 # 降级到有 2014 档的版本。首版组合参考 kylin-fix/麒麟部署修复说明.md 实测记录,
 # 按当前锁定树重新核对。
 #
-# ⚠️ uv.lock 中下列包升级时需复核本表:确认新版是否已有 2014 档 wheel(有则可
+# ⚠️ 2026-11-16 起 legacy 主路径 = 根包 pyproject 的 deploy-legacy extras 白名单
+# (--no-all-extras --extra deploy-legacy,重链在解析期整链排除);本表退为双保险
+# (替换钉版)与 LEGACY_EXCLUDE(整包剔除,兜底 extras 声明漂移)。上游给 harness
+# 加新 feature extra 且其依赖无 2014 档轮子时:在 deploy-legacy 白名单不收它,
+# 并复核本表是否需要新增钉版。CI 闸门在 legacy 包出现高基线 wheel 时硬失败。
+#
+# uv.lock 中下列包升级时需复核本表:确认新版是否已有 2014 档 wheel(有则可
 # 移出表),以及替换版本与依赖约束是否仍兼容(pyproject 下限、上游 wheel 互相
 # 依赖)。CI 闸门会在 legacy 包出现无 2014 档 wheel 时硬失败。
 #
@@ -91,6 +97,10 @@ LEGACY_PINNED=(
 )
 
 # legacy 从清单中**整包剔除**的依赖(不下载、不装):
+#   ⚠️ 2026-11-16 起 extras 白名单是主路径:offline_bundle.sh 在 legacy 导出时用
+#   --no-extra bedrock/object-storage/desktop/remote-backends 整链排除,本表退为
+#   双保险(extras 表与 pyproject 不同步时兜底)。上游给 harness 加新 extra 时
+#   若带无 2014 档轮子的依赖,需在导出 flags 与本表两处同步。
 #   deepagents-backends 0.x 所有版本硬性要求 psycopg>=3.3.2,与上表 psycopg 3.2.13
 #   死锁;它只服务 remote COS/S3/Postgres 后端(harness extra 'remote-backends'),
 #   SQLite 默认模式与 octop 自己的存储后端都不 import 它,剔除无影响。
@@ -175,10 +185,31 @@ build_variant() {
     done
 
     # ---- 导出锁定树的第三方依赖清单 ------------------------------------------
-    uv export --frozen --no-dev --no-hashes --no-emit-project \
-        --no-emit-package octop-harness --no-emit-package octop-gateway \
-        --no-emit-package octop-memory --no-emit-package octop-browser \
-        --format requirements-txt -o "$out_dir/requirements-third-party.txt"
+    # standard:全量(根包主 deps 已带 harness 轻粒度 extras;重链走 octop 的
+    #   deploy-full extra,Docker/Dockerfile 与 standard 构建机 uv sync 显式带)。
+    # legacy:--no-all-extras --extra deploy-legacy 白名单解析 —— 根包 pyproject
+    #   的 deploy-legacy extra 只带 harness 轻粒度 extras(web-search-all/docker/
+    #   observability/acp),云存储 SDK 链(object-storage)/Bedrock(bedrock)/
+    #   remote COS/S3/PG 后端(remote-backends)/键鼠控制(desktop)整链不进树。
+    #   uv 的 export extras 只作用于根包,所以白名单必须声明在根包 pyproject
+    #   (harness 自身 extras 无法被 export flags 排除)。
+    #   LEGACY_PINNED/LEGACY_EXCLUDE 表保留为双保险(extras 声明与 pyproject
+    #   漂移时兜底)。
+    EXPORT_FLAGS=(--frozen --no-dev --no-hashes --no-emit-project
+        --no-emit-package octop-harness --no-emit-package octop-gateway
+        --no-emit-package octop-memory --no-emit-package octop-browser
+        --format requirements-txt)
+    if [ "$variant" = "legacy" ]; then
+        uv export "${EXPORT_FLAGS[@]}" --no-all-extras --extra deploy-legacy \
+            -o "$out_dir/requirements-third-party.txt"
+        echo "[offline_bundle] [legacy] extras whitelist: --no-all-extras --extra deploy-legacy (heavy chains excluded at resolution)"
+    else
+        # standard:默认导出只含根包主 deps(harness 轻粒度 extras);重链
+        # (云存储 SDK/Bedrock/remote-backends/键鼠/tos)由 deploy-full extra
+        # 补齐,保持与 v1.2.0(harness[all])同等能力。
+        uv export "${EXPORT_FLAGS[@]}" --extra deploy-full \
+            -o "$out_dir/requirements-third-party.txt"
+    fi
     # 过滤跨平台 marker 行:Windows-only(pywin32)、Python>3.13(audioop-lts)等
     # 在目标(cp312/linux)下不可装,pip download 又不吃 marker 会整体失败。
     python3 - "$out_dir/requirements-third-party.txt" <<'FILTER'

@@ -91,6 +91,7 @@ git push dstech develop           # ④ 内网交付
 - 上游更新**只在 oss 分支合并一次**，再经 ③ 一分为二：GitHub 拿公开版，内网拿完整版。
 - 冲突只出现在两处：① 白标化 vs 上游（少数）；③ 大屏 session/挂载 vs 上游（较常见，上游也在改 chat/history）。原则：**以上游为基底，各自叠加自己的增量**。
 - 若只需稳定版，可改 `git merge upstream/main` 或指定 release tag；日常跟随 `upstream/develop` 最直接。
+- **反向回流（develop → oss）只许 cherry-pick，禁止 merge**：develop 侧产生的产品性修复（offline 脚本、Dockerfile、pyproject/uv.lock、desktop 打包等需要进发布物/CI 的改动），在 oss 上 `git cherry-pick -n <commit>` 落地——提交里若含内网线文档（同步评估档等 oss 不持有的文件），cherry-pick 会报 DU 冲突，按"跟随 oss 删除"处理（`git rm`）。**绝不能 `git merge develop` 进 oss**——那会把 develop 独有的业务内容整体带上公开线。发版前自查：develop 相对 oss 的产品性提交（`git log oss..develop --oneline -- pyproject.toml uv.lock scripts/ deploy/ .github/ desktop/ packages/ tests/`）是否已全部 cherry-pick 回流。
 
 ## 5. 发版流程
 
@@ -173,7 +174,7 @@ git merge upstream/develop -X theirs   # 内容冲突一律取上游（“以上
 | 17 | **pyproject 出现两个 `[tool.uv.sources]`** | `uv lock` / `uv sync` 全体解析失败 | 删除上游混入的重复 sources 段（含其 git pin） | merge 后 `grep -c 'tool.uv.sources' pyproject.toml` 应为 1 |
 | 18 | **python/脚本批量替换静默失败** | 白标产物名仍是官方命名（如 electron-builder artifactName 输出 `Octop-desktop-*`），CI 冒烟才暴露 | 修回并落 commit；教训：**任何批量替换必须 assert**（replace 后断言旧字符串不存在），禁止裸 replace | 同步脚本 / 一次性替换命令都要带 assert |
 | 19 | **上游新增 skills/脚本在 Windows 控制台打中文 JSON 崩溃** | Windows runner cp1252 `UnicodeEncodeError`（office-docs 类脚本 print 中文） | 脚本改 `sys.stdout.buffer.write((json.dumps(..., ensure_ascii=False)+"\n").encode("utf-8"))` + flush；对应测试 `subprocess.run` 加 `encoding="utf-8"` | 上游凡新增 print 中文 JSON 的脚本，同步时统一改字节写入 |
-| 20 | **offline bundle 脚本边界条件** | 零剔除时 `.dropped.txt` 不存在 FileNotFoundError；无 `*.tar.gz` 时 `ls` glob 撞 pipefail；sha256sum 兜底扫进子目录 | 已固化修复（`scripts/offline_bundle.sh`：touch 防护、`ls … \|\| true`、`find -type f \| xargs sha256sum`、FILTER EXCLUDE 云链/键鼠链包）；legacy 档根治 = extras 白名单改造（另行立项） | 新依赖进 lock 时先查 manylinux2014 轮子可得性，再决定 legacy 档取舍 |
+| 20 | **offline bundle 脚本边界条件** | 零剔除时 `.dropped.txt` 不存在 FileNotFoundError；无 `*.tar.gz` 时 `ls` glob 撞 pipefail；sha256sum 兜底扫进子目录 | 已固化修复（`scripts/offline_bundle.sh`：touch 防护、`ls … \|\| true`、`find -type f \| xargs sha256sum`、FILTER EXCLUDE 云链/键鼠链包）；**✅ legacy 根治已实施（2026-11-16 extras 白名单改造）**：根包 pyproject 拆 deploy-legacy/deploy-full 两层 extras，legacy 走 `uv export --no-all-extras --extra deploy-legacy` 解析期整链排除，守卫测试 `tests/unit/test_offline_extras_whitelist.py` 防上游回归（详见 `docs/kylin-legacy-deploy.md` §6） | 新依赖进 lock 时先查 manylinux2014 轮子可得性，再决定 legacy 档取舍 |
 | 21 | **revert 上游特性时误伤搭车修复** | revert 某 PR 会连带拆掉同分支上搭车的共享模块改动（如 telegram revert 丢 `stream_close` 等共享能力） | revert 前先 `git log --oneline <该特性分支>` 列搭车提交，逐个确认经别的路径仍在；与本地纠缠的特性默认「代码保留不启用」而非 revert | skip 决策表记一笔"搭车提交清单" |
 
 ### 10.3 运行时库（packages/）升级法（2026-11-07 首次，1.0.3b3/b4 同步验证）

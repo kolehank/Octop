@@ -145,7 +145,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
          uv sync --frozen --no-install-project --no-dev --extra browser; \
        else \
          uv sync --frozen --no-install-project --no-dev \
-           --extra browser --extra desktop --extra local-embedding --extra knowledge-ocr; \
+           --extra browser --extra desktop --extra local-embedding --extra knowledge-ocr \
+           --extra deploy-full; \
        fi \
     && apt-get purge -y --auto-remove build-essential \
     && rm -rf /var/lib/apt/lists/*
@@ -173,7 +174,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
          && .venv/bin/python -c "import octop"; \
        else \
          uv sync --frozen --no-dev \
-           --extra browser --extra desktop --extra local-embedding --extra knowledge-ocr \
+           --extra browser --extra desktop --extra local-embedding --extra knowledge-ocr --extra deploy-full \
          && .venv/bin/python -c "import cv2, fastembed, huggingface_hub, mss, rapidocr, onnxruntime, pymupdf; import importlib.util; assert importlib.util.find_spec('pynput')" \
          && apt-get update && apt-get install -y --no-install-recommends fonts-noto-cjk; \
        fi \

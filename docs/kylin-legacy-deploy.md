@@ -26,9 +26,28 @@ ldd --version | head -1
 |---|---|---|
 | wheel 标签档 | manylinux2014 + 2_17/2_26/2_28 四档 | 仅 manylinux2014 |
 | 第三方版本 | 按 `uv.lock` 原样 | 部分包降级到有 2014 档的版本（见 `scripts/offline_bundle.sh` 内 `LEGACY_PINNED` 替换表） |
+| 重链功能（云存储后端 / Bedrock / 键鼠截屏 / OCR / 本地 embedding） | 可用 | **裁剪**（见下文"裁剪清单"） |
 | PostgreSQL 模式 | 可用 | 可用（psycopg 钉 3.2.x 兼容版，未砍） |
 | 附带 SQLite 兼容库 | 有 | 有 |
 | 安装脚本 | 同一个 `install-offline.sh` | 同一个 |
+
+### 裁剪清单（2026-11-16 extras 白名单改造起，legacy 包整链不含）
+
+legacy 包按根包 `pyproject.toml` 的 `deploy-legacy` extras 白名单解析，四条
+无 manylinux2014 轮子的重依赖链在**解析期整链排除**（不再靠下载重试逐包剔）：
+
+| 被裁链 | 影响的功能 | legacy 部署注意事项 |
+|---|---|---|
+| 云存储 SDK（oss2 / 华为 OBS / 腾讯 COS） | Admin 配置 COS/OSS/OBS 云存储工作区后端 | 仍可用 **local_shell / docker / opensandbox** 后端；确需云存储时在有网机按目标平台编译后手动放入 bundle |
+| AWS Bedrock（langchain-aws） | Agent 选用 Bedrock 协议 | openai/anthropic 兼容协议与国产模型不受影响；harness 对缺失 SDK 给 ImportError 安装指引 |
+| remote-backends（deepagents-backends） | harness 远端 COS/S3/PG 工作区后端 | Octop 自己的数据库（SQLite/PostgreSQL）**不走此包**，部署不受影响 |
+| 键鼠/截屏控制（pynput / mss） | Host 桌面键鼠注入、截屏 | legacy 为无头服务器部署本就不用；**浏览器控制（playwright CDP）不受影响** |
+
+OCR（rapidocr/onnxruntime）与本地 embedding（fastembed）不在 legacy 包内
+（standard 的 offline 包同样不带，口径一致）。搜索全家桶、Docker 沙箱、
+Langfuse、ACP、browser、LDAP、MFA、office 文档处理等主体功能**全部保留**，
+由 `tests/unit/test_offline_extras_whitelist.py` 守卫测试逐包断言——上游新增
+依赖若把重链带回 legacy 树，该测试即红。
 
 legacy 替换表当前降级的包（版本以表内为准，随锁定树演进复核）：
 numpy、pillow、greenlet、tiktoken、argon2-cffi(-bindings)、cryptography、lxml、
@@ -80,3 +99,25 @@ legacy 包源于一次麒麟 ARM（glibc 2.23）现场部署的三个坑，现�
    启动即崩）→ CI 闸门做"清单 vs 实际 wheel"逐项比对，防复发。
 
 原始修复记录见仓库 `kylin-fix/`（未入库，现场档案）。
+
+## 六、2026-11-16 改造：extras 白名单取代"剔除重试"
+
+改造前 legacy 构建靠 `pip download` 失败→剔除→重试的循环追链：上游每次给
+harness 加一个无 2014 档轮子的依赖（如云存储 SDK 链、pynput→evdev 链），
+CI 就要人工补一轮剔除表，链条式暴露防不胜防。
+
+改造后：
+
+- 根包 `pyproject.toml` 把 harness extras 拆成两层声明——主 deps 只带轻链
+  （web-search-all/docker/observability/acp），重链（bedrock / object-storage /
+  desktop / remote-backends）收进 `deploy-full` extra；
+- legacy 导出走 `uv export --no-all-extras --extra deploy-legacy`，重链在
+  **依赖解析期**整链不进树；
+- `LEGACY_PINNED`（版本钉定）与 `LEGACY_EXCLUDE`（整包剔除）保留为双保险，
+  兜底 extras 声明与 pyproject 漂移；
+- 守卫测试 `tests/unit/test_offline_extras_whitelist.py` 四用例：legacy 树无
+  重链残留、主体功能 27 包齐全、deploy-full 能力不回退、白名单引用的 extras
+  必须存在。
+
+standard 档与 Docker（full 变体 uv sync 带 `--extra deploy-full`）行为与
+v1.2.0 完全等价（导出实测 = v1.2.0 全量树 − dev 工具，零能力回退）。

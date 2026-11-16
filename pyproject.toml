@@ -21,7 +21,11 @@ dependencies = [
     "apscheduler>=3.10,<4",
     "argon2-cffi>=23.1",
     "pyjwt>=2.8",
-    "octop-harness[all]>=1.0.9",
+    # harness fine-grained extras — light chains only (pure-Python wheels or
+    # with manylinux2014 builds). Heavy chains live in the [deploy-extra]
+    # optional-dependencies group below so the offline legacy bundle can
+    # resolve without them (see deploy-legacy there).
+    "octop-harness[web-search-all,docker,observability,acp]>=1.0.9",
     "octop-memory>=1.0.4",
     "lark-oapi>=1.7.3",
     "octop-gateway>=1.0.3",
@@ -85,6 +89,32 @@ knowledge-ocr = [
     "onnxruntime>=1.17",
     "pymupdf>=1.24",
     "shapely>=2.2.0",
+]
+# Offline-friendly deploy target for the legacy (manylinux2014/glibc 2.17)
+# bundle: `uv export --no-all-extras --extra deploy-legacy` resolves without
+# the chains whose wheels have no 2014-tier build. Harness fine-grained
+# extras mirror packages/octop-harness/pyproject.toml; keep the two lists in
+# sync when upstream adds a new feature extra. offline_bundle.sh
+# VARIANT=legacy uses this; standard/Docker install deploy-full instead.
+deploy-legacy = [
+    "octop-harness[web-search-all,docker,observability,acp]>=1.0.9",
+]
+# Full-featured deploy target (Docker image, standard offline bundle):
+# re-adds the heavy chains excluded from deploy-legacy — cloud-storage SDKs
+# (object-storage), Bedrock (numpy>=2.3.2), remote COS/S3/PG backends
+# (psycopg>=3.3.2), keyboard/mouse control (desktop), plus root-level
+# local-embedding / knowledge-ocr / tos which are NOT installed by default
+# for the same reason (no 2014-tier wheels on their native chains).
+# Dockerfile and offline_bundle.sh standard variant pass `--extra deploy-full`.
+deploy-full = [
+    "octop-harness[bedrock,object-storage,desktop,remote-backends]>=1.0.9",
+    "fastembed>=0.4",
+    "huggingface_hub>=0.20",
+    "rapidocr>=3.4,<4",
+    "onnxruntime>=1.17",
+    "pymupdf>=1.24",
+    "shapely>=2.2.0",
+    "tos>=2.9,<3",
 ]
 
 [dependency-groups]

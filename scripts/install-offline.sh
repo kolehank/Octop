@@ -112,8 +112,9 @@ fi
 
 # ---- 5) 纯离线安装 --------------------------------------------------------------
 # --no-deps 全量装 bundle 内所有 wheel(kylin-fix 实战验证的模式):不做依赖解析——
-# 主包 extras(harness[all] 的 deepagents-backends/langchain-aws 等)在 legacy 包被
-# 剔除,带解析会失败;wheel 集合源自同一 uv.lock + 闸门保证与清单一致,自洽。
+# 主包重链 extras(云存储 SDK/Bedrock/remote-backends/键鼠)在 legacy 包被
+# deploy-legacy 白名单整链排除(见根包 pyproject 与 offline_bundle.sh),带解析
+# 会失败;wheel 集合源自同一 uv.lock + 闸门保证与清单一致,自洽。
 echo "[install-offline] Installing (no network, no-deps full set)..."
 "$AGENTBUDDY_VENV/bin/python" -m pip install --quiet --upgrade pip \
     --no-index --find-links "$BUNDLE_DIR" pip || {

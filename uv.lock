@@ -3301,7 +3301,7 @@ dependencies = [
     { name = "mcp" },
     { name = "octop-browser" },
     { name = "octop-gateway" },
-    { name = "octop-harness", extra = ["all"] },
+    { name = "octop-harness", extra = ["acp", "docker", "observability", "web-search-all"] },
     { name = "octop-memory" },
     { name = "openpyxl" },
     { name = "pillow" },
@@ -3328,6 +3328,19 @@ dependencies = [
 [package.optional-dependencies]
 browser = [
     { name = "playwright" },
+]
+deploy-full = [
+    { name = "fastembed" },
+    { name = "huggingface-hub" },
+    { name = "octop-harness", extra = ["bedrock", "desktop", "object-storage", "remote-backends"] },
+    { name = "onnxruntime" },
+    { name = "pymupdf" },
+    { name = "rapidocr" },
+    { name = "shapely" },
+    { name = "tos" },
+]
+deploy-legacy = [
+    { name = "octop-harness", extra = ["acp", "docker", "observability", "web-search-all"] },
 ]
 desktop = [
     { name = "mss" },
@@ -3384,9 +3397,11 @@ requires-dist = [
     { name = "cryptography", specifier = ">=41" },
     { name = "edge-tts", specifier = ">=6.1" },
     { name = "fastapi", specifier = ">=0.110" },
+    { name = "fastembed", marker = "extra == 'deploy-full'", specifier = ">=0.4" },
     { name = "fastembed", marker = "extra == 'local-embedding'", specifier = ">=0.4" },
     { name = "firecrawl-anydoc", specifier = ">=0.2.4" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.27" },
+    { name = "huggingface-hub", marker = "extra == 'deploy-full'", specifier = ">=0.20" },
     { name = "huggingface-hub", marker = "extra == 'local-embedding'", specifier = ">=0.20" },
     { name = "josepy", specifier = ">=2.2.0" },
     { name = "langchain-core", specifier = ">=1.4.8" },
@@ -3398,8 +3413,11 @@ requires-dist = [
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10" },
     { name = "octop-browser", editable = "packages/octop-browser" },
     { name = "octop-gateway", editable = "packages/octop-gateway" },
-    { name = "octop-harness", extras = ["all"], editable = "packages/octop-harness" },
+    { name = "octop-harness", extras = ["bedrock", "object-storage", "desktop", "remote-backends"], marker = "extra == 'deploy-full'", editable = "packages/octop-harness" },
+    { name = "octop-harness", extras = ["web-search-all", "docker", "observability", "acp"], editable = "packages/octop-harness" },
+    { name = "octop-harness", extras = ["web-search-all", "docker", "observability", "acp"], marker = "extra == 'deploy-legacy'", editable = "packages/octop-harness" },
     { name = "octop-memory", editable = "packages/octop-memory" },
+    { name = "onnxruntime", marker = "extra == 'deploy-full'", specifier = ">=1.17" },
     { name = "onnxruntime", marker = "extra == 'knowledge-ocr'", specifier = ">=1.17" },
     { name = "openpyxl", specifier = ">=3.1" },
     { name = "pillow", specifier = ">=13.0.0" },
@@ -3408,6 +3426,7 @@ requires-dist = [
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
     { name = "pydantic", specifier = ">=2.6,<2.14" },
     { name = "pyjwt", specifier = ">=2.8" },
+    { name = "pymupdf", marker = "extra == 'deploy-full'", specifier = ">=1.24" },
     { name = "pymupdf", marker = "extra == 'knowledge-ocr'", specifier = ">=1.24" },
     { name = "pynput", marker = "extra == 'desktop'", specifier = ">=1.7" },
     { name = "pyotp", specifier = ">=2.10.0" },
@@ -3422,12 +3441,15 @@ requires-dist = [
     { name = "python-pptx", specifier = ">=1.0" },
     { name = "python-socks", specifier = ">=2.4" },
     { name = "questionary", specifier = ">=2.0" },
+    { name = "rapidocr", marker = "extra == 'deploy-full'", specifier = ">=3.4,<4" },
     { name = "rapidocr", marker = "extra == 'knowledge-ocr'", specifier = ">=3.4,<4" },
     { name = "rich", specifier = ">=13.7" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.4" },
     { name = "scalar-fastapi", specifier = ">=1.0" },
     { name = "segno", specifier = ">=1.6" },
+    { name = "shapely", marker = "extra == 'deploy-full'", specifier = ">=2.2.0" },
     { name = "shapely", marker = "extra == 'knowledge-ocr'", specifier = ">=2.2.0" },
+    { name = "tos", marker = "extra == 'deploy-full'", specifier = ">=2.9,<3" },
     { name = "tos", marker = "extra == 'tos'", specifier = ">=2.9,<3" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.27" },
     { name = "webauthn", specifier = ">=3.0.1" },
@@ -3435,7 +3457,7 @@ requires-dist = [
     { name = "xlrd", specifier = ">=2.0.1" },
     { name = "xlwt", marker = "extra == 'dev'", specifier = ">=1.3" },
 ]
-provides-extras = ["dev", "browser", "tos", "desktop", "local-embedding", "knowledge-ocr"]
+provides-extras = ["dev", "browser", "tos", "desktop", "local-embedding", "knowledge-ocr", "deploy-legacy", "deploy-full"]
 
 [package.metadata.requires-dev]
 dev = [
