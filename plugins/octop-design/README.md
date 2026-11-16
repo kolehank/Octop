@@ -5,11 +5,25 @@
 
 ## 安装
 
+源码目录（开发机，改动即时生效）:
+
 ```bash
 octop plugin install ./plugins/octop-design --force
 ```
 
-然后在 Dashboard「工具管理」为 Agent 启用 `design` 插件，即可在聊天中调用
+**离线分发用 ZIP**（目标机无需 node/npm，UI 用仓库内预构建的 `ui/dist`）:
+
+```bash
+uv run python scripts/pack_plugin.py plugins/octop-design   # -> dist/plugins/design-0.1.0.zip
+```
+
+ZIP 的三种装法，任选其一:
+
+1. **Dashboard 插件页上传**（推荐，离线机可用）——请求走 `POST /api/plugins/install`；
+2. `octop plugin install <目录>`——把 ZIP 解包后的目录传给 CLI（CLI 只接受目录或 URL）；
+3. 把 ZIP 放到 HTTP 服务上，`octop plugin install https://…/design-0.1.0.zip`。
+
+装好后在 Dashboard「工具管理」为 Agent 启用 `design` 插件，即可在聊天中调用
 `design_new` / `design_context` / `design_update` / `design_open` /
 `design_annotations`。
 
